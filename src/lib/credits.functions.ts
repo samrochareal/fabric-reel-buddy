@@ -6,7 +6,7 @@ export const getCredits = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId, claims } = context;
-    const email = typeof claims.email === "string" ? claims.email : null;
+    const email = typeof claims.email === "string" ? claims.email : "";
     const { data, error } = await supabase.rpc("ensure_profile", {
       p_user_id: userId,
       p_email: email,
