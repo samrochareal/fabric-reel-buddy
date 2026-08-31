@@ -11,6 +11,42 @@ export const ASPECTS: Record<AspectId, { label: string; w: number; h: number }> 
 
 export type ProcessMode = "turbo" | "completo";
 
+/** Every knob the batch editor exposes. */
+export type EditOptions = {
+  aspect: AspectId;
+  mode: ProcessMode;
+  /** 1 = no zoom, 2 = 200% */
+  zoom: number;
+  /** 0..1 crop anchor (0.5 = centered) */
+  posX: number;
+  posY: number;
+  /** playback rate, e.g. 1.02 for anti-duplication */
+  speed: number;
+  mirror: boolean;
+  border: { enabled: boolean; color: string; width: number };
+  title: { enabled: boolean; text: string; color: string; size: number };
+  bottom: { enabled: boolean; text: string; color: string; size: number };
+  overlayOpacity: number;
+  overlayColor: string;
+  fadeIn: boolean;
+};
+
+export const defaultEditOptions = (): EditOptions => ({
+  aspect: "9:16",
+  mode: "turbo",
+  zoom: 1,
+  posX: 0.5,
+  posY: 0.5,
+  speed: 1,
+  mirror: false,
+  border: { enabled: false, color: "#ffffff", width: 24 },
+  title: { enabled: false, text: "", color: "#ffffff", size: 64 },
+  bottom: { enabled: false, text: "", color: "#ffffff", size: 44 },
+  overlayOpacity: 0,
+  overlayColor: "#000000",
+  fadeIn: false,
+});
+
 let ffmpeg: FFmpeg | null = null;
 
 export async function getFFmpeg(onLog?: (msg: string) => void): Promise<FFmpeg> {
@@ -26,47 +62,158 @@ export async function getFFmpeg(onLog?: (msg: string) => void): Promise<FFmpeg> 
   return ffmpeg;
 }
 
-function buildFilter(aspect: AspectId, mode: ProcessMode): string {
-  const { w, h } = ASPECTS[aspect];
-  if (mode === "turbo") {
-    // Center crop to fill the frame (fast).
-    return `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}`;
+/**
+ * Renders titles, bottom captions, borders and colour overlays into a
+ * transparent PNG the size of the output frame. Text drawing happens on a
+ * canvas (browser fonts) instead of ffmpeg's drawtext, which keeps typography
+ * identical to the live preview.
+ */
+export function buildOverlayPng(opts: EditOptions, titleText: string): Promise<Blob | null> {
+  const { w, h } = ASPECTS[opts.aspect];
+  const hasTitle = opts.title.enabled && titleText.trim().length > 0;
+  const hasBottom = opts.bottom.enabled && opts.bottom.text.trim().length > 0;
+  const hasBorder = opts.border.enabled && opts.border.width > 0;
+  const hasTint = opts.overlayOpacity > 0;
+  if (!hasTitle && !hasBottom && !hasBorder && !hasTint) return Promise.resolve(null);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return Promise.resolve(null);
+
+  if (hasTint) {
+    ctx.fillStyle = opts.overlayColor;
+    ctx.globalAlpha = Math.min(1, Math.max(0, opts.overlayOpacity));
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 1;
   }
-  // Blurred background, video intact in front (slower).
-  return (
-    `split[a][b];` +
-    `[a]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},boxblur=24:2[bg];` +
-    `[b]scale=${w}:${h}:force_original_aspect_ratio=decrease[fg];` +
-    `[bg][fg]overlay=(W-w)/2:(H-h)/2`
-  );
+
+  if (hasBorder) {
+    ctx.strokeStyle = opts.border.color;
+    ctx.lineWidth = opts.border.width;
+    ctx.strokeRect(opts.border.width / 2, opts.border.width / 2, w - opts.border.width, h - opts.border.width);
+  }
+
+  const drawWrapped = (text: string, size: number, color: string, baselineY: number, fromTop: boolean) => {
+    ctx.font = `700 ${size}px Inter, "Helvetica Neue", Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillStyle = color;
+    ctx.shadowColor = "rgba(0,0,0,0.65)";
+    ctx.shadowBlur = size * 0.35;
+    const maxWidth = w * 0.86;
+    const words = text.split(/\s+/);
+    const lines: string[] = [];
+    let current = "";
+    for (const word of words) {
+      const test = current ? `${current} ${word}` : word;
+      if (ctx.measureText(test).width > maxWidth && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    }
+    if (current) lines.push(current);
+    const lineHeight = size * 1.2;
+    lines.forEach((line, i) => {
+      const y = fromTop
+        ? baselineY + i * lineHeight
+        : baselineY - (lines.length - 1 - i) * lineHeight;
+      ctx.fillText(line, w / 2, y);
+    });
+    ctx.shadowBlur = 0;
+  };
+
+  if (hasTitle) {
+    drawWrapped(titleText.trim(), opts.title.size, opts.title.color, h * 0.12, true);
+  }
+  if (hasBottom) {
+    drawWrapped(opts.bottom.text.trim(), opts.bottom.size, opts.bottom.color, h * 0.9, false);
+  }
+
+  return new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
+}
+
+function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
+  const { w, h } = ASPECTS[opts.aspect];
+  const zoom = Math.max(1, opts.zoom);
+  const sw = Math.round(w * zoom);
+  const sh = Math.round(h * zoom);
+  const px = Math.min(1, Math.max(0, opts.posX));
+  const py = Math.min(1, Math.max(0, opts.posY));
+
+  const parts: string[] = [];
+  if (opts.mode === "turbo") {
+    parts.push(
+      `[0:v]scale=${sw}:${sh}:force_original_aspect_ratio=increase,` +
+        `crop=${w}:${h}:(iw-ow)*${px.toFixed(3)}:(ih-oh)*${py.toFixed(3)}[base]`,
+    );
+  } else {
+    // Whole frame kept in front of a blurred fill of itself.
+    parts.push(
+      `[0:v]split[a][b];` +
+        `[a]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},boxblur=24:2[bg];` +
+        `[b]scale=${Math.round(w / zoom)}:${Math.round(h / zoom)}:force_original_aspect_ratio=decrease[fg];` +
+        `[bg][fg]overlay=(W-w)*${px.toFixed(3)}:(H-h)*${py.toFixed(3)}[base]`,
+    );
+  }
+
+  let label = "base";
+  const push = (filter: string, next: string) => {
+    parts.push(`[${label}]${filter}[${next}]`);
+    label = next;
+  };
+
+  if (opts.mirror) push("hflip", "mir");
+  if (opts.speed !== 1) push(`setpts=PTS/${opts.speed.toFixed(3)}`, "spd");
+  if (opts.fadeIn) push("fade=t=in:st=0:d=0.4", "fdi");
+  if (hasOverlay) {
+    parts.push(`[1:v]scale=${w}:${h}[ovl]`);
+    parts.push(`[${label}][ovl]overlay=0:0[outv]`);
+    label = "outv";
+  }
+  if (label !== "outv") parts.push(`[${label}]null[outv]`);
+  return parts.join(";");
 }
 
 export async function processVideo(
   file: File,
-  aspect: AspectId,
-  mode: ProcessMode,
+  opts: EditOptions,
+  titleText: string,
   onProgress: (ratio: number) => void,
 ): Promise<Blob> {
   const ff = await getFFmpeg();
-  const inputName = `in_${Date.now()}_${Math.random().toString(36).slice(2)}.mp4`;
-  const outputName = inputName.replace(/^in_/, "out_");
+  const stamp = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const inputName = `in_${stamp}.mp4`;
+  const overlayName = `ovl_${stamp}.png`;
+  const outputName = `out_${stamp}.mp4`;
 
   ff.on("progress", ({ progress }) => {
     onProgress(Math.min(1, Math.max(0, progress)));
   });
 
   await ff.writeFile(inputName, await fetchFile(file));
-  const args = [
-    "-i",
-    inputName,
-    "-vf",
-    buildFilter(aspect, mode),
+
+  const overlayPng = await buildOverlayPng(opts, titleText);
+  if (overlayPng) await ff.writeFile(overlayName, await fetchFile(overlayPng));
+
+  const args = ["-i", inputName];
+  if (overlayPng) args.push("-i", overlayName);
+  args.push("-filter_complex", buildFilterChain(opts, !!overlayPng), "-map", "[outv]");
+
+  if (opts.speed !== 1) {
+    args.push("-filter:a", `atempo=${Math.min(2, Math.max(0.5, opts.speed)).toFixed(3)}`);
+  }
+  args.push(
+    "-map",
+    "0:a?",
     "-c:v",
     "libx264",
     "-preset",
-    mode === "turbo" ? "ultrafast" : "veryfast",
+    opts.mode === "turbo" ? "ultrafast" : "veryfast",
     "-crf",
-    mode === "turbo" ? "30" : "26",
+    opts.mode === "turbo" ? "30" : "26",
     "-pix_fmt",
     "yuv420p",
     "-c:a",
@@ -76,11 +223,13 @@ export async function processVideo(
     "-movflags",
     "+faststart",
     outputName,
-  ];
+  );
+
   await ff.exec(args);
   const data = await ff.readFile(outputName);
   await ff.deleteFile(inputName).catch(() => {});
   await ff.deleteFile(outputName).catch(() => {});
+  if (overlayPng) await ff.deleteFile(overlayName).catch(() => {});
 
   const bytes = data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
   const copy = new Uint8Array(bytes.length);
