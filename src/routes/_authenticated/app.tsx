@@ -324,7 +324,7 @@ function EditorPage() {
           className="pointer-events-none absolute inset-x-[7%] bottom-[8%] text-center font-bold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
           style={{
             color: opts.bottom.color,
-            fontSize: small ? "0.55rem" : `${(opts.bottom.size / outW) * 100 * 0.9}%`,
+            fontSize: `${((opts.bottom.size / outW) * 100).toFixed(2)}cqw`,
           }}
         >
           {opts.bottom.text}
