@@ -272,7 +272,7 @@ function EditorPage() {
   const framePreview = (clip: Clip | undefined, small: boolean) => (
     <div
       className="relative overflow-hidden rounded-md bg-black"
-      style={{ aspectRatio: `${outW} / ${outH}` }}
+      style={{ aspectRatio: `${outW} / ${outH}`, containerType: "inline-size" }}
     >
       {clip ? (
         <video
