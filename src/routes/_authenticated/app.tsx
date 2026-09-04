@@ -313,7 +313,7 @@ function EditorPage() {
           className="pointer-events-none absolute inset-x-[7%] top-[8%] text-center font-bold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
           style={{
             color: opts.title.color,
-            fontSize: small ? "0.6rem" : `${(opts.title.size / outW) * 100 * 0.9}%`,
+            fontSize: `${((opts.title.size / outW) * 100).toFixed(2)}cqw`,
           }}
         >
           {titleFor(clips.findIndex((c) => c.id === clip?.id)) || "Título do vídeo"}
