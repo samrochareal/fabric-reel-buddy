@@ -304,7 +304,7 @@ function EditorPage() {
         <div
           className="pointer-events-none absolute inset-0"
           style={{
-            border: `${Math.max(1, (opts.border.width / outW) * 100)}% solid ${opts.border.color}`,
+            border: `${((opts.border.width / outW) * 100).toFixed(2)}cqw solid ${opts.border.color}`,
           }}
         />
       )}
