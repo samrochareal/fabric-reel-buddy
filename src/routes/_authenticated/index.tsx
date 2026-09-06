@@ -37,8 +37,20 @@ export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Editor em lote — Fábrica de Reels" },
-      { name: "description", content: "Edite e processe até 50 vídeos de uma vez." },
+      {
+        name: "description",
+        content:
+          "Edite e processe até 100 vídeos verticais de uma vez, com molduras, overlays e títulos.",
+      },
+      { property: "og:title", content: "Editor em lote — Fábrica de Reels" },
+      {
+        property: "og:description",
+        content: "Processe lotes de vídeos 9:16 direto no navegador.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: "robots", content: "noindex" },
+
     ],
   }),
   component: EditorPage,
