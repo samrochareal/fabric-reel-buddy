@@ -1,12 +1,23 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 
-export type AspectId = "9:16" | "1:1" | "4:5";
+export type AspectId = "9:16";
 
 export const ASPECTS: Record<AspectId, { label: string; w: number; h: number }> = {
   "9:16": { label: "9:16 · Reels/Shorts", w: 1080, h: 1920 },
-  "1:1": { label: "1:1 · Feed", w: 1080, h: 1080 },
-  "4:5": { label: "4:5 · Feed vertical", w: 1080, h: 1350 },
+};
+
+/** logo / brand image burned on top of the frame */
+export type LogoOverlay = {
+  enabled: boolean;
+  /** data URL of the PNG/JPG the user uploaded */
+  src: string | null;
+  /** width of the logo as a fraction of the frame width */
+  scale: number;
+  /** 0..1 placement anchor inside the frame */
+  x: number;
+  y: number;
+  opacity: number;
 };
 
 /** Every knob the batch editor exposes. */
@@ -28,6 +39,7 @@ export type EditOptions = {
   bottom: { enabled: boolean; text: string; color: string; size: number };
   overlayOpacity: number;
   overlayColor: string;
+  logo: LogoOverlay;
   fadeIn: boolean;
 };
 
@@ -44,8 +56,10 @@ export const defaultEditOptions = (): EditOptions => ({
   bottom: { enabled: false, text: "", color: "#ffffff", size: 44 },
   overlayOpacity: 0,
   overlayColor: "#000000",
+  logo: { enabled: false, src: null, scale: 0.3, x: 0.5, y: 0.08, opacity: 1 },
   fadeIn: false,
 });
+
 
 
 let ffmpeg: FFmpeg | null = null;
