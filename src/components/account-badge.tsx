@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { LogOut } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { LogOut, ShieldCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { exitGuestMode, isGuest } from "@/lib/guest-mode";
+import { useIsAdmin } from "@/lib/admin";
+
 
 /** Shows the signed-in e-mail plus a sign-out button. */
 export function AccountBadge() {
