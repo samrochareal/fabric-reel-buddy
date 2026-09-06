@@ -9,14 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AppRouteImport } from './routes/app'
-import { Route as CriadorDeOverlayRouteImport } from './routes/criador-de-overlay'
-import { Route as EditorProjectIdRouteImport } from './routes/editor.$projectId'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedCriadorDeOverlayRouteImport } from './routes/_authenticated/criador-de-overlay'
+import { Route as AuthenticatedEditorProjectIdRouteImport } from './routes/_authenticated/editor.$projectId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -24,58 +25,81 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CriadorDeOverlayRoute = CriadorDeOverlayRouteImport.update({
-  id: '/criador-de-overlay',
-  path: '/criador-de-overlay',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EditorProjectIdRoute = EditorProjectIdRouteImport.update({
-  id: '/editor/$projectId',
-  path: '/editor/$projectId',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCriadorDeOverlayRoute =
+  AuthenticatedCriadorDeOverlayRouteImport.update({
+    id: '/criador-de-overlay',
+    path: '/criador-de-overlay',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEditorProjectIdRoute =
+  AuthenticatedEditorProjectIdRouteImport.update({
+    id: '/editor/$projectId',
+    path: '/editor/$projectId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthenticatedIndexRoute
   '/app': typeof AppRoute
-  '/criador-de-overlay': typeof CriadorDeOverlayRoute
-  '/editor/$projectId': typeof EditorProjectIdRoute
+  '/auth': typeof AuthRoute
+  '/criador-de-overlay': typeof AuthenticatedCriadorDeOverlayRoute
+  '/editor/$projectId': typeof AuthenticatedEditorProjectIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/app': typeof AppRoute
-  '/criador-de-overlay': typeof CriadorDeOverlayRoute
-  '/editor/$projectId': typeof EditorProjectIdRoute
+  '/auth': typeof AuthRoute
+  '/criador-de-overlay': typeof AuthenticatedCriadorDeOverlayRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/editor/$projectId': typeof AuthenticatedEditorProjectIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/app': typeof AppRoute
-  '/criador-de-overlay': typeof CriadorDeOverlayRoute
-  '/editor/$projectId': typeof EditorProjectIdRoute
+  '/auth': typeof AuthRoute
+  '/_authenticated/criador-de-overlay': typeof AuthenticatedCriadorDeOverlayRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/editor/$projectId': typeof AuthenticatedEditorProjectIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/criador-de-overlay' | '/editor/$projectId'
+  fullPaths:
+    '/' | '/app' | '/auth' | '/criador-de-overlay' | '/editor/$projectId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/app' | '/criador-de-overlay' | '/editor/$projectId'
-  id: '__root__' | '/' | '/app' | '/criador-de-overlay' | '/editor/$projectId'
+  to: '/app' | '/auth' | '/criador-de-overlay' | '/' | '/editor/$projectId'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/app'
+    | '/auth'
+    | '/_authenticated/criador-de-overlay'
+    | '/_authenticated/'
+    | '/_authenticated/editor/$projectId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AppRoute: typeof AppRoute
-  CriadorDeOverlayRoute: typeof CriadorDeOverlayRoute
-  EditorProjectIdRoute: typeof EditorProjectIdRoute
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -85,28 +109,56 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/criador-de-overlay': {
-      id: '/criador-de-overlay'
-      path: '/criador-de-overlay'
-      fullPath: '/criador-de-overlay'
-      preLoaderRoute: typeof CriadorDeOverlayRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/editor/$projectId': {
-      id: '/editor/$projectId'
+    '/_authenticated/': {
+      id: '/_authenticated/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/criador-de-overlay': {
+      id: '/_authenticated/criador-de-overlay'
+      path: '/criador-de-overlay'
+      fullPath: '/criador-de-overlay'
+      preLoaderRoute: typeof AuthenticatedCriadorDeOverlayRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/editor/$projectId': {
+      id: '/_authenticated/editor/$projectId'
       path: '/editor/$projectId'
       fullPath: '/editor/$projectId'
-      preLoaderRoute: typeof EditorProjectIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedEditorProjectIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCriadorDeOverlayRoute: typeof AuthenticatedCriadorDeOverlayRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedEditorProjectIdRoute: typeof AuthenticatedEditorProjectIdRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCriadorDeOverlayRoute: AuthenticatedCriadorDeOverlayRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedEditorProjectIdRoute: AuthenticatedEditorProjectIdRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AppRoute: AppRoute,
-  CriadorDeOverlayRoute: CriadorDeOverlayRoute,
-  EditorProjectIdRoute: EditorProjectIdRoute,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

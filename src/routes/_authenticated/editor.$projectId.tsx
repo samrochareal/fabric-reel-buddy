@@ -32,7 +32,7 @@ import { Input } from "@/components/ui/input";
 import { ASPECTS, defaultEditOptions, type EditOptions } from "@/lib/video";
 
 
-export const Route = createFileRoute("/editor/$projectId")({
+export const Route = createFileRoute("/_authenticated/editor/$projectId")({
   head: () => ({
     meta: [
       { title: "Editor em lote — Fábrica de Reels" },
@@ -92,7 +92,7 @@ function EditorPage() {
   const { projectId } = Route.useParams();
   const [projectName, setProjectName] = useState<string | null>(null);
   useEffect(() => {
-    setProjectName(getProject(projectId)?.name ?? null);
+    void getProject(projectId).then((p) => setProjectName(p?.name ?? null));
   }, [projectId]);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -100,7 +100,7 @@ function EditorPage() {
   const [savedOverlays, setSavedOverlays] = useState<OverlayPreset[]>([]);
 
   useEffect(() => {
-    setSavedOverlays(listOverlays());
+    void listOverlays().then(setSavedOverlays);
   }, []);
   const cancelledRef = useRef(false);
 
@@ -290,7 +290,7 @@ function EditorPage() {
         }
       }
 
-      if (rendered > 0) registerProcessed(projectId, rendered);
+      if (rendered > 0) void registerProcessed(projectId, rendered);
       if (cancelledRef.current) {
         setPaused(true);
         toast.info("Processamento pausado. Clique em “Retomar processamento” para continuar.");
@@ -1067,7 +1067,7 @@ function EditorPage() {
                     <p className="flex items-center gap-2 text-xs font-bold">
                       <Sparkles className="size-4 text-primary" /> Overlays salvos
                     </p>
-                    <Button variant="ghost" size="sm" onClick={() => setSavedOverlays(listOverlays())}>
+                    <Button variant="ghost" size="sm" onClick={() => void listOverlays().then(setSavedOverlays)}>
                       Atualizar
                     </Button>
                   </div>

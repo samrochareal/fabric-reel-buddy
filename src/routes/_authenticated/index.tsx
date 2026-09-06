@@ -9,6 +9,8 @@ import {
   Trash2,
   Video,
 } from "lucide-react";
+import { toast } from "sonner";
+import { AccountBadge } from "@/components/account-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,7 +22,7 @@ import {
   type Project,
 } from "@/lib/projects";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Meus Projetos — Fábrica de Reels" },
@@ -53,8 +55,17 @@ function ProjectsPage() {
   const [name, setName] = useState("");
   const [note, setNote] = useState("");
 
+  const refresh = async () => {
+    try {
+      setProjects(await listProjects());
+    } catch {
+      toast.error("Não foi possível carregar seus projetos.");
+    }
+  };
+
   useEffect(() => {
-    setProjects(listProjects());
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const visible = useMemo(() => {
@@ -70,18 +81,26 @@ function ProjectsPage() {
 
   const totalProcessed = projects.reduce((sum, p) => sum + p.processedCount, 0);
 
-  const submit = () => {
-    const project = createProject(name, note);
-    setProjects(listProjects());
-    setName("");
-    setNote("");
-    setCreating(false);
-    void navigate({ to: "/editor/$projectId", params: { projectId: project.id } });
+  const submit = async () => {
+    try {
+      const project = await createProject(name, note);
+      setName("");
+      setNote("");
+      setCreating(false);
+      await refresh();
+      void navigate({ to: "/editor/$projectId", params: { projectId: project.id } });
+    } catch {
+      toast.error("Não foi possível criar o projeto.");
+    }
   };
 
-  const remove = (id: string) => {
-    deleteProject(id);
-    setProjects(listProjects());
+  const remove = async (id: string) => {
+    try {
+      await deleteProject(id);
+      await refresh();
+    } catch {
+      toast.error("Não foi possível excluir o projeto.");
+    }
   };
 
   return (
@@ -92,10 +111,10 @@ function ProjectsPage() {
           <span className="font-display text-base font-bold tracking-tight">
             fabrica <span className="text-muted-foreground">de</span> reels
           </span>
-
-
+          <AccountBadge />
         </div>
       </header>
+
 
       <main className="mx-auto max-w-6xl px-4 pb-24 pt-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -168,7 +187,7 @@ function ProjectsPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nome do projeto (ex.: Campanha Setembro)"
-                onKeyDown={(e) => e.key === "Enter" && submit()}
+                onKeyDown={(e) => e.key === "Enter" && void submit()}
               />
               <Textarea
                 value={note}
@@ -178,7 +197,7 @@ function ProjectsPage() {
               />
             </div>
             <div className="mt-3 flex gap-2">
-              <Button size="sm" onClick={submit}>
+              <Button size="sm" onClick={() => void submit()}>
                 Criar e abrir editor
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setCreating(false)}>
@@ -244,7 +263,7 @@ function ProjectsPage() {
                   </Button>
                   <button
                     type="button"
-                    onClick={() => remove(project.id)}
+                    onClick={() => void remove(project.id)}
                     aria-label={`Excluir ${project.name}`}
                     className="rounded-md border border-border p-2 text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
                   >

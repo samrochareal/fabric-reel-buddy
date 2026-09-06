@@ -27,7 +27,7 @@ import {
   type TextAlign,
 } from "@/lib/overlays";
 
-export const Route = createFileRoute("/criador-de-overlay")({
+export const Route = createFileRoute("/_authenticated/criador-de-overlay")({
   head: () => ({
     meta: [
       { title: "Criador de Overlay — Fábrica de Reels" },
@@ -67,7 +67,7 @@ function OverlayCreator() {
   const patch = (next: Partial<OverlayConfig>) => setCfg((prev) => ({ ...prev, ...next }));
 
   useEffect(() => {
-    setPresets(listOverlays());
+    void listOverlays().then(setPresets);
   }, []);
 
   // keep the uploaded photo decoded so the canvas redraws instantly while dragging
@@ -219,7 +219,7 @@ function OverlayCreator() {
     return canvasRef.current?.toDataURL("image/png") ?? null;
   };
 
-  const persist = (slot: number) => {
+  const persist = async (slot: number) => {
     const dataUrl = renderDataUrl();
     if (!dataUrl) return;
     const label =
@@ -227,14 +227,26 @@ function OverlayCreator() {
       presets.find((p) => p.slot === slot)?.name ||
       cfg.name.trim() ||
       `Perfil ${slot}`;
-    setPresets(saveOverlay({ slot, name: label, dataUrl, config: cfg, updatedAt: Date.now() }));
+    try {
+      setPresets(
+        await saveOverlay({ slot, name: label, dataUrl, config: cfg, updatedAt: Date.now() }),
+      );
+    } catch {
+      toast.error("Não foi possível salvar o perfil na sua conta.");
+      return;
+    }
     setEditingSlot(slot);
     setPresetName(label);
     toast.success(`Salvo como “${label}”. Já dá para usar nos projetos.`);
   };
 
-  const rename = (preset: OverlayPreset, name: string) => {
-    setPresets(saveOverlay({ ...preset, name }));
+  const rename = async (preset: OverlayPreset, name: string) => {
+    setPresets((prev) => prev.map((p) => (p.slot === preset.slot ? { ...p, name } : p)));
+    try {
+      await saveOverlay({ ...preset, name });
+    } catch {
+      toast.error("Não foi possível renomear o perfil.");
+    }
   };
 
   const loadPreset = (preset: OverlayPreset) => {
@@ -460,7 +472,7 @@ function OverlayCreator() {
             <Button variant="outline" size="sm" onClick={download}>
               <Download className="mr-1.5 size-4" /> Baixar .png
             </Button>
-            <Button size="sm" onClick={() => persist(editingSlot ?? 1)}>
+            <Button size="sm" onClick={() => void persist(editingSlot ?? 1)}>
               <Save className="mr-1.5 size-4" /> Salvar no sistema
             </Button>
           </div>
@@ -518,7 +530,7 @@ function OverlayCreator() {
                     {preset ? (
                       <Input
                         value={preset.name}
-                        onChange={(e) => rename(preset, e.target.value)}
+                        onChange={(e) => void rename(preset, e.target.value)}
                         className="h-7 text-xs font-bold"
                         aria-label={`Renomear perfil ${slot}`}
                       />
@@ -531,7 +543,7 @@ function OverlayCreator() {
                       <button
                         type="button"
                         onClick={() => {
-                          setPresets(deleteOverlay(slot));
+                          void deleteOverlay(slot).then(setPresets);
                           if (editingSlot === slot) setEditingSlot(null);
                         }}
                         className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
@@ -555,7 +567,7 @@ function OverlayCreator() {
                         variant="secondary"
                         size="sm"
                         className="w-full"
-                        onClick={() => persist(slot)}
+                        onClick={() => void persist(slot)}
                       >
                         <Save className="mr-1.5 size-3.5" />
                         {preset ? "Salvar" : "Salvar aqui"}

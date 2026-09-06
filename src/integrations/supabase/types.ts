@@ -38,6 +38,39 @@ export type Database = {
         }
         Relationships: []
       }
+      overlay_presets: {
+        Row: {
+          config: Json
+          created_at: string
+          data_url: string
+          id: string
+          name: string
+          slot: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          data_url: string
+          id?: string
+          name?: string
+          slot: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          data_url?: string
+          id?: string
+          name?: string
+          slot?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -59,19 +92,45 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          note: string
+          processed_count: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          note?: string
+          processed_count?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          note?: string
+          processed_count?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      consume_credits: {
-        Args: { p_amount: number; p_user_id: string }
-        Returns: number
-      }
-      ensure_profile: {
-        Args: { p_email: string; p_user_id: string }
-        Returns: number
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
