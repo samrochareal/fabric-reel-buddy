@@ -98,9 +98,8 @@ export async function buildOverlayPng(
   const { w, h } = ASPECTS[opts.aspect];
   const hasTitle = opts.title.enabled && titleText.trim().length > 0;
   const hasBottom = opts.bottom.enabled && opts.bottom.text.trim().length > 0;
-  const hasBorder = opts.border.top > 0 || opts.border.bottom > 0;
   const hasTint = opts.overlayOpacity > 0;
-  if (!hasTitle && !hasBottom && !hasBorder && !hasTint) return null;
+  if (!hasTitle && !hasBottom && !hasTint) return null;
 
   const canvas = document.createElement("canvas");
   canvas.width = w;
@@ -116,14 +115,6 @@ export async function buildOverlayPng(
     ctx.globalAlpha = 1;
   }
 
-  if (hasBorder) {
-    ctx.fillStyle = opts.border.color;
-    if (opts.border.top > 0) ctx.fillRect(0, 0, w, Math.round(h * opts.border.top));
-    if (opts.border.bottom > 0) {
-      const bh = Math.round(h * opts.border.bottom);
-      ctx.fillRect(0, h - bh, w, bh);
-    }
-  }
 
   const drawWrapped = (text: string, size: number, color: string, baselineY: number, fromTop: boolean) => {
     ctx.font = `700 ${size}px Inter, "Helvetica Neue", Arial, sans-serif`;
