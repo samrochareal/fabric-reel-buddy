@@ -266,8 +266,11 @@ function EditorPage() {
             ),
           );
         }
+        rendered += 1;
       }
-      toast.success("Lote concluído!");
+      if (rendered > 0) registerProcessed(projectId, rendered);
+      toast.success("Lote concluído! Use “Baixar todos” para salvar tudo.");
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao processar.");
     } finally {
