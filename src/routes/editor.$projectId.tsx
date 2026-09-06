@@ -613,43 +613,13 @@ function EditorPage() {
 
         {/* ---------- Column 2: preview ---------- */}
         <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Prévia · {ASPECTS[opts.aspect].label}
-            </p>
-            <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
-              {([1, 4, 9] as const).map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setGrid(g)}
-                  className={`rounded-md px-2.5 py-1 text-xs font-bold transition-colors ${
-                    grid === g
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {g === 1 ? "1X" : g === 4 ? "2X2" : "3X3"}
-                </button>
-              ))}
-            </div>
-          </div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Prévia · {ASPECTS[opts.aspect].label}
+          </p>
 
           <div className="rounded-xl border border-border bg-card p-4">
-            <div
-              className={`mx-auto grid gap-2 ${
-                grid === 1
-                  ? "max-w-[300px] grid-cols-1"
-                  : grid === 4
-                    ? "max-w-[420px] grid-cols-2"
-                    : "max-w-[520px] grid-cols-3"
-              }`}
-            >
-              {gridClips.length === 0
-                ? framePreview(undefined, grid !== 1)
-                : gridClips.map((clip) => (
-                    <div key={clip.id}>{framePreview(clip, grid !== 1)}</div>
-                  ))}
+            <div className="mx-auto max-w-[300px]">
+              {previewClip ? framePreview(previewClip, false) : framePreview(undefined, false)}
             </div>
 
             {/* our own player controls — always in the same spot */}
