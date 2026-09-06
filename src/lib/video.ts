@@ -282,91 +282,93 @@ export async function processVideo(
   const bgName = `bg_${stamp}.png`;
   const outputName = `out_${stamp}.mp4`;
 
-  ff.on("progress", ({ progress }) => {
+  const progressHandler = ({ progress }: { progress: number }) => {
     onProgress(Math.min(1, Math.max(0, progress)));
-  });
+  };
+  ff.on("progress", progressHandler);
 
-  await ff.writeFile(inputName, await fetchFile(file));
+  try {
+    await ff.writeFile(inputName, await fetchFile(file));
 
-  const useBg = opts.bgImage.enabled && !!opts.bgImage.src;
-  if (useBg && opts.bgImage.src) await ff.writeFile(bgName, await fetchFile(opts.bgImage.src));
+    const useBg = opts.bgImage.enabled && !!opts.bgImage.src;
+    if (useBg && opts.bgImage.src) await ff.writeFile(bgName, await fetchFile(opts.bgImage.src));
 
-  const overlayPng = await buildOverlayPng(opts, titleText);
-  if (overlayPng) await ff.writeFile(overlayName, await fetchFile(overlayPng));
+    const overlayPng = await buildOverlayPng(opts, titleText);
+    if (overlayPng) await ff.writeFile(overlayName, await fetchFile(overlayPng));
 
-  const args = ["-i", inputName];
-  let next = 1;
-  let bgIndex: number | null = null;
-  let overlayIndex: number | null = null;
-  if (useBg) {
-    args.push("-i", bgName);
-    bgIndex = next++;
+    const args = ["-i", inputName];
+    let next = 1;
+    let bgIndex: number | null = null;
+    let overlayIndex: number | null = null;
+    if (useBg) {
+      args.push("-i", bgName);
+      bgIndex = next++;
+    }
+    if (overlayPng) {
+      args.push("-i", overlayName);
+      overlayIndex = next++;
+    }
+    args.push(
+      "-filter_complex_threads",
+      String(ffmpegThreads),
+      "-filter_complex",
+      buildFilterChain(opts, { bgIndex, overlayIndex }),
+      "-map",
+      "[outv]",
+    );
+
+    if (opts.speed !== 1) {
+      args.push("-filter:a", `atempo=${Math.min(2, Math.max(0.5, opts.speed)).toFixed(3)}`);
+    }
+    args.push(
+      "-map",
+      "0:a?",
+      "-c:v",
+      "libx264",
+      // superfast avoids the expensive look-ahead and motion-search passes while
+      // retaining materially better compression than ultrafast.
+      "-preset",
+      "superfast",
+      "-crf",
+      "27",
+      "-maxrate",
+      "3200k",
+      "-bufsize",
+      "6400k",
+      "-profile:v",
+      "high",
+      "-level",
+      "4.0",
+      "-g",
+      "60",
+      "-threads",
+      String(ffmpegThreads),
+      "-pix_fmt",
+      "yuv420p",
+    );
+    const mp4Audio = /mp4|quicktime|m4v/i.test(file.type);
+    if (opts.speed !== 1 || !mp4Audio) {
+      args.push("-c:a", "aac", "-b:a", "96k", "-ac", "2", "-ar", "44100");
+    } else {
+      args.push("-c:a", "copy");
+    }
+    args.push("-movflags", "+faststart", outputName);
+
+    const exitCode = await ff.exec(args);
+    if (exitCode !== 0) throw new Error("Não foi possível concluir a renderização do vídeo.");
+    const data = await ff.readFile(outputName);
+
+    const bytes = data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
+    const copy = new Uint8Array(bytes.length);
+    copy.set(bytes);
+    return new Blob([copy.buffer], { type: "video/mp4" });
+  } finally {
+    ff.off("progress", progressHandler);
+    await ff.deleteFile(inputName).catch(() => {});
+    await ff.deleteFile(outputName).catch(() => {});
+    await ff.deleteFile(overlayName).catch(() => {});
+    await ff.deleteFile(bgName).catch(() => {});
   }
-  if (overlayPng) {
-    args.push("-i", overlayName);
-    overlayIndex = next++;
-  }
-  args.push(
-    "-filter_complex",
-    buildFilterChain(opts, { bgIndex, overlayIndex }),
-    "-map",
-    "[outv]",
-  );
-
-
-  if (opts.speed !== 1) {
-    args.push("-filter:a", `atempo=${Math.min(2, Math.max(0.5, opts.speed)).toFixed(3)}`);
-  }
-  args.push(
-    "-map",
-    "0:a?",
-    "-c:v",
-    "libx264",
-    "-preset",
-    "veryfast",
-    "-crf",
-    "25",
-    "-maxrate",
-    "3500k",
-    "-bufsize",
-    "7000k",
-    "-profile:v",
-    "high",
-    "-level",
-    "4.0",
-    "-g",
-    "60",
-    "-sc_threshold",
-    "0",
-    "-x264-params",
-    "rc-lookahead=10:subme=4:trellis=0:aq-mode=1",
-    "-threads",
-    String(ffmpegThreads),
-    "-pix_fmt",
-    "yuv420p",
-  );
-  const mp4Audio = /mp4|quicktime|m4v/i.test(file.type);
-  if (opts.speed !== 1 || !mp4Audio) {
-    // audio was re-timed (or comes from a container whose codec MP4 cannot hold)
-    args.push("-c:a", "aac", "-b:a", "96k", "-ac", "2", "-ar", "44100");
-  } else {
-    // untouched audio is copied straight through — no quality loss, no cost
-    args.push("-c:a", "copy");
-  }
-  args.push("-movflags", "+faststart", outputName);
-
-
-  await ff.exec(args);
-  const data = await ff.readFile(outputName);
-  await ff.deleteFile(inputName).catch(() => {});
-  await ff.deleteFile(outputName).catch(() => {});
-  if (overlayPng) await ff.deleteFile(overlayName).catch(() => {});
-  if (useBg) await ff.deleteFile(bgName).catch(() => {});
-
-  const bytes = data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
-  const copy = new Uint8Array(bytes.length);
-  copy.set(bytes);
-  return new Blob([copy.buffer], { type: "video/mp4" });
 }
 
 export function outputName(originalName: string, aspect: AspectId): string {
