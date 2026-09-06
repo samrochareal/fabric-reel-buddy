@@ -97,9 +97,11 @@ function statusLabel(status: ClipStatus, progress: number) {
 
 function EditorPage() {
 
+  const branding = useBranding();
   const [clips, setClips] = useState<Clip[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [opts, setOpts] = useState<EditOptions>(defaultEditOptions);
+
   
   const [tab, setTab] = useState<EditTab>("titulo");
   const [antiDup, setAntiDup] = useState(false);
