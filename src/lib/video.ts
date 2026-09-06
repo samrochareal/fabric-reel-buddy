@@ -79,7 +79,7 @@ export async function getFFmpeg(onLog?: (msg: string) => void): Promise<FFmpeg> 
  * canvas (browser fonts) instead of ffmpeg's drawtext, which keeps typography
  * identical to the live preview.
  */
-function loadImage(src: string): Promise<HTMLImageElement | null> {
+export function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -291,6 +291,7 @@ export async function processVideo(
   await ff.deleteFile(inputName).catch(() => {});
   await ff.deleteFile(outputName).catch(() => {});
   if (overlayPng) await ff.deleteFile(overlayName).catch(() => {});
+  if (useBg) await ff.deleteFile(bgName).catch(() => {});
 
   const bytes = data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
   const copy = new Uint8Array(bytes.length);
