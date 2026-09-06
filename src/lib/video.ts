@@ -169,13 +169,27 @@ function buildFilterChain(
   const px = Math.min(1, Math.max(0, opts.posX));
   const py = Math.min(1, Math.max(0, opts.posY));
 
+  // Borders trim ONLY the video layer: the cut area reveals the background
+  // (solid colour or the overlay image), it is never painted over.
+  const ox = Math.round((w - sw) * px);
+  const oy = Math.round((h - sh) * py);
+  const barTop = Math.round(h * Math.min(0.45, Math.max(0, opts.border.top)));
+  const barBottom = Math.round(h * Math.min(0.45, Math.max(0, opts.border.bottom)));
+  let cutTop = Math.min(sh - 2, Math.max(0, barTop - oy));
+  let cutBottom = Math.min(sh - 2 - cutTop, Math.max(0, oy + sh - (h - barBottom)));
+  cutTop = Math.round(cutTop / 2) * 2;
+  cutBottom = Math.round(cutBottom / 2) * 2;
+  const vh = Math.max(2, Math.round((sh - cutTop - cutBottom) / 2) * 2);
+
   const parts: string[] = [];
   const bgFront = opts.bgImage.layer === "front";
   // Cover-fit the source to the output frame, scale it by the zoom factor,
   // then place it over the background (solid colour, optionally an image).
   parts.push(
     `[0:v]${opts.mirror ? "hflip," : ""}scale=${w}:${h}:force_original_aspect_ratio=increase,` +
-      `crop=${w}:${h},scale=${sw}:${sh},setsar=1[vid]`,
+      `crop=${w}:${h},scale=${sw}:${sh}` +
+      (cutTop > 0 || cutBottom > 0 ? `,crop=${sw}:${vh}:0:${cutTop}` : "") +
+      `,setsar=1[vid]`,
   );
   parts.push(`color=c=${opts.bgColor}:s=${w}x${h}:r=30[bgc]`);
   let bgLabel = "bgc";
@@ -191,8 +205,9 @@ function buildFilterChain(
     }
   }
   parts.push(
-    `[${bgLabel}][vid]overlay=x=(W-w)*${px.toFixed(3)}:y=(H-h)*${py.toFixed(3)}:shortest=1[base]`,
+    `[${bgLabel}][vid]overlay=x=${ox}:y=${oy + cutTop}:shortest=1[base]`,
   );
+
 
   let label = "base";
   if (inputs.bgIndex !== null && bgFront) {
