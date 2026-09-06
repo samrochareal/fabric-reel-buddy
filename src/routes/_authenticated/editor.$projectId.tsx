@@ -58,6 +58,10 @@ type Clip = {
 };
 
 const MAX_CLIPS = 100;
+const MAX_FILE_MB = 100;
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+const MAX_DURATION_S = 180;
+
 type EditTab = "titulo" | "inferior" | "overlay" | "extras";
 const TABS: { id: EditTab; label: string }[] = [
   { id: "titulo", label: "Título" },
@@ -135,12 +139,44 @@ function EditorPage() {
 
   const patch = (next: Partial<EditOptions>) => setOpts((prev) => ({ ...prev, ...next }));
 
-  const addFiles = useCallback((files: FileList | File[]) => {
-    const incoming = Array.from(files).filter((f) => f.type.startsWith("video/"));
-    if (incoming.length === 0) {
+  const addFiles = useCallback(async (files: FileList | File[]) => {
+    const videos = Array.from(files).filter((f) => f.type.startsWith("video/"));
+    if (videos.length === 0) {
       toast.error("Selecione arquivos de vídeo.");
       return;
     }
+
+    const tooBig = videos.filter((f) => f.size > MAX_FILE_BYTES);
+    const sized = videos.filter((f) => f.size <= MAX_FILE_BYTES);
+    if (tooBig.length > 0) {
+      toast.error(`${tooBig.length} vídeo(s) acima de ${MAX_FILE_MB} MB foram ignorados.`);
+    }
+
+    const readDuration = (file: File) =>
+      new Promise<number>((resolve) => {
+        const el = document.createElement("video");
+        const url = URL.createObjectURL(file);
+        el.preload = "metadata";
+        el.onloadedmetadata = () => {
+          const d = el.duration;
+          URL.revokeObjectURL(url);
+          resolve(Number.isFinite(d) ? d : 0);
+        };
+        el.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(0);
+        };
+        el.src = url;
+      });
+
+    const durations = await Promise.all(sized.map(readDuration));
+    const incoming = sized.filter((_, i) => (durations[i] ?? 0) <= MAX_DURATION_S);
+    const tooLong = sized.length - incoming.length;
+    if (tooLong > 0) {
+      toast.error(`${tooLong} vídeo(s) acima de ${MAX_DURATION_S}s foram ignorados.`);
+    }
+    if (incoming.length === 0) return;
+
     setClips((prev) => {
       const room = MAX_CLIPS - prev.length;
       if (incoming.length > room) toast.error(`Máximo de ${MAX_CLIPS} vídeos por lote.`);
@@ -156,6 +192,7 @@ function EditorPage() {
       return merged;
     });
   }, [selectedId]);
+
 
   const removeClip = (id: string) =>
     setClips((prev) => {
@@ -503,7 +540,7 @@ function EditorPage() {
       <div className="flex items-end justify-between gap-4 px-4 pt-5">
         <h1 className="font-display text-xl font-bold tracking-tight">Editor em lote</h1>
         <p className="text-xs text-muted-foreground">
-          Até {MAX_CLIPS} vídeos por lote · processamento no seu navegador · uso ilimitado
+          Até {MAX_CLIPS} vídeos por lote · máximo {MAX_FILE_MB}MB · {MAX_DURATION_S}s cada
         </p>
       </div>
 
@@ -520,7 +557,7 @@ function EditorPage() {
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
-              addFiles(e.dataTransfer.files);
+              void addFiles(e.dataTransfer.files);
             }}
             role="button"
             tabIndex={0}
@@ -528,7 +565,9 @@ function EditorPage() {
           >
             <UploadCloud className="size-6 text-primary" />
             <p className="mt-2 text-sm font-semibold">Arraste vídeos ou clique</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">MP4, MOV, WebM</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              MP4, MOV, WebM · máximo {MAX_FILE_MB}MB · {MAX_DURATION_S}s cada
+            </p>
             <input
               ref={inputRef}
               type="file"
@@ -536,10 +575,11 @@ function EditorPage() {
               multiple
               className="hidden"
               onChange={(e) => {
-                if (e.target.files) addFiles(e.target.files);
+                if (e.target.files) void addFiles(e.target.files);
                 e.target.value = "";
               }}
             />
+
           </div>
 
           <div className="rounded-xl border border-border bg-card">

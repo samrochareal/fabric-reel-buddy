@@ -224,7 +224,7 @@ function buildFilterChain(
   parts.push(
     // one scale pass straight to the final size (cover fit) instead of
     // scaling to the frame and rescaling by the zoom factor.
-    `[0:v]${opts.mirror ? "hflip," : ""}scale=${sw}:${sh}:force_original_aspect_ratio=increase,` +
+    `[0:v]${opts.mirror ? "hflip," : ""}scale=${sw}:${sh}:force_original_aspect_ratio=increase:flags=fast_bilinear,` +
       `crop=${sw}:${sh}` +
       (cutTop > 0 || cutBottom > 0 ? `,crop=${sw}:${vh}:0:${cutTop}` : "") +
       `,setsar=1[vid]`,
@@ -325,9 +325,21 @@ export async function processVideo(
     "-preset",
     "veryfast",
     "-crf",
-    "23",
+    "25",
+    "-maxrate",
+    "3500k",
+    "-bufsize",
+    "7000k",
+    "-profile:v",
+    "high",
+    "-level",
+    "4.0",
     "-g",
     "60",
+    "-sc_threshold",
+    "0",
+    "-x264-params",
+    "rc-lookahead=10:subme=4:trellis=0:aq-mode=1",
     "-threads",
     String(ffmpegThreads),
     "-pix_fmt",
@@ -336,12 +348,13 @@ export async function processVideo(
   const mp4Audio = /mp4|quicktime|m4v/i.test(file.type);
   if (opts.speed !== 1 || !mp4Audio) {
     // audio was re-timed (or comes from a container whose codec MP4 cannot hold)
-    args.push("-c:a", "aac", "-b:a", "128k");
+    args.push("-c:a", "aac", "-b:a", "96k", "-ac", "2", "-ar", "44100");
   } else {
     // untouched audio is copied straight through — no quality loss, no cost
     args.push("-c:a", "copy");
   }
   args.push("-movflags", "+faststart", outputName);
+
 
   await ff.exec(args);
   const data = await ff.readFile(outputName);

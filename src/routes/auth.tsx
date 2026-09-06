@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { getRememberMe, setRememberMe } from "@/lib/session-pref";
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -35,6 +37,12 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const [remember, setRemember] = useState(true);
+
+  useEffect(() => {
+    setRemember(getRememberMe());
+  }, []);
+
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -52,7 +60,9 @@ function AuthPage() {
 
   const withGoogle = async () => {
     setBusy(true);
+    setRememberMe(remember);
     try {
+
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
@@ -73,7 +83,9 @@ function AuthPage() {
       return;
     }
     setBusy(true);
+    setRememberMe(remember);
     try {
+
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
@@ -121,6 +133,21 @@ function AuthPage() {
           <p className="mt-1.5 text-sm text-muted-foreground">
             Seus projetos e perfis de overlay ficam salvos na sua conta.
           </p>
+
+          <label className="mt-5 flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-background/60 p-3">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 accent-primary"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+            />
+            <span className="text-xs">
+              <span className="font-semibold">Continuar conectado</span>
+              <span className="block text-muted-foreground">
+                Mantenha o acesso salvo neste dispositivo e não precise entrar novamente.
+              </span>
+            </span>
+          </label>
 
           <Button
             variant="secondary"
