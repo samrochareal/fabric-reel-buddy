@@ -564,6 +564,38 @@ function EditorPage() {
                   ))}
             </div>
 
+            {/* our own player controls — always in the same spot */}
+            <div className="mt-4 flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2">
+              <button
+                type="button"
+                onClick={togglePlay}
+                disabled={!selected}
+                className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-40"
+                aria-label={playing ? "Pausar" : "Reproduzir"}
+              >
+                {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
+              </button>
+              <Slider
+                className="flex-1"
+                value={[pos]}
+                min={0}
+                max={1}
+                step={0.001}
+                onValueChange={([v]) => seekTo(v ?? 0)}
+              />
+              <span className="w-20 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
+                {fmtTime(pos * duration)} / {fmtTime(duration)}
+              </span>
+              <button
+                type="button"
+                onClick={() => setMuted((m) => !m)}
+                className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                aria-label={muted ? "Ativar som" : "Silenciar"}
+              >
+                {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+              </button>
+            </div>
+
             {activeClip && (
               <div className="mt-4">
                 <div className="flex items-center gap-2 text-xs">
@@ -578,28 +610,16 @@ function EditorPage() {
             )}
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
-              <div className="flex gap-1 rounded-lg border border-border bg-background p-1">
-                {(Object.keys(ASPECTS) as AspectId[]).map((a) => (
-                  <button
-                    key={a}
-                    type="button"
-                    onClick={() => patch({ aspect: a })}
-                    className={`rounded-md px-3 py-1 text-xs font-bold transition-colors ${
-                      opts.aspect === a
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {a}
-                  </button>
-                ))}
-              </div>
+              <span className="rounded-md border border-border bg-background px-3 py-1 text-xs font-bold">
+                9:16 · 1080×1920
+              </span>
               {doneClips.length > 0 && (
                 <Button variant="outline" size="sm" onClick={() => void downloadAll()}>
                   <Archive className="mr-1.5 size-4" /> Baixar tudo (.zip)
                 </Button>
               )}
             </div>
+
           </div>
         </section>
 
