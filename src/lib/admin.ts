@@ -50,8 +50,8 @@ export type PlatformStats = {
 };
 
 export async function fetchPlatformStats(): Promise<PlatformStats> {
-  const { data, error } = await supabase.rpc("admin_platform_stats");
-  if (error) throw error;
+  const { getPlatformStats } = await import("@/lib/admin.functions");
+  const data = await getPlatformStats();
   return data as unknown as PlatformStats;
 }
 
