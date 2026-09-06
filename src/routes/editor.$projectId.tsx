@@ -80,7 +80,7 @@ function EditorPage() {
   const [clips, setClips] = useState<Clip[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [opts, setOpts] = useState<EditOptions>(defaultEditOptions);
-  const [grid, setGrid] = useState<1 | 4 | 9>(1);
+  
   const [tab, setTab] = useState<EditTab>("titulo");
   const [antiDup, setAntiDup] = useState(false);
   const [scope, setScope] = useState<"batch" | "single">("batch");
@@ -323,7 +323,7 @@ function EditorPage() {
   }
 
 
-  const gridClips = grid === 1 ? (selected ? [selected] : []) : clips.slice(0, grid);
+  const previewClip = selected;
   const { w: outW, h: outH } = ASPECTS[opts.aspect];
 
   const framePreview = (clip: Clip | undefined, small: boolean) => {
@@ -613,43 +613,13 @@ function EditorPage() {
 
         {/* ---------- Column 2: preview ---------- */}
         <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Prévia · {ASPECTS[opts.aspect].label}
-            </p>
-            <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
-              {([1, 4, 9] as const).map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setGrid(g)}
-                  className={`rounded-md px-2.5 py-1 text-xs font-bold transition-colors ${
-                    grid === g
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {g === 1 ? "1X" : g === 4 ? "2X2" : "3X3"}
-                </button>
-              ))}
-            </div>
-          </div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Prévia · {ASPECTS[opts.aspect].label}
+          </p>
 
           <div className="rounded-xl border border-border bg-card p-4">
-            <div
-              className={`mx-auto grid gap-2 ${
-                grid === 1
-                  ? "max-w-[300px] grid-cols-1"
-                  : grid === 4
-                    ? "max-w-[420px] grid-cols-2"
-                    : "max-w-[520px] grid-cols-3"
-              }`}
-            >
-              {gridClips.length === 0
-                ? framePreview(undefined, grid !== 1)
-                : gridClips.map((clip) => (
-                    <div key={clip.id}>{framePreview(clip, grid !== 1)}</div>
-                  ))}
+            <div className="mx-auto max-w-[300px]">
+              {previewClip ? framePreview(previewClip, false) : framePreview(undefined, false)}
             </div>
 
             {/* our own player controls — always in the same spot */}
@@ -802,27 +772,10 @@ function EditorPage() {
                 />
               </div>
             </div>
-            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-              Zoom de 50% a 500%. Em 100% o vídeo preenche a tela inteira; abaixo de 100% ele fica
-              menor e aparece a cor de fundo; acima de 100% ele amplia e as sobras são cortadas.
-              {scope === "single"
-                ? " Estes valores valem só para o vídeo selecionado."
-                : " Estes valores valem para todos os vídeos da fila."}
-            </p>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-sm font-bold">Bordas do vídeo</p>
-            <div className="mt-3 flex items-start gap-2 rounded-lg border border-border/70 bg-background/60 p-3">
-              <Scissors className="mt-0.5 size-4 shrink-0 text-primary" />
-              <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Ajuste manualmente o quanto cortar do{" "}
-                <span className="font-bold text-foreground">topo e do rodapé do vídeo</span>{" "}
-                (marcas d’água, legendas, logos). O corte remove só o vídeo — a imagem de fundo
-                continua visível nessa área.
-              </p>
-            </div>
-
             <div className="mt-4 space-y-4">
               {[
                 {
@@ -1004,11 +957,6 @@ function EditorPage() {
                     onCheckedChange={(v) => patch({ bgImage: { ...opts.bgImage, enabled: v } })}
                   />
                 </div>
-                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                  A imagem entra em 9:16 preenchendo toda a tela. Por padrão ela fica atrás do
-                  vídeo: diminua o zoom do vídeo para ela aparecer.
-                </p>
-
                 <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg border border-border p-1">
                   {([
                     { id: "back", label: "Atrás do vídeo" },
