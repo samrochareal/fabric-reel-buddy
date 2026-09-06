@@ -547,10 +547,15 @@ function EditorPage() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
         <div className="flex h-14 items-center gap-3 px-4">
           <span className="flex items-center gap-2">
-            <Scissors className="size-4 text-primary" />
+            {branding.logo_url ? (
+              <img src={branding.logo_url} alt={branding.system_name} className="h-6 w-auto" />
+            ) : (
+              <Scissors className="size-4 text-primary" />
+            )}
             <span className="font-display text-base font-bold tracking-tight">
-              fabrica <span className="text-muted-foreground">de</span> reels
+              {branding.system_name}
             </span>
+
           </span>
           <AccountBadge />
 
