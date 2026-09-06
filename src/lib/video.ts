@@ -23,7 +23,7 @@ export type EditOptions = {
   aspect: AspectId;
   /** 1 = video fills the frame; below 1 it shrinks and the background shows */
   zoom: number;
-  /** 0..1 placement anchor (0.5 = centered) */
+  /** 0..5 placement anchor (2.5 = centered); 0 and 5 push the video off-frame */
   posX: number;
   posY: number;
   /** colour behind the video when zoom < 1 */
@@ -38,14 +38,13 @@ export type EditOptions = {
   overlayOpacity: number;
   overlayColor: string;
   bgImage: BackgroundImage;
-  fadeIn: boolean;
 };
 
 export const defaultEditOptions = (): EditOptions => ({
   aspect: "9:16",
   zoom: 1,
-  posX: 0.5,
-  posY: 0.5,
+  posX: 2.5,
+  posY: 2.5,
   bgColor: "#000000",
   speed: 1,
   mirror: false,
@@ -55,7 +54,6 @@ export const defaultEditOptions = (): EditOptions => ({
   overlayOpacity: 0,
   overlayColor: "#000000",
   bgImage: { enabled: false, src: null, opacity: 1, layer: "back" },
-  fadeIn: false,
 });
 
 
@@ -166,13 +164,15 @@ function buildFilterChain(
   // zoom 1 = video covers the whole frame; below 1 it shrinks over the background.
   const sw = Math.max(2, Math.round((w * zoom) / 2) * 2);
   const sh = Math.max(2, Math.round((h * zoom) / 2) * 2);
-  const px = Math.min(1, Math.max(0, opts.posX));
-  const py = Math.min(1, Math.max(0, opts.posY));
+  // position: 0..5 where 2.5 keeps the video centred; the extremes slide it
+  // a full frame to either side so it can leave the screen entirely.
+  const px = Math.min(5, Math.max(0, opts.posX));
+  const py = Math.min(5, Math.max(0, opts.posY));
 
   // Borders trim ONLY the video layer: the cut area reveals the background
   // (solid colour or the overlay image), it is never painted over.
-  const ox = Math.round((w - sw) * px);
-  const oy = Math.round((h - sh) * py);
+  const ox = Math.round((w - sw) / 2 + ((px - 2.5) / 2.5) * w);
+  const oy = Math.round((h - sh) / 2 + ((py - 2.5) / 2.5) * h);
   const barTop = Math.round(h * Math.min(0.45, Math.max(0, opts.border.top)));
   const barBottom = Math.round(h * Math.min(0.45, Math.max(0, opts.border.bottom)));
   let cutTop = Math.min(sh - 2, Math.max(0, barTop - oy));
@@ -221,7 +221,6 @@ function buildFilterChain(
 
 
   if (opts.speed !== 1) push(`setpts=PTS/${opts.speed.toFixed(3)}`, "spd");
-  if (opts.fadeIn) push("fade=t=in:st=0:d=0.4", "fdi");
   if (inputs.overlayIndex !== null) {
     parts.push(`[${inputs.overlayIndex}:v]scale=${w}:${h}[ovl]`);
     parts.push(`[${label}][ovl]overlay=0:0[outv]`);
