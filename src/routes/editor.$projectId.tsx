@@ -340,7 +340,7 @@ function EditorPage() {
         background: o.bgColor,
       }}
     >
-      {o.bgImage.enabled && o.bgImage.src && (
+      {o.bgImage.enabled && o.bgImage.src && o.bgImage.layer !== "front" && (
         <img
           src={o.bgImage.src}
           alt=""
@@ -390,6 +390,15 @@ function EditorPage() {
         <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
           sem vídeo
         </div>
+      )}
+
+      {o.bgImage.enabled && o.bgImage.src && o.bgImage.layer === "front" && (
+        <img
+          src={o.bgImage.src}
+          alt=""
+          className="pointer-events-none absolute inset-0 size-full object-cover"
+          style={{ opacity: o.bgImage.opacity }}
+        />
       )}
 
       {o.overlayOpacity > 0 && (
@@ -1099,9 +1108,29 @@ function EditorPage() {
                   />
                 </div>
                 <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                  A imagem fica atrás do vídeo, preenchendo toda a área de cor sólida. Diminua o
-                  zoom do vídeo para ela aparecer.
+                  A imagem entra em 9:16 preenchendo toda a tela. Por padrão ela fica atrás do
+                  vídeo: diminua o zoom do vídeo para ela aparecer.
                 </p>
+
+                <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg border border-border p-1">
+                  {([
+                    { id: "back", label: "Atrás do vídeo" },
+                    { id: "front", label: "Na frente" },
+                  ] as const).map((l) => (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => patch({ bgImage: { ...opts.bgImage, layer: l.id } })}
+                      className={`rounded-md px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+                        (opts.bgImage.layer ?? "back") === l.id
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
 
                 <input
                   ref={logoInputRef}
