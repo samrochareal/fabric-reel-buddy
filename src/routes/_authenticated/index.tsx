@@ -53,8 +53,17 @@ function ProjectsPage() {
   const [name, setName] = useState("");
   const [note, setNote] = useState("");
 
+  const refresh = async () => {
+    try {
+      setProjects(await listProjects());
+    } catch {
+      toast.error("Não foi possível carregar seus projetos.");
+    }
+  };
+
   useEffect(() => {
-    setProjects(listProjects());
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const visible = useMemo(() => {
@@ -70,18 +79,26 @@ function ProjectsPage() {
 
   const totalProcessed = projects.reduce((sum, p) => sum + p.processedCount, 0);
 
-  const submit = () => {
-    const project = createProject(name, note);
-    setProjects(listProjects());
-    setName("");
-    setNote("");
-    setCreating(false);
-    void navigate({ to: "/editor/$projectId", params: { projectId: project.id } });
+  const submit = async () => {
+    try {
+      const project = await createProject(name, note);
+      setName("");
+      setNote("");
+      setCreating(false);
+      await refresh();
+      void navigate({ to: "/editor/$projectId", params: { projectId: project.id } });
+    } catch {
+      toast.error("Não foi possível criar o projeto.");
+    }
   };
 
-  const remove = (id: string) => {
-    deleteProject(id);
-    setProjects(listProjects());
+  const remove = async (id: string) => {
+    try {
+      await deleteProject(id);
+      await refresh();
+    } catch {
+      toast.error("Não foi possível excluir o projeto.");
+    }
   };
 
   return (
@@ -92,10 +109,10 @@ function ProjectsPage() {
           <span className="font-display text-base font-bold tracking-tight">
             fabrica <span className="text-muted-foreground">de</span> reels
           </span>
-
-
+          <AccountBadge />
         </div>
       </header>
+
 
       <main className="mx-auto max-w-6xl px-4 pb-24 pt-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
