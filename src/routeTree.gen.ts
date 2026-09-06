@@ -9,15 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as CriadorDeOverlayRouteImport } from './routes/criador-de-overlay'
+import { Route as EditorProjectIdRouteImport } from './routes/editor.$projectId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -28,46 +23,44 @@ const CriadorDeOverlayRoute = CriadorDeOverlayRouteImport.update({
   path: '/criador-de-overlay',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EditorProjectIdRoute = EditorProjectIdRouteImport.update({
+  id: '/editor/$projectId',
+  path: '/editor/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/criador-de-overlay': typeof CriadorDeOverlayRoute
+  '/editor/$projectId': typeof EditorProjectIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/criador-de-overlay': typeof CriadorDeOverlayRoute
+  '/editor/$projectId': typeof EditorProjectIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/criador-de-overlay': typeof CriadorDeOverlayRoute
+  '/editor/$projectId': typeof EditorProjectIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/criador-de-overlay'
+  fullPaths: '/app' | '/criador-de-overlay' | '/editor/$projectId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/app' | '/criador-de-overlay'
-  id: '__root__' | '/' | '/app' | '/criador-de-overlay'
+  to: '/app' | '/criador-de-overlay' | '/editor/$projectId'
+  id: '__root__' | '/app' | '/criador-de-overlay' | '/editor/$projectId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRoute
   CriadorDeOverlayRoute: typeof CriadorDeOverlayRoute
+  EditorProjectIdRoute: typeof EditorProjectIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/app': {
       id: '/app'
       path: '/app'
@@ -82,13 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CriadorDeOverlayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/editor/$projectId': {
+      id: '/editor/$projectId'
+      path: '/editor/$projectId'
+      fullPath: '/editor/$projectId'
+      preLoaderRoute: typeof EditorProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AppRoute: AppRoute,
   CriadorDeOverlayRoute: CriadorDeOverlayRoute,
+  EditorProjectIdRoute: EditorProjectIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
