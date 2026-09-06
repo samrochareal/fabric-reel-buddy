@@ -883,12 +883,12 @@ function EditorPage() {
                 <div className="mt-4 space-y-4">
                   {[
                     {
-                      label: "Preencher no topo",
+                      label: "Cortar no topo",
                       value: opts.border.top,
                       set: (v: number) => patch({ border: { ...opts.border, top: v } }),
                     },
                     {
-                      label: "Preencher no rodapé",
+                      label: "Cortar no rodapé",
                       value: opts.border.bottom,
                       set: (v: number) => patch({ border: { ...opts.border, bottom: v } }),
                     },
