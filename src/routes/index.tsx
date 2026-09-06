@@ -777,39 +777,100 @@ function EditorPage() {
           <div className="rounded-xl border border-border bg-card p-4">
             {tab === "bordas" && (
               <>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold">Borda no vídeo</p>
-                  <Switch
-                    checked={opts.border.enabled}
-                    onCheckedChange={(v) => patch({ border: { ...opts.border, enabled: v } })}
-                  />
+                <div className="flex items-start gap-2 rounded-lg border border-border/70 bg-background/60 p-3">
+                  <Scissors className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    Aqui você <span className="font-bold text-foreground">remove as bordas
+                    superior e inferior</span> do vídeo original (marcas d\u2019água, legendas,
+                    logos). As linhas tracejadas no preview mostram exatamente onde será o corte.
+                  </p>
                 </div>
-                <div className="mt-4 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Cor</span>
-                    <Input
-                      type="color"
-                      value={opts.border.color}
-                      onChange={(e) => patch({ border: { ...opts.border, color: e.target.value } })}
-                      className="h-8 w-16 p-1"
+
+                <p className="mt-4 text-xs font-semibold text-muted-foreground">Cor das bordas</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <Input
+                    type="color"
+                    value={opts.border.color}
+                    onChange={(e) => patch({ border: { ...opts.border, color: e.target.value } })}
+                    className="h-9 w-14 p-1"
+                  />
+                  <Input
+                    value={opts.border.color}
+                    onChange={(e) => patch({ border: { ...opts.border, color: e.target.value } })}
+                    className="h-9 flex-1 text-xs"
+                  />
+                  {["#ffffff", "#000000"].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      aria-label={`Cor ${preset}`}
+                      onClick={() => patch({ border: { ...opts.border, color: preset } })}
+                      className="size-9 rounded-md border border-border"
+                      style={{ background: preset }}
                     />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Espessura</span>
-                      <span className="font-bold">{opts.border.width}px</span>
-                    </div>
-                    <Slider
-                      className="mt-2"
-                      value={[opts.border.width]}
-                      min={4}
-                      max={120}
-                      step={2}
-                      onValueChange={([v]) =>
-                        patch({ border: { ...opts.border, width: v ?? opts.border.width } })
+                  ))}
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1">
+                  {(["manual", "auto"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() =>
+                        patch({
+                          border:
+                            m === "auto"
+                              ? { ...opts.border, mode: m, top: 0.08, bottom: 0.08 }
+                              : { ...opts.border, mode: m },
+                        })
                       }
-                    />
-                  </div>
+                      className={`rounded-md px-2 py-2 text-xs font-semibold transition-colors ${
+                        opts.border.mode === m
+                          ? "bg-card text-foreground shadow"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {m === "manual" ? "Manual" : "Automático"}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-4 space-y-4">
+                  {[
+                    {
+                      label: "Preencher no topo",
+                      value: opts.border.top,
+                      set: (v: number) => patch({ border: { ...opts.border, top: v } }),
+                    },
+                    {
+                      label: "Preencher no rodapé",
+                      value: opts.border.bottom,
+                      set: (v: number) => patch({ border: { ...opts.border, bottom: v } }),
+                    },
+                  ].map((row) => (
+                    <div key={row.label}>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{row.label}</span>
+                        <span className="font-bold">{(row.value * 100).toFixed(1)}%</span>
+                      </div>
+                      <Slider
+                        className="mt-2"
+                        value={[row.value]}
+                        min={0}
+                        max={0.4}
+                        step={0.005}
+                        disabled={opts.border.mode === "auto"}
+                        onValueChange={([v]) => row.set(v ?? row.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-xs">
+                  Conteúdo central:{" "}
+                  <span className="font-bold">
+                    {Math.max(0, 100 - (opts.border.top + opts.border.bottom) * 100).toFixed(0)}%
+                  </span>
                 </div>
               </>
             )}
