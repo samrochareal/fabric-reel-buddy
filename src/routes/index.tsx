@@ -1,17 +1,12 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft,
-  ArrowRight,
   Scissors,
   UploadCloud,
   Loader2,
   Download,
   Trash2,
   Zap,
-  LogOut,
   Archive,
   X,
   RotateCcw,
@@ -25,9 +20,6 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { consumeCredits, getCredits } from "@/lib/credits.functions";
 import {
   ASPECTS,
   defaultEditOptions,
@@ -35,7 +27,7 @@ import {
   type EditOptions,
 } from "@/lib/video";
 
-export const Route = createFileRoute("/_authenticated/app")({
+export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Editor em lote — Fábrica de Reels" },
@@ -60,7 +52,7 @@ type Clip = {
   error?: string;
 };
 
-const MAX_CLIPS = 50;
+const MAX_CLIPS = 500;
 type EditTab = "bordas" | "titulo" | "inferior" | "overlay" | "extras";
 const TABS: { id: EditTab; label: string }[] = [
   { id: "bordas", label: "Bordas" },
@@ -78,11 +70,6 @@ function statusLabel(status: ClipStatus, progress: number) {
 }
 
 function EditorPage() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const fetchCredits = useServerFn(getCredits);
-  const consume = useServerFn(consumeCredits);
 
   const [clips, setClips] = useState<Clip[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -95,12 +82,6 @@ function EditorPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
 
-  const { data: creditsData, isLoading: creditsLoading } = useQuery({
-    queryKey: ["credits"],
-    queryFn: fetchCredits,
-    enabled: !!user,
-  });
-  const credits = creditsData?.credits ?? 0;
 
   const patch = (next: Partial<EditOptions>) => setOpts((prev) => ({ ...prev, ...next }));
 
@@ -162,13 +143,6 @@ function EditorPage() {
       toast.error("Adicione vídeos para processar.");
       return;
     }
-    if (credits < queuedClips.length) {
-      toast.error(
-        `Créditos insuficientes: você tem ${credits} e o lote precisa de ${queuedClips.length}.`,
-      );
-      navigate({ to: "/pricing" });
-      return;
-    }
 
     setRunning(true);
     cancelledRef.current = false;
@@ -181,9 +155,7 @@ function EditorPage() {
         setEngineReady(true);
       }
 
-      const { credits: remaining } = await consume({ data: { count: queuedClips.length } });
-      queryClient.setQueryData(["credits"], { credits: remaining });
-      toast.success(`${queuedClips.length} crédito(s) utilizados. Processando…`);
+      toast.success(`Processando ${queuedClips.length} vídeo(s)…`);
 
       for (const clip of queuedClips) {
         if (cancelledRef.current) break;
@@ -261,10 +233,6 @@ function EditorPage() {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
-  async function signOut() {
-    await supabase.auth.signOut();
-    navigate({ to: "/" });
-  }
 
   const gridClips = grid === 1 ? (selected ? [selected] : []) : clips.slice(0, grid);
   const { w: outW, h: outH } = ASPECTS[opts.aspect];
@@ -338,12 +306,6 @@ function EditorPage() {
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
         <div className="flex h-14 items-center gap-3 px-4">
-          <Link
-            to="/"
-            className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ArrowLeft className="size-4" /> Voltar
-          </Link>
           <span className="mx-auto flex items-center gap-2">
             <Scissors className="size-4 text-primary" />
             <span className="font-display text-base font-bold tracking-tight">
@@ -354,18 +316,9 @@ function EditorPage() {
             <span className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground sm:inline">
               {clips.length}/{MAX_CLIPS} na fila
             </span>
-            <Link
-              to="/pricing"
-              className="rounded-full border border-turbo/50 bg-turbo/10 px-3 py-1 text-xs font-bold text-turbo"
-            >
-              {creditsLoading ? "…" : credits} vídeos / conta
-            </Link>
-            <Link
-              to="/pricing"
-              className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold md:inline"
-            >
-              Planos
-            </Link>
+            <span className="rounded-full border border-turbo/50 bg-turbo/10 px-3 py-1 text-xs font-bold text-turbo">
+              Premium · ilimitado
+            </span>
             <a
               href="mailto:suporte@fabricadereels.com.br"
               className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold md:inline"
@@ -375,10 +328,6 @@ function EditorPage() {
             <span className="hidden text-muted-foreground lg:inline">
               <HelpCircle className="size-4" />
             </span>
-            <Button variant="ghost" size="sm" onClick={() => void signOut()}>
-              <LogOut className="size-4" />
-              <span className="sr-only">Sair</span>
-            </Button>
           </div>
         </div>
       </header>
@@ -386,7 +335,7 @@ function EditorPage() {
       <div className="flex items-end justify-between gap-4 px-4 pt-5">
         <h1 className="font-display text-xl font-bold tracking-tight">Editor em lote</h1>
         <p className="text-xs text-muted-foreground">
-          Até {MAX_CLIPS} vídeos · processamento no seu navegador · 1 crédito por vídeo
+          Até {MAX_CLIPS} vídeos por lote · processamento no seu navegador · uso ilimitado
         </p>
       </div>
 
@@ -437,16 +386,12 @@ function EditorPage() {
               </button>
             </div>
 
-            <Link
-              to="/pricing"
-              className="flex items-start gap-2 border-b border-border/60 bg-turbo/10 px-3 py-3 text-xs font-semibold text-turbo"
-            >
+            <div className="flex items-start gap-2 border-b border-border/60 bg-turbo/10 px-3 py-3 text-xs font-semibold text-turbo">
               <Zap className="mt-0.5 size-4 shrink-0" />
               <span className="flex-1">
-                Assine e leve de 30 a 300 vídeos, com títulos, overlay e suporte prioritário
+                Todas as funções liberadas: títulos, bordas, overlay, velocidade e lotes sem limite
               </span>
-              <ArrowRight className="mt-0.5 size-4 shrink-0" />
-            </Link>
+            </div>
 
             <ul className="max-h-[540px] divide-y divide-border/60 overflow-y-auto">
               {clips.length === 0 && (
@@ -993,7 +938,7 @@ function EditorPage() {
               </Button>
             )}
             <p className="text-center text-[11px] text-muted-foreground">
-              Custo: {queuedClips.length} crédito(s) · saldo {credits}
+              Sem custo por vídeo · todas as funções desbloqueadas
             </p>
           </div>
         </section>
