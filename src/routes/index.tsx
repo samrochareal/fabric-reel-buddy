@@ -62,6 +62,8 @@ const TABS: { id: EditTab; label: string }[] = [
   { id: "extras", label: "Extras" },
 ];
 
+type FineTune = { zoom: number; posX: number; posY: number };
+
 function statusLabel(status: ClipStatus, progress: number) {
   if (status === "done") return "pronto";
   if (status === "error") return "falhou";
@@ -77,6 +79,8 @@ function EditorPage() {
   const [grid, setGrid] = useState<1 | 4 | 9>(1);
   const [tab, setTab] = useState<EditTab>("titulo");
   const [antiDup, setAntiDup] = useState(false);
+  const [scope, setScope] = useState<"batch" | "single">("batch");
+  const [overrides, setOverrides] = useState<Record<string, FineTune>>({});
   const [running, setRunning] = useState(false);
   const [engineReady, setEngineReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -135,8 +139,42 @@ function EditorPage() {
   const titleFor = (index: number) =>
     opts.title.enabled ? (titleLines[index] ?? titleLines[titleLines.length - 1] ?? "") : "";
 
-  const effectiveOpts = (): EditOptions =>
-    antiDup ? { ...opts, speed: opts.speed === 1 ? 1.02 : opts.speed } : opts;
+  /** batch options merged with the per-video fine-tune override, if any */
+  const optsFor = (clipId?: string): EditOptions => {
+    const over = clipId ? overrides[clipId] : undefined;
+    const merged = over ? { ...opts, ...over } : opts;
+    return antiDup ? { ...merged, speed: merged.speed === 1 ? 1.02 : merged.speed } : merged;
+  };
+
+  const fine: FineTune =
+    scope === "single" && selected && overrides[selected.id]
+      ? overrides[selected.id]!
+      : { zoom: opts.zoom, posX: opts.posX, posY: opts.posY };
+
+  const patchFine = (next: Partial<FineTune>) => {
+    if (scope === "single" && selected) {
+      const id = selected.id;
+      setOverrides((prev) => ({
+        ...prev,
+        [id]: { ...{ zoom: opts.zoom, posX: opts.posX, posY: opts.posY }, ...prev[id], ...next },
+      }));
+    } else {
+      patch(next);
+    }
+  };
+
+  const resetFine = () => {
+    if (scope === "single" && selected) {
+      const id = selected.id;
+      setOverrides((prev) => {
+        const rest = { ...prev };
+        delete rest[id];
+        return rest;
+      });
+    } else {
+      patch({ zoom: 1, posX: 0.5, posY: 0.5 });
+    }
+  };
 
   async function handleProcess() {
     if (queuedClips.length === 0) {
@@ -146,7 +184,6 @@ function EditorPage() {
 
     setRunning(true);
     cancelledRef.current = false;
-    const settings = effectiveOpts();
     try {
       const videoLib = await import("@/lib/video");
       if (!engineReady) {
@@ -160,6 +197,7 @@ function EditorPage() {
       for (const clip of queuedClips) {
         if (cancelledRef.current) break;
         const index = clips.findIndex((c) => c.id === clip.id);
+        const settings = optsFor(clip.id);
         setClips((prev) =>
           prev.map((c) => (c.id === clip.id ? { ...c, status: "processing", progress: 0 } : c)),
         );
@@ -237,30 +275,32 @@ function EditorPage() {
   const gridClips = grid === 1 ? (selected ? [selected] : []) : clips.slice(0, grid);
   const { w: outW, h: outH } = ASPECTS[opts.aspect];
 
-  const framePreview = (clip: Clip | undefined, small: boolean) => (
+  const framePreview = (clip: Clip | undefined, small: boolean) => {
+    const o = optsFor(clip?.id);
+    return (
     <div
       className="relative overflow-hidden rounded-md"
       style={{
         aspectRatio: `${outW} / ${outH}`,
         containerType: "inline-size",
-        background: opts.bgColor,
+        background: o.bgColor,
       }}
     >
       {clip ? (
         <div
           className="absolute"
           style={{
-            width: `${opts.zoom * 100}%`,
-            height: `${opts.zoom * 100}%`,
-            left: `${(1 - opts.zoom) * 100 * opts.posX}%`,
-            top: `${(1 - opts.zoom) * 100 * opts.posY}%`,
+            width: `${o.zoom * 100}%`,
+            height: `${o.zoom * 100}%`,
+            left: `${(1 - o.zoom) * 100 * o.posX}%`,
+            top: `${(1 - o.zoom) * 100 * o.posY}%`,
           }}
         >
           <video
             key={clip.id}
             src={clip.resultUrl ?? clip.previewUrl}
             className="size-full object-cover"
-            style={{ transform: opts.mirror ? "scaleX(-1)" : undefined }}
+            style={{ transform: o.mirror ? "scaleX(-1)" : undefined }}
             muted
             loop
             playsInline
@@ -274,44 +314,64 @@ function EditorPage() {
         </div>
       )}
 
-      {opts.overlayOpacity > 0 && (
+      {o.overlayOpacity > 0 && (
         <div
           className="pointer-events-none absolute inset-0"
-          style={{ background: opts.overlayColor, opacity: opts.overlayOpacity }}
+          style={{ background: o.overlayColor, opacity: o.overlayOpacity }}
         />
       )}
-      {opts.border.enabled && (
+
+      {/* solid bars that cover the original top/bottom borders */}
+      {o.border.top > 0 && (
         <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            border: `${((opts.border.width / outW) * 100).toFixed(2)}cqw solid ${opts.border.color}`,
-          }}
+          className="pointer-events-none absolute inset-x-0 top-0"
+          style={{ height: `${o.border.top * 100}%`, background: o.border.color }}
         />
       )}
-      {opts.title.enabled && (
+      {o.border.bottom > 0 && (
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0"
+          style={{ height: `${o.border.bottom * 100}%`, background: o.border.color }}
+        />
+      )}
+      {(o.border.top > 0 || o.border.bottom > 0) && !small && (
+        <>
+          <div
+            className="pointer-events-none absolute inset-x-0 border-t border-dashed border-primary/70"
+            style={{ top: `${o.border.top * 100}%` }}
+          />
+          <div
+            className="pointer-events-none absolute inset-x-0 border-t border-dashed border-primary/70"
+            style={{ bottom: `${o.border.bottom * 100}%` }}
+          />
+        </>
+      )}
+
+      {o.title.enabled && (
         <p
           className="pointer-events-none absolute inset-x-[7%] top-[8%] text-center font-bold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
           style={{
-            color: opts.title.color,
-            fontSize: `${((opts.title.size / outW) * 100).toFixed(2)}cqw`,
+            color: o.title.color,
+            fontSize: `${((o.title.size / outW) * 100).toFixed(2)}cqw`,
           }}
         >
           {titleFor(clips.findIndex((c) => c.id === clip?.id)) || "Título do vídeo"}
         </p>
       )}
-      {opts.bottom.enabled && opts.bottom.text && (
+      {o.bottom.enabled && o.bottom.text && (
         <p
           className="pointer-events-none absolute inset-x-[7%] bottom-[8%] text-center font-bold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
           style={{
-            color: opts.bottom.color,
-            fontSize: `${((opts.bottom.size / outW) * 100).toFixed(2)}cqw`,
+            color: o.bottom.color,
+            fontSize: `${((o.bottom.size / outW) * 100).toFixed(2)}cqw`,
           }}
         >
-          {opts.bottom.text}
+          {o.bottom.text}
         </p>
       )}
     </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -546,54 +606,67 @@ function EditorPage() {
         {/* ---------- Column 3: batch fine-tune ---------- */}
         <section className="space-y-3">
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-bold">
-                Config. em lote{" "}
-                <span className="font-normal text-muted-foreground">
-                  ({clips.length || 0} vídeo{clips.length === 1 ? "" : "s"})
-                </span>
-              </p>
+            <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1">
               <button
                 type="button"
-                onClick={() => patch({ zoom: 1, posX: 0.5, posY: 0.5 })}
+                onClick={() => setScope("batch")}
+                className={`rounded-md px-2 py-2 text-xs font-semibold transition-colors ${
+                  scope === "batch" ? "bg-card text-foreground shadow" : "text-muted-foreground"
+                }`}
+              >
+                Config. em lote ({clips.length} vídeo{clips.length === 1 ? "" : "s"})
+              </button>
+              <button
+                type="button"
+                onClick={() => setScope("single")}
+                disabled={!selected}
+                className={`rounded-md px-2 py-2 text-xs font-semibold transition-colors disabled:opacity-40 ${
+                  scope === "single" ? "bg-card text-foreground shadow" : "text-muted-foreground"
+                }`}
+              >
+                Só este vídeo
+              </button>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm font-bold">Ajuste fino do vídeo</p>
+              <button
+                type="button"
+                onClick={resetFine}
                 className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
                 <RotateCcw className="size-3.5" /> Padrão
               </button>
             </div>
 
-            <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Ajuste fino do vídeo
-            </p>
-
             <div className="mt-3 space-y-4">
               {[
                 {
                   label: "Zoom",
-                  value: opts.zoom,
-                  display: `${Math.round(opts.zoom * 100)}%`,
-                  min: 0.3,
-                  max: 2,
+                  value: fine.zoom,
+                  display: `${Math.round(fine.zoom * 100)}%`,
+                  min: 0.5,
+                  max: 5,
                   step: 0.01,
-                  set: (v: number) => patch({ zoom: v }),
+                  set: (v: number) => patchFine({ zoom: v }),
                 },
                 {
                   label: "Posição vertical",
-                  value: opts.posY,
-                  display: `${Math.round(opts.posY * 100)}%`,
+                  value: fine.posY,
+                  display: `${Math.round(fine.posY * 100)}%`,
                   min: 0,
                   max: 1,
                   step: 0.01,
-                  set: (v: number) => patch({ posY: v }),
+                  set: (v: number) => patchFine({ posY: v }),
                 },
                 {
                   label: "Posição horizontal",
-                  value: opts.posX,
-                  display: `${Math.round(opts.posX * 100)}%`,
+                  value: fine.posX,
+                  display: `${Math.round(fine.posX * 100)}%`,
                   min: 0,
                   max: 1,
                   step: 0.01,
-                  set: (v: number) => patch({ posX: v }),
+                  set: (v: number) => patchFine({ posX: v }),
                 },
               ].map((row) => (
                 <div key={row.label}>
@@ -622,11 +695,12 @@ function EditorPage() {
               </div>
             </div>
             <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-              Em 100% o vídeo preenche a tela toda. Abaixo de 100% ele diminui e aparece a cor de
-              fundo; acima de 100% ele amplia e as bordas são cortadas. A posição move o vídeo
-              dentro da tela.
+              Zoom de 50% a 500%. Em 100% o vídeo preenche a tela inteira; abaixo de 100% ele fica
+              menor e aparece a cor de fundo; acima de 100% ele amplia e as sobras são cortadas.
+              {scope === "single"
+                ? " Estes valores valem só para o vídeo selecionado."
+                : " Estes valores valem para todos os vídeos da fila."}
             </p>
-
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
@@ -703,39 +777,100 @@ function EditorPage() {
           <div className="rounded-xl border border-border bg-card p-4">
             {tab === "bordas" && (
               <>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold">Borda no vídeo</p>
-                  <Switch
-                    checked={opts.border.enabled}
-                    onCheckedChange={(v) => patch({ border: { ...opts.border, enabled: v } })}
-                  />
+                <div className="flex items-start gap-2 rounded-lg border border-border/70 bg-background/60 p-3">
+                  <Scissors className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    Aqui você <span className="font-bold text-foreground">remove as bordas
+                    superior e inferior</span> do vídeo original (marcas d\u2019água, legendas,
+                    logos). As linhas tracejadas no preview mostram exatamente onde será o corte.
+                  </p>
                 </div>
-                <div className="mt-4 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Cor</span>
-                    <Input
-                      type="color"
-                      value={opts.border.color}
-                      onChange={(e) => patch({ border: { ...opts.border, color: e.target.value } })}
-                      className="h-8 w-16 p-1"
+
+                <p className="mt-4 text-xs font-semibold text-muted-foreground">Cor das bordas</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <Input
+                    type="color"
+                    value={opts.border.color}
+                    onChange={(e) => patch({ border: { ...opts.border, color: e.target.value } })}
+                    className="h-9 w-14 p-1"
+                  />
+                  <Input
+                    value={opts.border.color}
+                    onChange={(e) => patch({ border: { ...opts.border, color: e.target.value } })}
+                    className="h-9 flex-1 text-xs"
+                  />
+                  {["#ffffff", "#000000"].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      aria-label={`Cor ${preset}`}
+                      onClick={() => patch({ border: { ...opts.border, color: preset } })}
+                      className="size-9 rounded-md border border-border"
+                      style={{ background: preset }}
                     />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Espessura</span>
-                      <span className="font-bold">{opts.border.width}px</span>
-                    </div>
-                    <Slider
-                      className="mt-2"
-                      value={[opts.border.width]}
-                      min={4}
-                      max={120}
-                      step={2}
-                      onValueChange={([v]) =>
-                        patch({ border: { ...opts.border, width: v ?? opts.border.width } })
+                  ))}
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1">
+                  {(["manual", "auto"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() =>
+                        patch({
+                          border:
+                            m === "auto"
+                              ? { ...opts.border, mode: m, top: 0.08, bottom: 0.08 }
+                              : { ...opts.border, mode: m },
+                        })
                       }
-                    />
-                  </div>
+                      className={`rounded-md px-2 py-2 text-xs font-semibold transition-colors ${
+                        opts.border.mode === m
+                          ? "bg-card text-foreground shadow"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {m === "manual" ? "Manual" : "Automático"}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-4 space-y-4">
+                  {[
+                    {
+                      label: "Preencher no topo",
+                      value: opts.border.top,
+                      set: (v: number) => patch({ border: { ...opts.border, top: v } }),
+                    },
+                    {
+                      label: "Preencher no rodapé",
+                      value: opts.border.bottom,
+                      set: (v: number) => patch({ border: { ...opts.border, bottom: v } }),
+                    },
+                  ].map((row) => (
+                    <div key={row.label}>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{row.label}</span>
+                        <span className="font-bold">{(row.value * 100).toFixed(1)}%</span>
+                      </div>
+                      <Slider
+                        className="mt-2"
+                        value={[row.value]}
+                        min={0}
+                        max={0.4}
+                        step={0.005}
+                        disabled={opts.border.mode === "auto"}
+                        onValueChange={([v]) => row.set(v ?? row.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-xs">
+                  Conteúdo central:{" "}
+                  <span className="font-bold">
+                    {Math.max(0, 100 - (opts.border.top + opts.border.bottom) * 100).toFixed(0)}%
+                  </span>
                 </div>
               </>
             )}
