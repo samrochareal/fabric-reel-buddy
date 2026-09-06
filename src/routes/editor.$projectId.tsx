@@ -1242,14 +1242,37 @@ function EditorPage() {
                   <span className="text-muted-foreground">Fade de entrada</span>
                   <Switch checked={opts.fadeIn} onCheckedChange={(v) => patch({ fadeIn: v })} />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Anti duplicidade</span>
-                  <Switch checked={antiDup} onCheckedChange={setAntiDup} />
+                <div className="mt-2 space-y-3 border-t border-border/60 pt-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold">Modo anti duplicidade</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                        Aplica pequenas variações em todos os vídeos para reduzir detecção de
+                        duplicidade.
+                      </p>
+                    </div>
+                    <Switch checked={antiDup} onCheckedChange={setAntiDup} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      Velocidade {opts.speed.toFixed(2)}x
+                    </span>
+                    <div className="w-28">
+                      <Slider
+                        value={[opts.speed]}
+                        min={0.9}
+                        max={1.15}
+                        step={0.01}
+                        onValueChange={([v]) => patch({ speed: v ?? 1 })}
+                      />
+                    </div>
+                  </div>
                 </div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
                   Todo o processamento roda no seu navegador: os arquivos nunca são enviados para
                   nenhum servidor.
                 </p>
+
               </div>
             )}
           </div>
