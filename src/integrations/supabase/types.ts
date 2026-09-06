@@ -130,14 +130,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      consume_credits: {
-        Args: { p_amount: number; p_user_id: string }
-        Returns: number
-      }
-      ensure_profile: {
-        Args: { p_email: string; p_user_id: string }
-        Returns: number
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
