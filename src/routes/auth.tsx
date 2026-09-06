@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { getRememberMe, setRememberMe } from "@/lib/session-pref";
 import { enterGuestMode, exitGuestMode } from "@/lib/guest-mode";
+import { useBranding } from "@/lib/branding";
 
 
 export const Route = createFileRoute("/auth")({
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const branding = useBranding();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
