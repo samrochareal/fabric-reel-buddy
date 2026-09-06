@@ -287,7 +287,12 @@ function EditorPage() {
       }
 
       if (rendered > 0) registerProcessed(projectId, rendered);
-      toast.success("Lote concluído! Use “Baixar todos” para salvar tudo.");
+      if (cancelledRef.current) {
+        toast.info("Processamento pausado. Clique em “Processar vídeos” para continuar.");
+      } else {
+        toast.success("Lote concluído! Use “Baixar todos” para salvar tudo.");
+      }
+
 
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao processar.");
