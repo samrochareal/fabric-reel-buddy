@@ -224,7 +224,7 @@ function buildFilterChain(
   parts.push(
     // one scale pass straight to the final size (cover fit) instead of
     // scaling to the frame and rescaling by the zoom factor.
-    `[0:v]${opts.mirror ? "hflip," : ""}scale=${sw}:${sh}:force_original_aspect_ratio=increase:flags=fast_bilinear,` +
+    `[0:v]${opts.mirror ? "hflip," : ""}scale=${sw}:${sh}:force_original_aspect_ratio=increase,` +
       `crop=${sw}:${sh}` +
       (cutTop > 0 || cutBottom > 0 ? `,crop=${sw}:${vh}:0:${cutTop}` : "") +
       `,setsar=1[vid]`,
@@ -324,8 +324,6 @@ export async function processVideo(
     "libx264",
     "-preset",
     "veryfast",
-    "-tune",
-    "zerolatency",
     "-crf",
     "23",
     "-g",
@@ -335,8 +333,9 @@ export async function processVideo(
     "-pix_fmt",
     "yuv420p",
   );
-  if (opts.speed !== 1) {
-    // audio was re-timed, so it has to be re-encoded
+  const mp4Audio = /mp4|quicktime|m4v/i.test(file.type);
+  if (opts.speed !== 1 || !mp4Audio) {
+    // audio was re-timed (or comes from a container whose codec MP4 cannot hold)
     args.push("-c:a", "aac", "-b:a", "128k");
   } else {
     // untouched audio is copied straight through — no quality loss, no cost
