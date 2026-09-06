@@ -148,14 +148,13 @@ function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
   // Cover-fit the source to the output frame, scale it by the zoom factor,
   // then place it over the solid background colour.
   parts.push(
-    `[0:v]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},` +
-      `scale=${sw}:${sh},setsar=1[vid]`,
+    `[0:v]${opts.mirror ? "hflip," : ""}scale=${w}:${h}:force_original_aspect_ratio=increase,` +
+      `crop=${w}:${h},scale=${sw}:${sh},setsar=1[vid]`,
   );
   parts.push(`color=c=${opts.bgColor}:s=${w}x${h}:r=30[bgc]`);
   parts.push(
     `[bgc][vid]overlay=x=(W-w)*${px.toFixed(3)}:y=(H-h)*${py.toFixed(3)}:shortest=1[base]`,
   );
-
 
   let label = "base";
   const push = (filter: string, next: string) => {
@@ -163,7 +162,7 @@ function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
     label = next;
   };
 
-  if (opts.mirror) push("hflip", "mir");
+
   if (opts.speed !== 1) push(`setpts=PTS/${opts.speed.toFixed(3)}`, "spd");
   if (opts.fadeIn) push("fade=t=in:st=0:d=0.4", "fdi");
   if (hasOverlay) {
