@@ -32,7 +32,7 @@ import { Input } from "@/components/ui/input";
 import { ASPECTS, defaultEditOptions, type EditOptions } from "@/lib/video";
 
 
-export const Route = createFileRoute("/_authenticated/editor/$projectId")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Editor em lote — Fábrica de Reels" },
