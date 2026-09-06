@@ -41,14 +41,13 @@ export const Route = createFileRoute("/")({
   component: ProjectsPage,
 });
 
-type Filter = "all" | "active" | "draft";
 type SortBy = "recent" | "name";
 
 function ProjectsPage() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
+
   const [sortBy, setSortBy] = useState<SortBy>("recent");
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
