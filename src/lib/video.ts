@@ -9,17 +9,16 @@ export const ASPECTS: Record<AspectId, { label: string; w: number; h: number }> 
   "4:5": { label: "4:5 · Feed vertical", w: 1080, h: 1350 },
 };
 
-export type ProcessMode = "turbo" | "completo";
-
 /** Every knob the batch editor exposes. */
 export type EditOptions = {
   aspect: AspectId;
-  mode: ProcessMode;
-  /** 1 = no zoom, 2 = 200% */
+  /** 1 = video fills the frame; below 1 it shrinks and the background shows */
   zoom: number;
-  /** 0..1 crop anchor (0.5 = centered) */
+  /** 0..1 placement anchor (0.5 = centered) */
   posX: number;
   posY: number;
+  /** colour behind the video when zoom < 1 */
+  bgColor: string;
   /** playback rate, e.g. 1.02 for anti-duplication */
   speed: number;
   mirror: boolean;
@@ -33,10 +32,10 @@ export type EditOptions = {
 
 export const defaultEditOptions = (): EditOptions => ({
   aspect: "9:16",
-  mode: "turbo",
   zoom: 1,
   posX: 0.5,
   posY: 0.5,
+  bgColor: "#000000",
   speed: 1,
   mirror: false,
   border: { enabled: false, color: "#ffffff", width: 24 },
@@ -46,6 +45,7 @@ export const defaultEditOptions = (): EditOptions => ({
   overlayColor: "#000000",
   fadeIn: false,
 });
+
 
 let ffmpeg: FFmpeg | null = null;
 
@@ -137,27 +137,24 @@ export function buildOverlayPng(opts: EditOptions, titleText: string): Promise<B
 
 function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
   const { w, h } = ASPECTS[opts.aspect];
-  const zoom = Math.max(1, opts.zoom);
-  const sw = Math.round(w * zoom);
-  const sh = Math.round(h * zoom);
+  const zoom = Math.min(2, Math.max(0.2, opts.zoom));
+  // zoom 1 = video covers the whole frame; below 1 it shrinks over the background.
+  const sw = Math.max(2, Math.round((w * zoom) / 2) * 2);
+  const sh = Math.max(2, Math.round((h * zoom) / 2) * 2);
   const px = Math.min(1, Math.max(0, opts.posX));
   const py = Math.min(1, Math.max(0, opts.posY));
 
   const parts: string[] = [];
-  if (opts.mode === "turbo") {
-    parts.push(
-      `[0:v]scale=${sw}:${sh}:force_original_aspect_ratio=increase,` +
-        `crop=${w}:${h}:(iw-ow)*${px.toFixed(3)}:(ih-oh)*${py.toFixed(3)}[base]`,
-    );
-  } else {
-    // Whole frame kept in front of a blurred fill of itself.
-    parts.push(
-      `[0:v]split[a][b];` +
-        `[a]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},boxblur=24:2[bg];` +
-        `[b]scale=${Math.round(w / zoom)}:${Math.round(h / zoom)}:force_original_aspect_ratio=decrease[fg];` +
-        `[bg][fg]overlay=(W-w)*${px.toFixed(3)}:(H-h)*${py.toFixed(3)}[base]`,
-    );
-  }
+  // Cover-fit the source to the output frame, scale it by the zoom factor,
+  // then place it over the solid background colour.
+  parts.push(
+    `[0:v]${opts.mirror ? "hflip," : ""}scale=${w}:${h}:force_original_aspect_ratio=increase,` +
+      `crop=${w}:${h},scale=${sw}:${sh},setsar=1[vid]`,
+  );
+  parts.push(`color=c=${opts.bgColor}:s=${w}x${h}:r=30[bgc]`);
+  parts.push(
+    `[bgc][vid]overlay=x=(W-w)*${px.toFixed(3)}:y=(H-h)*${py.toFixed(3)}:shortest=1[base]`,
+  );
 
   let label = "base";
   const push = (filter: string, next: string) => {
@@ -165,7 +162,7 @@ function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
     label = next;
   };
 
-  if (opts.mirror) push("hflip", "mir");
+
   if (opts.speed !== 1) push(`setpts=PTS/${opts.speed.toFixed(3)}`, "spd");
   if (opts.fadeIn) push("fade=t=in:st=0:d=0.4", "fdi");
   if (hasOverlay) {
@@ -211,9 +208,10 @@ export async function processVideo(
     "-c:v",
     "libx264",
     "-preset",
-    opts.mode === "turbo" ? "ultrafast" : "veryfast",
+    "veryfast",
     "-crf",
-    opts.mode === "turbo" ? "30" : "26",
+    "26",
+
     "-pix_fmt",
     "yuv420p",
     "-c:a",

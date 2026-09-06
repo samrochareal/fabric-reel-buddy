@@ -239,29 +239,41 @@ function EditorPage() {
 
   const framePreview = (clip: Clip | undefined, small: boolean) => (
     <div
-      className="relative overflow-hidden rounded-md bg-black"
-      style={{ aspectRatio: `${outW} / ${outH}`, containerType: "inline-size" }}
+      className="relative overflow-hidden rounded-md"
+      style={{
+        aspectRatio: `${outW} / ${outH}`,
+        containerType: "inline-size",
+        background: opts.bgColor,
+      }}
     >
       {clip ? (
-        <video
-          key={clip.id}
-          src={clip.resultUrl ?? clip.previewUrl}
-          className="size-full object-cover"
+        <div
+          className="absolute"
           style={{
-            transform: `scale(${opts.zoom}) ${opts.mirror ? "scaleX(-1)" : ""}`,
-            objectPosition: `${opts.posX * 100}% ${opts.posY * 100}%`,
+            width: `${opts.zoom * 100}%`,
+            height: `${opts.zoom * 100}%`,
+            left: `${(1 - opts.zoom) * 100 * opts.posX}%`,
+            top: `${(1 - opts.zoom) * 100 * opts.posY}%`,
           }}
-          muted
-          loop
-          playsInline
-          controls={!small && grid === 1}
-          preload="metadata"
-        />
+        >
+          <video
+            key={clip.id}
+            src={clip.resultUrl ?? clip.previewUrl}
+            className="size-full object-cover"
+            style={{ transform: opts.mirror ? "scaleX(-1)" : undefined }}
+            muted
+            loop
+            playsInline
+            controls={!small && grid === 1}
+            preload="metadata"
+          />
+        </div>
       ) : (
         <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
           sem vídeo
         </div>
       )}
+
       {opts.overlayOpacity > 0 && (
         <div
           className="pointer-events-none absolute inset-0"
@@ -522,22 +534,6 @@ function EditorPage() {
                   </button>
                 ))}
               </div>
-              <div className="flex gap-1 rounded-lg border border-border bg-background p-1">
-                {(["turbo", "completo"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => patch({ mode: m })}
-                    className={`rounded-md px-3 py-1 text-xs font-bold capitalize transition-colors ${
-                      opts.mode === m
-                        ? "bg-turbo text-turbo-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {m === "turbo" ? "Turbo (corte)" : "Completo (fundo)"}
-                  </button>
-                ))}
-              </div>
               {doneClips.length > 0 && (
                 <Button variant="outline" size="sm" onClick={() => void downloadAll()}>
                   <Archive className="mr-1.5 size-4" /> Baixar tudo (.zip)
@@ -576,7 +572,7 @@ function EditorPage() {
                   label: "Zoom",
                   value: opts.zoom,
                   display: `${Math.round(opts.zoom * 100)}%`,
-                  min: 1,
+                  min: 0.3,
                   max: 2,
                   step: 0.01,
                   set: (v: number) => patch({ zoom: v }),
@@ -615,10 +611,22 @@ function EditorPage() {
                   />
                 </div>
               ))}
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Cor de fundo</span>
+                <Input
+                  type="color"
+                  value={opts.bgColor}
+                  onChange={(e) => patch({ bgColor: e.target.value })}
+                  className="h-8 w-16 p-1"
+                />
+              </div>
             </div>
             <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-              Ajusta zoom e posição do recorte em todos os vídeos do lote.
+              Em 100% o vídeo preenche a tela toda. Abaixo de 100% ele diminui e aparece a cor de
+              fundo; acima de 100% ele amplia e as bordas são cortadas. A posição move o vídeo
+              dentro da tela.
             </p>
+
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
@@ -891,22 +899,7 @@ function EditorPage() {
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="flex items-center gap-1.5 text-sm font-bold">
-                  <Zap className="size-4 text-turbo" /> Modo Turbo
-                </p>
-                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  Processamento mais rápido com leve redução de qualidade.
-                </p>
-              </div>
-              <Switch
-                checked={opts.mode === "turbo"}
-                onCheckedChange={(v) => patch({ mode: v ? "turbo" : "completo" })}
-              />
-            </div>
-          </div>
+
 
           <div className="sticky bottom-4 space-y-2">
             <Button
