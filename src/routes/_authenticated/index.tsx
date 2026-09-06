@@ -31,6 +31,9 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ASPECTS, defaultEditOptions, type EditOptions } from "@/lib/video";
+import { logVideoJobs } from "@/lib/admin";
+import { useBranding } from "@/lib/branding";
+
 
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -94,9 +97,11 @@ function statusLabel(status: ClipStatus, progress: number) {
 
 function EditorPage() {
 
+  const branding = useBranding();
   const [clips, setClips] = useState<Clip[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [opts, setOpts] = useState<EditOptions>(defaultEditOptions);
+
   
   const [tab, setTab] = useState<EditTab>("titulo");
   const [antiDup, setAntiDup] = useState(false);
@@ -295,6 +300,8 @@ function EditorPage() {
     cancelledRef.current = false;
 
     let rendered = 0;
+    let renderedBytes = 0;
+
 
     try {
       const videoLib = await import("@/lib/video");
@@ -336,6 +343,8 @@ function EditorPage() {
             ),
           );
           rendered += 1;
+          renderedBytes += blob.size;
+
         } catch (err) {
 
           setClips((prev) =>
@@ -352,7 +361,10 @@ function EditorPage() {
         }
       }
 
-      void rendered;
+      if (rendered > 0) {
+        void logVideoJobs({ clips: rendered, outputBytes: renderedBytes });
+      }
+
       if (cancelledRef.current) {
         setPaused(true);
         toast.info("Processamento pausado. Clique em “Retomar processamento” para continuar.");
@@ -535,10 +547,15 @@ function EditorPage() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
         <div className="flex h-14 items-center gap-3 px-4">
           <span className="flex items-center gap-2">
-            <Scissors className="size-4 text-primary" />
+            {branding.logo_url ? (
+              <img src={branding.logo_url} alt={branding.system_name} className="h-6 w-auto" />
+            ) : (
+              <Scissors className="size-4 text-primary" />
+            )}
             <span className="font-display text-base font-bold tracking-tight">
-              fabrica <span className="text-muted-foreground">de</span> reels
+              {branding.system_name}
             </span>
+
           </span>
           <AccountBadge />
 

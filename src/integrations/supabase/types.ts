@@ -71,6 +71,39 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_settings: {
+        Row: {
+          created_at: string
+          icon_url: string | null
+          id: boolean
+          logo_url: string | null
+          palette: Json
+          system_name: string
+          tagline: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          icon_url?: string | null
+          id?: boolean
+          logo_url?: string | null
+          palette?: Json
+          system_name?: string
+          tagline?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          icon_url?: string | null
+          id?: boolean
+          logo_url?: string | null
+          palette?: Json
+          system_name?: string
+          tagline?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -89,6 +122,27 @@ export type Database = {
           credits?: number
           email?: string | null
           id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -113,15 +167,49 @@ export type Database = {
         }
         Relationships: []
       }
+      video_jobs: {
+        Row: {
+          clips: number
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          output_bytes: number | null
+          user_id: string | null
+        }
+        Insert: {
+          clips?: number
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          output_bytes?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          clips?: number
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          output_bytes?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_platform_stats: { Args: never; Returns: Json }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -248,6 +336,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const

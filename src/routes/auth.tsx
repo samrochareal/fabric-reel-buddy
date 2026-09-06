@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { getRememberMe, setRememberMe } from "@/lib/session-pref";
 import { enterGuestMode, exitGuestMode } from "@/lib/guest-mode";
+import { useBranding } from "@/lib/branding";
 
 
 export const Route = createFileRoute("/auth")({
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const branding = useBranding();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -127,11 +129,16 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2">
-          <Scissors className="size-5 text-primary" />
+          {branding.logo_url ? (
+            <img src={branding.logo_url} alt={branding.system_name} className="h-7 w-auto" />
+          ) : (
+            <Scissors className="size-5 text-primary" />
+          )}
           <span className="font-display text-lg font-bold tracking-tight">
-            fabrica <span className="text-muted-foreground">de</span> reels
+            {branding.system_name}
           </span>
         </div>
+
 
         <div className="mt-6 rounded-2xl border border-border bg-card p-6">
           <h1 className="font-display text-2xl font-bold tracking-tight">

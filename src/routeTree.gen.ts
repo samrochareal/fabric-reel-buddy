@@ -13,6 +13,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedCriadorDeOverlayRouteImport } from './routes/_authenticated/criador-de-overlay'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -34,6 +35,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCriadorDeOverlayRoute =
   AuthenticatedCriadorDeOverlayRouteImport.update({
     id: '/criador-de-overlay',
@@ -45,11 +51,13 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/criador-de-overlay': typeof AuthenticatedCriadorDeOverlayRoute
 }
 export interface FileRoutesByTo {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/criador-de-overlay': typeof AuthenticatedCriadorDeOverlayRoute
   '/': typeof AuthenticatedIndexRoute
 }
@@ -58,19 +66,21 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/criador-de-overlay': typeof AuthenticatedCriadorDeOverlayRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/auth' | '/criador-de-overlay'
+  fullPaths: '/' | '/app' | '/auth' | '/admin' | '/criador-de-overlay'
   fileRoutesByTo: FileRoutesByTo
-  to: '/app' | '/auth' | '/criador-de-overlay' | '/'
+  to: '/app' | '/auth' | '/admin' | '/criador-de-overlay' | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/app'
     | '/auth'
+    | '/_authenticated/admin'
     | '/_authenticated/criador-de-overlay'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
@@ -111,6 +121,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/criador-de-overlay': {
       id: '/_authenticated/criador-de-overlay'
       path: '/criador-de-overlay'
@@ -122,11 +139,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCriadorDeOverlayRoute: typeof AuthenticatedCriadorDeOverlayRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCriadorDeOverlayRoute: AuthenticatedCriadorDeOverlayRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }

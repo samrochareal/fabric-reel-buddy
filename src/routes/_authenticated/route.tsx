@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { shouldDiscardSession } from "@/lib/session-pref";
 import { isGuest } from "@/lib/guest-mode";
+import { ensureProfile } from "@/lib/admin";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -15,8 +16,10 @@ export const Route = createFileRoute("/_authenticated")({
     }
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
+    await ensureProfile();
     return { user: data.user };
   },
   component: () => <Outlet />,
 });
+
 
