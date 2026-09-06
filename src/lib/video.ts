@@ -60,13 +60,72 @@ export const defaultEditOptions = (): EditOptions => ({
 
 let ffmpeg: FFmpeg | null = null;
 let loading: Promise<FFmpeg> | null = null;
-/** true when the multi-threaded core is in use (needs cross-origin isolation) */
+/** number of threads the loaded core can use */
 export let ffmpegThreads = 1;
 
-async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
-  const instance = new FFmpeg();
-  if (onLog) instance.on("log", ({ message }) => onLog(message));
+const CORE_MT = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.10/dist/esm";
+const CORE_ST = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`timeout: ${label}`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err instanceof Error ? err : new Error(String(err)));
+      },
+    );
+  });
+}
+
+/**
+ * The class worker shipped by @ffmpeg/ffmpeg is loaded through
+ * `new URL('./worker.js', import.meta.url)`, which bundlers cannot always
+ * resolve — the worker then never boots and `load()` hangs forever. Building it
+ * ourselves with Vite's `?worker&url` gives a stable, bundled worker URL.
+ */
+let cachedWorkerURL: string | null = null;
+
+/**
+ * The worker script is turned into a blob URL: a same-origin worker script has
+ * to carry the COEP header itself under cross-origin isolation, while a blob
+ * worker simply inherits the page's policy.
+ */
+async function classWorkerURL(): Promise<string | undefined> {
+  if (cachedWorkerURL) return cachedWorkerURL;
+  try {
+    const res = await fetch("/ffmpeg-worker.js");
+    const code = await res.text();
+    cachedWorkerURL = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+    return cachedWorkerURL;
+  } catch {
+    return undefined;
+  }
+}
+
+async function tryLoad(
+  instance: FFmpeg,
+  base: string,
+  multi: boolean,
+  worker: string | undefined,
+): Promise<void> {
+  const config: Record<string, string> = {
+    coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
+    wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
+  };
+  if (multi) {
+    config["workerURL"] = await toBlobURL(`${base}/ffmpeg-core.worker.js`, "text/javascript");
+  }
+  if (worker) config["classWorkerURL"] = worker;
+  await withTimeout(instance.load(config), 45_000, multi ? "core-mt" : "core");
+}
+
+async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
+  const worker = await classWorkerURL();
   const cores = typeof navigator !== "undefined" ? (navigator.hardwareConcurrency ?? 4) : 4;
   const canThread =
     typeof window !== "undefined" &&
@@ -74,37 +133,52 @@ async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
     (window as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated === true &&
     cores > 1;
 
-  if (canThread) {
-    const mt = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.10/dist/esm";
+  const attempts: Array<{ base: string; multi: boolean }> = canThread
+    ? [
+        { base: CORE_MT, multi: true },
+        { base: CORE_ST, multi: false },
+      ]
+    : [{ base: CORE_ST, multi: false }];
+
+  let lastError: unknown = null;
+  for (const attempt of attempts) {
+    const instance = new FFmpeg();
+    if (onLog) instance.on("log", ({ message }) => onLog(message));
     try {
-      await instance.load({
-        coreURL: await toBlobURL(`${mt}/ffmpeg-core.js`, "text/javascript"),
-        wasmURL: await toBlobURL(`${mt}/ffmpeg-core.wasm`, "application/wasm"),
-        workerURL: await toBlobURL(`${mt}/ffmpeg-core.worker.js`, "text/javascript"),
-      });
-      ffmpegThreads = Math.min(8, cores);
+      await tryLoad(instance, attempt.base, attempt.multi, worker);
+      ffmpegThreads = attempt.multi ? Math.min(8, cores) : 1;
       return instance;
-    } catch {
-      ffmpegThreads = 1;
+    } catch (err) {
+      lastError = err;
+      try {
+        instance.terminate();
+      } catch {
+        /* ignore */
+      }
     }
   }
-
-  const base = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
-  await instance.load({
-    coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
-    wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
-  });
   ffmpegThreads = 1;
-  return instance;
+  throw new Error(
+    `Não foi possível iniciar o motor de vídeo. Verifique sua conexão e tente novamente. (${
+      lastError instanceof Error ? lastError.message : String(lastError)
+    })`,
+  );
 }
 
 export async function getFFmpeg(onLog?: (msg: string) => void): Promise<FFmpeg> {
   if (ffmpeg) return ffmpeg;
   if (!loading) {
-    loading = loadCore(onLog).then((i) => {
-      ffmpeg = i;
-      return i;
-    });
+    loading = loadCore(onLog).then(
+      (i) => {
+        ffmpeg = i;
+        return i;
+      },
+      (err) => {
+        // allow a retry on the next click instead of caching the failure
+        loading = null;
+        throw err;
+      },
+    );
   }
   return loading;
 }
