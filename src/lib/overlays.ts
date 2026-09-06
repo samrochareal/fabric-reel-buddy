@@ -95,7 +95,7 @@ export async function saveOverlay(preset: OverlayPreset): Promise<OverlayPreset[
       slot: preset.slot,
       name: preset.name,
       data_url: preset.dataUrl,
-      config: preset.config as unknown as Record<string, unknown>,
+      config: preset.config as unknown as never,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id,slot" },

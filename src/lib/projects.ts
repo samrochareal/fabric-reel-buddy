@@ -63,7 +63,13 @@ export async function updateProject(
   id: string,
   patch: Partial<Pick<Project, "name" | "note" | "status" | "processedCount">>,
 ) {
-  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const payload: {
+    updated_at: string;
+    name?: string;
+    note?: string;
+    status?: string;
+    processed_count?: number;
+  } = { updated_at: new Date().toISOString() };
   if (patch.name !== undefined) payload.name = patch.name;
   if (patch.note !== undefined) payload.note = patch.note;
   if (patch.status !== undefined) payload.status = patch.status;
