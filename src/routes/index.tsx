@@ -606,54 +606,67 @@ function EditorPage() {
         {/* ---------- Column 3: batch fine-tune ---------- */}
         <section className="space-y-3">
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-bold">
-                Config. em lote{" "}
-                <span className="font-normal text-muted-foreground">
-                  ({clips.length || 0} vídeo{clips.length === 1 ? "" : "s"})
-                </span>
-              </p>
+            <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1">
               <button
                 type="button"
-                onClick={() => patch({ zoom: 1, posX: 0.5, posY: 0.5 })}
+                onClick={() => setScope("batch")}
+                className={`rounded-md px-2 py-2 text-xs font-semibold transition-colors ${
+                  scope === "batch" ? "bg-card text-foreground shadow" : "text-muted-foreground"
+                }`}
+              >
+                Config. em lote ({clips.length} vídeo{clips.length === 1 ? "" : "s"})
+              </button>
+              <button
+                type="button"
+                onClick={() => setScope("single")}
+                disabled={!selected}
+                className={`rounded-md px-2 py-2 text-xs font-semibold transition-colors disabled:opacity-40 ${
+                  scope === "single" ? "bg-card text-foreground shadow" : "text-muted-foreground"
+                }`}
+              >
+                Só este vídeo
+              </button>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm font-bold">Ajuste fino do vídeo</p>
+              <button
+                type="button"
+                onClick={resetFine}
                 className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
                 <RotateCcw className="size-3.5" /> Padrão
               </button>
             </div>
 
-            <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Ajuste fino do vídeo
-            </p>
-
             <div className="mt-3 space-y-4">
               {[
                 {
                   label: "Zoom",
-                  value: opts.zoom,
-                  display: `${Math.round(opts.zoom * 100)}%`,
-                  min: 0.3,
-                  max: 2,
+                  value: fine.zoom,
+                  display: `${Math.round(fine.zoom * 100)}%`,
+                  min: 0.5,
+                  max: 5,
                   step: 0.01,
-                  set: (v: number) => patch({ zoom: v }),
+                  set: (v: number) => patchFine({ zoom: v }),
                 },
                 {
                   label: "Posição vertical",
-                  value: opts.posY,
-                  display: `${Math.round(opts.posY * 100)}%`,
+                  value: fine.posY,
+                  display: `${Math.round(fine.posY * 100)}%`,
                   min: 0,
                   max: 1,
                   step: 0.01,
-                  set: (v: number) => patch({ posY: v }),
+                  set: (v: number) => patchFine({ posY: v }),
                 },
                 {
                   label: "Posição horizontal",
-                  value: opts.posX,
-                  display: `${Math.round(opts.posX * 100)}%`,
+                  value: fine.posX,
+                  display: `${Math.round(fine.posX * 100)}%`,
                   min: 0,
                   max: 1,
                   step: 0.01,
-                  set: (v: number) => patch({ posX: v }),
+                  set: (v: number) => patchFine({ posX: v }),
                 },
               ].map((row) => (
                 <div key={row.label}>
@@ -682,11 +695,12 @@ function EditorPage() {
               </div>
             </div>
             <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-              Em 100% o vídeo preenche a tela toda. Abaixo de 100% ele diminui e aparece a cor de
-              fundo; acima de 100% ele amplia e as bordas são cortadas. A posição move o vídeo
-              dentro da tela.
+              Zoom de 50% a 500%. Em 100% o vídeo preenche a tela inteira; abaixo de 100% ele fica
+              menor e aparece a cor de fundo; acima de 100% ele amplia e as sobras são cortadas.
+              {scope === "single"
+                ? " Estes valores valem só para o vídeo selecionado."
+                : " Estes valores valem para todos os vídeos da fila."}
             </p>
-
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
