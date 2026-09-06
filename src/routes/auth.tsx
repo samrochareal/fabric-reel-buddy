@@ -83,7 +83,9 @@ function AuthPage() {
       return;
     }
     setBusy(true);
+    setRememberMe(remember);
     try {
+
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
