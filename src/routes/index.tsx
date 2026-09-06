@@ -534,22 +534,6 @@ function EditorPage() {
                   </button>
                 ))}
               </div>
-              <div className="flex gap-1 rounded-lg border border-border bg-background p-1">
-                {(["turbo", "completo"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => patch({ mode: m })}
-                    className={`rounded-md px-3 py-1 text-xs font-bold capitalize transition-colors ${
-                      opts.mode === m
-                        ? "bg-turbo text-turbo-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {m === "turbo" ? "Turbo (corte)" : "Completo (fundo)"}
-                  </button>
-                ))}
-              </div>
               {doneClips.length > 0 && (
                 <Button variant="outline" size="sm" onClick={() => void downloadAll()}>
                   <Archive className="mr-1.5 size-4" /> Baixar tudo (.zip)
