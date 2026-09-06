@@ -222,17 +222,28 @@ function OverlayCreator() {
   const persist = (slot: number) => {
     const dataUrl = renderDataUrl();
     if (!dataUrl) return;
-    const label = cfg.name.trim() || `Perfil ${slot}`;
+    const label =
+      presetName.trim() ||
+      presets.find((p) => p.slot === slot)?.name ||
+      cfg.name.trim() ||
+      `Perfil ${slot}`;
     setPresets(saveOverlay({ slot, name: label, dataUrl, config: cfg, updatedAt: Date.now() }));
     setEditingSlot(slot);
-    toast.success(`Salvo em Perfil ${slot}. Já dá para usar nos projetos.`);
+    setPresetName(label);
+    toast.success(`Salvo como “${label}”. Já dá para usar nos projetos.`);
+  };
+
+  const rename = (preset: OverlayPreset, name: string) => {
+    setPresets(saveOverlay({ ...preset, name }));
   };
 
   const loadPreset = (preset: OverlayPreset) => {
     setCfg({ ...defaultOverlayConfig(), ...preset.config });
     setEditingSlot(preset.slot);
-    toast.success(`Perfil ${preset.slot} carregado.`);
+    setPresetName(preset.name);
+    toast.success(`“${preset.name}” carregado.`);
   };
+
 
   const download = () => {
     const canvas = canvasRef.current;
