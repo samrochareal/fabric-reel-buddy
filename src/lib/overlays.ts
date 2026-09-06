@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export type TextAlign = "left" | "center" | "right";
 
 export type OverlayConfig = {
@@ -31,8 +33,6 @@ export const OVERLAY_SLOTS = 10;
 export const OVERLAY_W = 1080;
 export const OVERLAY_H = 1920;
 
-const KEY = "fdr.overlays.v1";
-
 export const defaultOverlayConfig = (): OverlayConfig => ({
   photo: null,
   name: "",
@@ -50,38 +50,62 @@ export const defaultOverlayConfig = (): OverlayConfig => ({
   photoSize: 0.26,
 });
 
-function read(): OverlayPreset[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    const parsed = raw ? (JSON.parse(raw) as OverlayPreset[]) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+type Row = {
+  slot: number;
+  name: string;
+  data_url: string;
+  config: unknown;
+  updated_at: string;
+};
+
+const toPreset = (row: Row): OverlayPreset => ({
+  slot: row.slot,
+  name: row.name,
+  dataUrl: row.data_url,
+  config: { ...defaultOverlayConfig(), ...((row.config as OverlayConfig) ?? {}) },
+  updatedAt: new Date(row.updated_at).getTime(),
+});
+
+export async function listOverlays(): Promise<OverlayPreset[]> {
+  const { data, error } = await supabase
+    .from("overlay_presets")
+    .select("slot,name,data_url,config,updated_at")
+    .order("slot", { ascending: true });
+  if (error) throw error;
+  return (data as Row[]).map(toPreset);
 }
 
-function write(list: OverlayPreset[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(KEY, JSON.stringify(list));
+export async function getOverlay(slot: number): Promise<OverlayPreset | null> {
+  const { data, error } = await supabase
+    .from("overlay_presets")
+    .select("slot,name,data_url,config,updated_at")
+    .eq("slot", slot)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toPreset(data as Row) : null;
 }
 
-export function listOverlays(): OverlayPreset[] {
-  return read().sort((a, b) => a.slot - b.slot);
-}
-
-export function getOverlay(slot: number): OverlayPreset | undefined {
-  return read().find((p) => p.slot === slot);
-}
-
-export function saveOverlay(preset: OverlayPreset): OverlayPreset[] {
-  const list = read().filter((p) => p.slot !== preset.slot);
-  list.push({ ...preset, updatedAt: Date.now() });
-  write(list);
+export async function saveOverlay(preset: OverlayPreset): Promise<OverlayPreset[]> {
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
+  if (!userId) throw new Error("Sessão expirada");
+  const { error } = await supabase.from("overlay_presets").upsert(
+    {
+      user_id: userId,
+      slot: preset.slot,
+      name: preset.name,
+      data_url: preset.dataUrl,
+      config: preset.config as unknown as Record<string, unknown>,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,slot" },
+  );
+  if (error) throw error;
   return listOverlays();
 }
 
-export function deleteOverlay(slot: number): OverlayPreset[] {
-  write(read().filter((p) => p.slot !== slot));
+export async function deleteOverlay(slot: number): Promise<OverlayPreset[]> {
+  const { error } = await supabase.from("overlay_presets").delete().eq("slot", slot);
+  if (error) throw error;
   return listOverlays();
 }
