@@ -277,6 +277,8 @@ function EditorPage() {
 
   const framePreview = (clip: Clip | undefined, small: boolean) => {
     const o = optsFor(clip?.id);
+    const isMain = !small && !!clip && clip.id === selected?.id;
+
     return (
     <div
       className="relative overflow-hidden rounded-md"
