@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { getProject, registerProcessed } from "@/lib/projects";
+import { listOverlays, type OverlayPreset } from "@/lib/overlays";
 
 import {
   Scissors,
@@ -95,6 +96,11 @@ function EditorPage() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [savedOverlays, setSavedOverlays] = useState<OverlayPreset[]>([]);
+
+  useEffect(() => {
+    setSavedOverlays(listOverlays());
+  }, []);
   const cancelledRef = useRef(false);
 
   // our own player state, so the play button never moves with the video
@@ -334,6 +340,15 @@ function EditorPage() {
         background: o.bgColor,
       }}
     >
+      {o.bgImage.enabled && o.bgImage.src && (
+        <img
+          src={o.bgImage.src}
+          alt=""
+          className="pointer-events-none absolute inset-0 size-full object-cover"
+          style={{ opacity: o.bgImage.opacity }}
+        />
+      )}
+
       {clip ? (
         <div
           className="absolute"
@@ -383,22 +398,6 @@ function EditorPage() {
           style={{ background: o.overlayColor, opacity: o.overlayOpacity }}
         />
       )}
-
-      {o.logo.enabled && o.logo.src && (
-        <img
-          src={o.logo.src}
-          alt=""
-          className="pointer-events-none absolute"
-          style={{
-            width: `${o.logo.scale * 100}%`,
-            left: `${o.logo.x * 100}%`,
-            top: `${o.logo.y * 100}%`,
-            transform: `translate(-${o.logo.x * 100}%, -${o.logo.y * 100}%)`,
-            opacity: o.logo.opacity,
-          }}
-        />
-      )}
-
 
       {/* solid bars that cover the original top/bottom borders */}
       {o.border.top > 0 && (
@@ -766,7 +765,7 @@ function EditorPage() {
                 {
                   label: "Posição vertical",
                   value: fine.posY,
-                  display: `${Math.round(fine.posY * 100)}%`,
+                  display: fine.posY === 0.5 ? "centro" : `${fine.posY > 0.5 ? "+" : ""}${Math.round((fine.posY - 0.5) * 200)}`,
                   min: 0,
                   max: 1,
                   step: 0.01,
@@ -775,7 +774,7 @@ function EditorPage() {
                 {
                   label: "Posição horizontal",
                   value: fine.posX,
-                  display: `${Math.round(fine.posX * 100)}%`,
+                  display: fine.posX === 0.5 ? "centro" : `${fine.posX > 0.5 ? "+" : ""}${Math.round((fine.posX - 0.5) * 200)}`,
                   min: 0,
                   max: 1,
                   step: 0.01,
