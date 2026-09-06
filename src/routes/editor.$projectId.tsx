@@ -292,10 +292,12 @@ function EditorPage() {
 
       if (rendered > 0) registerProcessed(projectId, rendered);
       if (cancelledRef.current) {
-        toast.info("Processamento pausado. Clique em “Processar vídeos” para continuar.");
+        setPaused(true);
+        toast.info("Processamento pausado. Clique em “Retomar processamento” para continuar.");
       } else {
         toast.success("Lote concluído! Use “Baixar todos” para salvar tudo.");
       }
+
 
 
     } catch (err) {
