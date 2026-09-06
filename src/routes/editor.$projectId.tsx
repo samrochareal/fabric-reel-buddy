@@ -393,6 +393,7 @@ function EditorPage() {
             onPause={isMain ? () => setPlaying(false) : undefined}
           />
         </div>
+        </div>
       ) : (
         <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
           sem vídeo
@@ -415,19 +416,8 @@ function EditorPage() {
         />
       )}
 
-      {/* solid bars that cover the original top/bottom borders */}
-      {o.border.top > 0 && (
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0"
-          style={{ height: `${o.border.top * 100}%`, background: o.border.color }}
-        />
-      )}
-      {o.border.bottom > 0 && (
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0"
-          style={{ height: `${o.border.bottom * 100}%`, background: o.border.color }}
-        />
-      )}
+      {/* dashed guides: the video is trimmed here, the background stays visible */}
+
       {(o.border.top > 0 || o.border.bottom > 0) && !small && (
         <>
           <div
