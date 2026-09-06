@@ -1093,15 +1093,15 @@ function EditorPage() {
             {tab === "overlay" && (
               <>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold">Overlay (marca/logo)</p>
+                  <p className="text-sm font-bold">Overlay de fundo</p>
                   <Switch
-                    checked={opts.logo.enabled}
-                    onCheckedChange={(v) => patch({ logo: { ...opts.logo, enabled: v } })}
+                    checked={opts.bgImage.enabled}
+                    onCheckedChange={(v) => patch({ bgImage: { ...opts.bgImage, enabled: v } })}
                   />
                 </div>
                 <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                  Envie uma imagem de overlay (PNG com fundo transparente funciona melhor) e ajuste
-                  tamanho, posição e transparência.
+                  A imagem fica atrás do vídeo, preenchendo toda a área de cor sólida. Diminua o
+                  zoom do vídeo para ela aparecer.
                 </p>
 
                 <input
@@ -1116,9 +1116,9 @@ function EditorPage() {
                     const reader = new FileReader();
                     reader.onload = () => {
                       patch({
-                        logo: { ...opts.logo, enabled: true, src: String(reader.result) },
+                        bgImage: { ...opts.bgImage, enabled: true, src: String(reader.result) },
                       });
-                      toast.success("Overlay carregada.");
+                      toast.success("Imagem de fundo carregada.");
                     };
                     reader.readAsDataURL(file);
                   }}
@@ -1128,86 +1128,46 @@ function EditorPage() {
                   className="mt-4 w-full"
                   onClick={() => logoInputRef.current?.click()}
                 >
-                  <Plus className="mr-1.5 size-4" /> Enviar imagem de overlay
+                  <Plus className="mr-1.5 size-4" /> Enviar imagem de fundo
                 </Button>
 
-                {opts.logo.src && (
+                {opts.bgImage.src && (
                   <div className="mt-3 space-y-3 rounded-lg border border-border bg-background/60 p-3">
                     <div className="flex items-center gap-3">
                       <img
-                        src={opts.logo.src}
-                        alt="Overlay atual"
-                        className="size-12 rounded border border-border object-contain"
+                        src={opts.bgImage.src}
+                        alt="Fundo atual"
+                        className="h-14 w-8 rounded border border-border object-cover"
                       />
                       <p className="flex-1 text-[11px] font-semibold text-muted-foreground">
-                        Editar ajustes da overlay atual
+                        Imagem de fundo em uso
                       </p>
                       <button
                         type="button"
-                        onClick={() => patch({ logo: { ...opts.logo, src: null, enabled: false } })}
+                        onClick={() =>
+                          patch({ bgImage: { ...opts.bgImage, src: null, enabled: false } })
+                        }
                         className="text-muted-foreground transition-colors hover:text-destructive"
-                        aria-label="Remover overlay"
+                        aria-label="Remover imagem de fundo"
                       >
                         <Trash2 className="size-4" />
                       </button>
                     </div>
                     <div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Tamanho</span>
-                        <span className="font-bold">{Math.round(opts.logo.scale * 100)}%</span>
-                      </div>
-                      <Slider
-                        className="mt-2"
-                        value={[opts.logo.scale]}
-                        min={0.05}
-                        max={1}
-                        step={0.01}
-                        onValueChange={([v]) =>
-                          patch({ logo: { ...opts.logo, scale: v ?? opts.logo.scale } })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Posição horizontal</span>
-                        <span className="font-bold">{Math.round(opts.logo.x * 100)}%</span>
-                      </div>
-                      <Slider
-                        className="mt-2"
-                        value={[opts.logo.x]}
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        onValueChange={([v]) => patch({ logo: { ...opts.logo, x: v ?? opts.logo.x } })}
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Posição vertical</span>
-                        <span className="font-bold">{Math.round(opts.logo.y * 100)}%</span>
-                      </div>
-                      <Slider
-                        className="mt-2"
-                        value={[opts.logo.y]}
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        onValueChange={([v]) => patch({ logo: { ...opts.logo, y: v ?? opts.logo.y } })}
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">Transparência</span>
-                        <span className="font-bold">{Math.round(opts.logo.opacity * 100)}%</span>
+                        <span className="font-bold">
+                          {Math.round(opts.bgImage.opacity * 100)}%
+                        </span>
                       </div>
                       <Slider
                         className="mt-2"
-                        value={[opts.logo.opacity]}
+                        value={[opts.bgImage.opacity]}
                         min={0.1}
                         max={1}
                         step={0.01}
                         onValueChange={([v]) =>
-                          patch({ logo: { ...opts.logo, opacity: v ?? opts.logo.opacity } })
+                          patch({ bgImage: { ...opts.bgImage, opacity: v ?? opts.bgImage.opacity } })
                         }
                       />
                     </div>
@@ -1217,22 +1177,47 @@ function EditorPage() {
                 <div className="mt-4 rounded-lg border border-border bg-background/60 p-3">
                   <div className="flex items-center justify-between">
                     <p className="flex items-center gap-2 text-xs font-bold">
-                      <Sparkles className="size-4 text-primary" /> Criador de Overlay
+                      <Sparkles className="size-4 text-primary" /> Overlays salvos
                     </p>
-                    <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
-                      NOVO
-                    </span>
+                    <Button variant="ghost" size="sm" onClick={() => setSavedOverlays(listOverlays())}>
+                      Atualizar
+                    </Button>
                   </div>
-                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                    Crie uma overlay personalizada com seu nome, @ e foto — estilo redes sociais.
-                    Abre em uma nova aba.
-                  </p>
+                  {savedOverlays.length === 0 ? (
+                    <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                      Você ainda não salvou nenhum perfil no Criador de Overlay.
+                    </p>
+                  ) : (
+                    <div className="mt-3 grid grid-cols-4 gap-2">
+                      {savedOverlays.map((preset) => (
+                        <button
+                          key={preset.slot}
+                          type="button"
+                          onClick={() => {
+                            patch({
+                              bgImage: { ...opts.bgImage, enabled: true, src: preset.dataUrl },
+                            });
+                            toast.success(`Overlay “${preset.name}” aplicada.`);
+                          }}
+                          className={`overflow-hidden rounded border transition-colors ${
+                            opts.bgImage.src === preset.dataUrl
+                              ? "border-primary"
+                              : "border-border hover:border-primary/60"
+                          }`}
+                          title={preset.name}
+                        >
+                          <img src={preset.dataUrl} alt={preset.name} className="aspect-[9/16] w-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
                     <a href="/criador-de-overlay" target="_blank" rel="noreferrer">
-                      Abrir criador
+                      Abrir Criador de Overlay
                     </a>
                   </Button>
                 </div>
+
 
                 <div className="mt-5 border-t border-border/60 pt-4">
                   <p className="text-sm font-bold">Overlay de cor</p>
