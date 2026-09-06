@@ -585,7 +585,11 @@ function EditorPage() {
                         {(clip.file.size / 1024 / 1024).toFixed(1)} MB ·{" "}
                         {statusLabel(clip.status, clip.progress)}
                       </span>
+                      {clip.status === "processing" && (
+                        <Progress value={clip.progress * 100} className="mt-1.5 h-1" />
+                      )}
                     </span>
+
                     {clip.status === "done" ? (
                       <span
                         onClick={(e) => {
