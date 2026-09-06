@@ -9,17 +9,16 @@ export const ASPECTS: Record<AspectId, { label: string; w: number; h: number }> 
   "4:5": { label: "4:5 · Feed vertical", w: 1080, h: 1350 },
 };
 
-export type ProcessMode = "turbo" | "completo";
-
 /** Every knob the batch editor exposes. */
 export type EditOptions = {
   aspect: AspectId;
-  mode: ProcessMode;
-  /** 1 = no zoom, 2 = 200% */
+  /** 1 = video fills the frame; below 1 it shrinks and the background shows */
   zoom: number;
-  /** 0..1 crop anchor (0.5 = centered) */
+  /** 0..1 placement anchor (0.5 = centered) */
   posX: number;
   posY: number;
+  /** colour behind the video when zoom < 1 */
+  bgColor: string;
   /** playback rate, e.g. 1.02 for anti-duplication */
   speed: number;
   mirror: boolean;
@@ -33,10 +32,10 @@ export type EditOptions = {
 
 export const defaultEditOptions = (): EditOptions => ({
   aspect: "9:16",
-  mode: "turbo",
   zoom: 1,
   posX: 0.5,
   posY: 0.5,
+  bgColor: "#000000",
   speed: 1,
   mirror: false,
   border: { enabled: false, color: "#ffffff", width: 24 },
@@ -46,6 +45,7 @@ export const defaultEditOptions = (): EditOptions => ({
   overlayColor: "#000000",
   fadeIn: false,
 });
+
 
 let ffmpeg: FFmpeg | null = null;
 
