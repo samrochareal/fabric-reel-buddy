@@ -62,6 +62,8 @@ const TABS: { id: EditTab; label: string }[] = [
   { id: "extras", label: "Extras" },
 ];
 
+type FineTune = { zoom: number; posX: number; posY: number };
+
 function statusLabel(status: ClipStatus, progress: number) {
   if (status === "done") return "pronto";
   if (status === "error") return "falhou";
@@ -77,6 +79,8 @@ function EditorPage() {
   const [grid, setGrid] = useState<1 | 4 | 9>(1);
   const [tab, setTab] = useState<EditTab>("titulo");
   const [antiDup, setAntiDup] = useState(false);
+  const [scope, setScope] = useState<"batch" | "single">("batch");
+  const [overrides, setOverrides] = useState<Record<string, FineTune>>({});
   const [running, setRunning] = useState(false);
   const [engineReady, setEngineReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -135,8 +139,42 @@ function EditorPage() {
   const titleFor = (index: number) =>
     opts.title.enabled ? (titleLines[index] ?? titleLines[titleLines.length - 1] ?? "") : "";
 
-  const effectiveOpts = (): EditOptions =>
-    antiDup ? { ...opts, speed: opts.speed === 1 ? 1.02 : opts.speed } : opts;
+  /** batch options merged with the per-video fine-tune override, if any */
+  const optsFor = (clipId?: string): EditOptions => {
+    const over = clipId ? overrides[clipId] : undefined;
+    const merged = over ? { ...opts, ...over } : opts;
+    return antiDup ? { ...merged, speed: merged.speed === 1 ? 1.02 : merged.speed } : merged;
+  };
+
+  const fine: FineTune =
+    scope === "single" && selected && overrides[selected.id]
+      ? overrides[selected.id]!
+      : { zoom: opts.zoom, posX: opts.posX, posY: opts.posY };
+
+  const patchFine = (next: Partial<FineTune>) => {
+    if (scope === "single" && selected) {
+      const id = selected.id;
+      setOverrides((prev) => ({
+        ...prev,
+        [id]: { ...{ zoom: opts.zoom, posX: opts.posX, posY: opts.posY }, ...prev[id], ...next },
+      }));
+    } else {
+      patch(next);
+    }
+  };
+
+  const resetFine = () => {
+    if (scope === "single" && selected) {
+      const id = selected.id;
+      setOverrides((prev) => {
+        const rest = { ...prev };
+        delete rest[id];
+        return rest;
+      });
+    } else {
+      patch({ zoom: 1, posX: 0.5, posY: 0.5 });
+    }
+  };
 
   async function handleProcess() {
     if (queuedClips.length === 0) {
@@ -146,7 +184,6 @@ function EditorPage() {
 
     setRunning(true);
     cancelledRef.current = false;
-    const settings = effectiveOpts();
     try {
       const videoLib = await import("@/lib/video");
       if (!engineReady) {
@@ -160,6 +197,7 @@ function EditorPage() {
       for (const clip of queuedClips) {
         if (cancelledRef.current) break;
         const index = clips.findIndex((c) => c.id === clip.id);
+        const settings = optsFor(clip.id);
         setClips((prev) =>
           prev.map((c) => (c.id === clip.id ? { ...c, status: "processing", progress: 0 } : c)),
         );
