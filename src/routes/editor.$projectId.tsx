@@ -57,7 +57,7 @@ type Clip = {
   error?: string;
 };
 
-const MAX_CLIPS = 500;
+const MAX_CLIPS = 100;
 type EditTab = "bordas" | "titulo" | "inferior" | "overlay" | "extras";
 const TABS: { id: EditTab; label: string }[] = [
   { id: "bordas", label: "Bordas" },
@@ -351,6 +351,12 @@ function EditorPage() {
 
       {clip ? (
         <div
+          className="absolute inset-0"
+          style={{
+            clipPath: `inset(${(o.border.top * 100).toFixed(2)}% 0% ${(o.border.bottom * 100).toFixed(2)}% 0%)`,
+          }}
+        >
+        <div
           className="absolute"
           style={{
             width: `${o.zoom * 100}%`,
@@ -359,6 +365,7 @@ function EditorPage() {
             top: `${(1 - o.zoom) * 100 * o.posY}%`,
           }}
         >
+
           <video
             key={clip.id}
             ref={isMain ? playerRef : undefined}
@@ -386,6 +393,7 @@ function EditorPage() {
             onPause={isMain ? () => setPlaying(false) : undefined}
           />
         </div>
+        </div>
       ) : (
         <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
           sem vídeo
@@ -408,19 +416,8 @@ function EditorPage() {
         />
       )}
 
-      {/* solid bars that cover the original top/bottom borders */}
-      {o.border.top > 0 && (
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0"
-          style={{ height: `${o.border.top * 100}%`, background: o.border.color }}
-        />
-      )}
-      {o.border.bottom > 0 && (
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0"
-          style={{ height: `${o.border.bottom * 100}%`, background: o.border.color }}
-        />
-      )}
+      {/* dashed guides: the video is trimmed here, the background stays visible */}
+
       {(o.border.top > 0 || o.border.bottom > 0) && !small && (
         <>
           <div
@@ -486,15 +483,6 @@ function EditorPage() {
             <span className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground sm:inline">
               {clips.length}/{MAX_CLIPS} na fila
             </span>
-            <span className="rounded-full border border-turbo/50 bg-turbo/10 px-3 py-1 text-xs font-bold text-turbo">
-              Premium · ilimitado
-            </span>
-            <a
-              href="mailto:suporte@fabricadereels.com.br"
-              className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold md:inline"
-            >
-              Suporte
-            </a>
             <span className="hidden text-muted-foreground lg:inline">
               <HelpCircle className="size-4" />
             </span>
@@ -823,46 +811,6 @@ function EditorPage() {
                 : " Estes valores valem para todos os vídeos da fila."}
             </p>
           </div>
-
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-sm font-bold">Modo anti duplicidade</p>
-                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  Aplica pequenas variações em todos os vídeos para reduzir detecção de duplicidade.
-                </p>
-              </div>
-              <Switch checked={antiDup} onCheckedChange={setAntiDup} />
-            </div>
-
-            <div className="mt-4 space-y-3 border-t border-border/60 pt-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">
-                  Velocidade {opts.speed.toFixed(2)}x
-                </span>
-                <div className="w-28">
-                  <Slider
-                    value={[opts.speed]}
-                    min={0.9}
-                    max={1.15}
-                    step={0.01}
-                    onValueChange={([v]) => patch({ speed: v ?? 1 })}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Espelhar vídeos</span>
-                <Switch
-                  checked={opts.mirror}
-                  onCheckedChange={(v) => patch({ mirror: v })}
-                />
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Fade de entrada</span>
-                <Switch checked={opts.fadeIn} onCheckedChange={(v) => patch({ fadeIn: v })} />
-              </div>
-            </div>
-          </div>
         </section>
 
         {/* ---------- Column 4: edit tabs + process ---------- */}
@@ -901,36 +849,12 @@ function EditorPage() {
                 <div className="flex items-start gap-2 rounded-lg border border-border/70 bg-background/60 p-3">
                   <Scissors className="mt-0.5 size-4 shrink-0 text-primary" />
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    Aqui você <span className="font-bold text-foreground">remove as bordas
-                    superior e inferior</span> do vídeo original (marcas d\u2019água, legendas,
-                    logos). As linhas tracejadas no preview mostram exatamente onde será o corte.
+                    Aqui você <span className="font-bold text-foreground">corta o topo e o
+                    rodapé do vídeo</span> (marcas d’água, legendas, logos). O corte remove só o
+                    vídeo — a imagem de fundo continua visível nessa área.
                   </p>
                 </div>
 
-                <p className="mt-4 text-xs font-semibold text-muted-foreground">Cor das bordas</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <Input
-                    type="color"
-                    value={opts.border.color}
-                    onChange={(e) => patch({ border: { ...opts.border, color: e.target.value } })}
-                    className="h-9 w-14 p-1"
-                  />
-                  <Input
-                    value={opts.border.color}
-                    onChange={(e) => patch({ border: { ...opts.border, color: e.target.value } })}
-                    className="h-9 flex-1 text-xs"
-                  />
-                  {["#ffffff", "#000000"].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      aria-label={`Cor ${preset}`}
-                      onClick={() => patch({ border: { ...opts.border, color: preset } })}
-                      className="size-9 rounded-md border border-border"
-                      style={{ background: preset }}
-                    />
-                  ))}
-                </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1">
                   {(["manual", "auto"] as const).map((m) => (
@@ -959,12 +883,12 @@ function EditorPage() {
                 <div className="mt-4 space-y-4">
                   {[
                     {
-                      label: "Preencher no topo",
+                      label: "Cortar no topo",
                       value: opts.border.top,
                       set: (v: number) => patch({ border: { ...opts.border, top: v } }),
                     },
                     {
-                      label: "Preencher no rodapé",
+                      label: "Cortar no rodapé",
                       value: opts.border.bottom,
                       set: (v: number) => patch({ border: { ...opts.border, bottom: v } }),
                     },
@@ -1294,14 +1218,37 @@ function EditorPage() {
                   <span className="text-muted-foreground">Fade de entrada</span>
                   <Switch checked={opts.fadeIn} onCheckedChange={(v) => patch({ fadeIn: v })} />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Anti duplicidade</span>
-                  <Switch checked={antiDup} onCheckedChange={setAntiDup} />
+                <div className="mt-2 space-y-3 border-t border-border/60 pt-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold">Modo anti duplicidade</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                        Aplica pequenas variações em todos os vídeos para reduzir detecção de
+                        duplicidade.
+                      </p>
+                    </div>
+                    <Switch checked={antiDup} onCheckedChange={setAntiDup} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      Velocidade {opts.speed.toFixed(2)}x
+                    </span>
+                    <div className="w-28">
+                      <Slider
+                        value={[opts.speed]}
+                        min={0.9}
+                        max={1.15}
+                        step={0.01}
+                        onValueChange={([v]) => patch({ speed: v ?? 1 })}
+                      />
+                    </div>
+                  </div>
                 </div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
                   Todo o processamento roda no seu navegador: os arquivos nunca são enviados para
                   nenhum servidor.
                 </p>
+
               </div>
             )}
           </div>
