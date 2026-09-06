@@ -90,6 +90,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
  * resolve — the worker then never boots and `load()` hangs forever. Building it
  * ourselves with Vite's `?worker&url` gives a stable, bundled worker URL.
  */
+export const __workerUrl = ffmpegWorkerUrl;
+
 function classWorkerURL(): string | undefined {
   return ffmpegWorkerUrl || undefined;
 }
