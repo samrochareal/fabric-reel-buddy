@@ -80,7 +80,7 @@ function EditorPage() {
   const [clips, setClips] = useState<Clip[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [opts, setOpts] = useState<EditOptions>(defaultEditOptions);
-  const [grid, setGrid] = useState<1 | 4 | 9>(1);
+  
   const [tab, setTab] = useState<EditTab>("titulo");
   const [antiDup, setAntiDup] = useState(false);
   const [scope, setScope] = useState<"batch" | "single">("batch");
