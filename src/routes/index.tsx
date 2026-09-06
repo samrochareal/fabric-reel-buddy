@@ -1,241 +1,1003 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import {
-  UploadCloud,
-  Crop,
-  Download,
-  Zap,
-  ShieldCheck,
-  Timer,
+  ArrowLeft,
   ArrowRight,
-  Check,
+  Scissors,
+  UploadCloud,
+  Loader2,
+  Download,
+  Trash2,
+  Zap,
+  LogOut,
+  Archive,
+  X,
+  RotateCcw,
+  Play,
+  HelpCircle,
 } from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
-import { PLANS } from "@/lib/plans";
+import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { consumeCredits, getCredits } from "@/lib/credits.functions";
+import {
+  ASPECTS,
+  defaultEditOptions,
+  type AspectId,
+  type EditOptions,
+} from "@/lib/video";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({
     meta: [
-      { title: "Fábrica de Reels — Edite vídeos em massa e economize horas" },
-      {
-        name: "description",
-        content:
-          "Suba até 50 clipes de uma vez, ajuste o enquadramento em segundos e baixe tudo pronto. Modo Turbo: cada vídeo fica pronto em cerca de 30 segundos.",
-      },
-      { property: "og:title", content: "Fábrica de Reels — Edite vídeos em massa" },
-      {
-        property: "og:description",
-        content: "Suba até 50 clipes, enquadre em segundos e baixe tudo pronto para Reels, TikTok e Shorts.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { title: "Editor em lote — Fábrica de Reels" },
+      { name: "description", content: "Edite e processe até 50 vídeos de uma vez." },
+      { name: "robots", content: "noindex" },
     ],
   }),
-  component: Index,
+  component: EditorPage,
 });
 
-const STEPS = [
-  {
-    icon: UploadCloud,
-    title: "Suba seus clipes",
-    text: "Arraste até 50 vídeos de uma vez. Nada sai do seu computador: o processamento acontece no seu navegador.",
-  },
-  {
-    icon: Crop,
-    title: "Escolha o enquadramento",
-    text: "9:16 para Reels e Shorts, 1:1 ou 4:5 para o feed. Modo Turbo corta e preenche; Modo Completo mantém o vídeo inteiro com fundo desfocado.",
-  },
-  {
-    icon: Download,
-    title: "Baixe tudo pronto",
-    text: "Receba cada vídeo em MP4 otimizado ou baixe o lote inteiro em um único .zip.",
-  },
+type ClipStatus = "queued" | "processing" | "done" | "error";
+
+type Clip = {
+  id: string;
+  file: File;
+  previewUrl: string;
+  status: ClipStatus;
+  progress: number;
+  resultBlob?: Blob;
+  resultUrl?: string;
+  resultName?: string;
+  error?: string;
+};
+
+const MAX_CLIPS = 50;
+type EditTab = "bordas" | "titulo" | "inferior" | "overlay" | "extras";
+const TABS: { id: EditTab; label: string }[] = [
+  { id: "bordas", label: "Bordas" },
+  { id: "titulo", label: "Título" },
+  { id: "inferior", label: "Inferior" },
+  { id: "overlay", label: "Overlay" },
+  { id: "extras", label: "Extras" },
 ];
 
-const BULLETS = [
-  { icon: Zap, text: "Modo Turbo: cerca de 30 segundos por vídeo" },
-  { icon: ShieldCheck, text: "Seus vídeos nunca saem do seu dispositivo" },
-  { icon: Timer, text: "Sem filas: o processamento começa na hora" },
-];
+function statusLabel(status: ClipStatus, progress: number) {
+  if (status === "done") return "pronto";
+  if (status === "error") return "falhou";
+  if (status === "processing") return `${Math.round(progress * 100)}%`;
+  return "aguardando";
+}
 
-const FAQS = [
-  {
-    q: "Já paguei, e agora?",
-    a: "Basta criar uma conta ou fazer login com o mesmo e-mail usado na compra. Seus créditos aparecem automaticamente.",
-  },
-  {
-    q: "Os planos renovam automaticamente?",
-    a: "Não. Você compra créditos conforme a necessidade — sem renovação mensal nem cobrança recorrente. Créditos não expiram.",
-  },
-  {
-    q: "Comprar um plano menor faz downgrade?",
-    a: "Não. Comprar um plano menor apenas soma créditos à sua conta — seu plano atual e benefícios não sofrem downgrade.",
-  },
-  {
-    q: "Meus vídeos são enviados para algum servidor?",
-    a: "Não. Todo o processamento acontece localmente no seu navegador. Seus arquivos nunca saem do seu dispositivo.",
-  },
-  {
-    q: "Quantos vídeos posso processar de uma vez?",
-    a: "Até 50 clipes por lote, em qualquer um dos formatos disponíveis (9:16, 1:1 e 4:5).",
-  },
-];
+function EditorPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const fetchCredits = useServerFn(getCredits);
+  const consume = useServerFn(consumeCredits);
 
-function Index() {
+  const [clips, setClips] = useState<Clip[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [opts, setOpts] = useState<EditOptions>(defaultEditOptions);
+  const [grid, setGrid] = useState<1 | 4 | 9>(1);
+  const [tab, setTab] = useState<EditTab>("titulo");
+  const [antiDup, setAntiDup] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [engineReady, setEngineReady] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const cancelledRef = useRef(false);
+
+  const { data: creditsData, isLoading: creditsLoading } = useQuery({
+    queryKey: ["credits"],
+    queryFn: fetchCredits,
+    enabled: !!user,
+  });
+  const credits = creditsData?.credits ?? 0;
+
+  const patch = (next: Partial<EditOptions>) => setOpts((prev) => ({ ...prev, ...next }));
+
+  const addFiles = useCallback((files: FileList | File[]) => {
+    const incoming = Array.from(files).filter((f) => f.type.startsWith("video/"));
+    if (incoming.length === 0) {
+      toast.error("Selecione arquivos de vídeo.");
+      return;
+    }
+    setClips((prev) => {
+      const room = MAX_CLIPS - prev.length;
+      if (incoming.length > room) toast.error(`Máximo de ${MAX_CLIPS} vídeos por lote.`);
+      const next = incoming.slice(0, room).map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl: URL.createObjectURL(file),
+        status: "queued" as ClipStatus,
+        progress: 0,
+      }));
+      const merged = [...prev, ...next];
+      if (!selectedId && merged[0]) setSelectedId(merged[0].id);
+      return merged;
+    });
+  }, [selectedId]);
+
+  const removeClip = (id: string) =>
+    setClips((prev) => {
+      const clip = prev.find((c) => c.id === id);
+      if (clip) URL.revokeObjectURL(clip.previewUrl);
+      const rest = prev.filter((c) => c.id !== id);
+      if (selectedId === id) setSelectedId(rest[0]?.id ?? null);
+      return rest;
+    });
+
+  const clearAll = () =>
+    setClips((prev) => {
+      prev.forEach((c) => URL.revokeObjectURL(c.previewUrl));
+      setSelectedId(null);
+      return [];
+    });
+
+  const queuedClips = clips.filter((c) => c.status === "queued" || c.status === "error");
+  const doneClips = clips.filter((c) => c.status === "done");
+  const activeClip = clips.find((c) => c.status === "processing");
+  const selected = clips.find((c) => c.id === selectedId) ?? clips[0];
+
+  const titleLines = useMemo(
+    () => opts.title.text.split("\n").map((l) => l.trim()),
+    [opts.title.text],
+  );
+  const titleFor = (index: number) =>
+    opts.title.enabled ? (titleLines[index] ?? titleLines[titleLines.length - 1] ?? "") : "";
+
+  const effectiveOpts = (): EditOptions =>
+    antiDup ? { ...opts, speed: opts.speed === 1 ? 1.02 : opts.speed } : opts;
+
+  async function handleProcess() {
+    if (queuedClips.length === 0) {
+      toast.error("Adicione vídeos para processar.");
+      return;
+    }
+    if (credits < queuedClips.length) {
+      toast.error(
+        `Créditos insuficientes: você tem ${credits} e o lote precisa de ${queuedClips.length}.`,
+      );
+      navigate({ to: "/pricing" });
+      return;
+    }
+
+    setRunning(true);
+    cancelledRef.current = false;
+    const settings = effectiveOpts();
+    try {
+      const videoLib = await import("@/lib/video");
+      if (!engineReady) {
+        toast.info("Preparando o motor de vídeo (só na primeira vez)…");
+        await videoLib.getFFmpeg();
+        setEngineReady(true);
+      }
+
+      const { credits: remaining } = await consume({ data: { count: queuedClips.length } });
+      queryClient.setQueryData(["credits"], { credits: remaining });
+      toast.success(`${queuedClips.length} crédito(s) utilizados. Processando…`);
+
+      for (const clip of queuedClips) {
+        if (cancelledRef.current) break;
+        const index = clips.findIndex((c) => c.id === clip.id);
+        setClips((prev) =>
+          prev.map((c) => (c.id === clip.id ? { ...c, status: "processing", progress: 0 } : c)),
+        );
+        try {
+          const blob = await videoLib.processVideo(
+            clip.file,
+            settings,
+            titleFor(index),
+            (ratio) =>
+              setClips((prev) => prev.map((c) => (c.id === clip.id ? { ...c, progress: ratio } : c))),
+          );
+          setClips((prev) =>
+            prev.map((c) =>
+              c.id === clip.id
+                ? {
+                    ...c,
+                    status: "done",
+                    progress: 1,
+                    resultBlob: blob,
+                    resultUrl: URL.createObjectURL(blob),
+                    resultName: videoLib.outputName(clip.file.name, settings.aspect),
+                  }
+                : c,
+            ),
+          );
+        } catch (err) {
+          setClips((prev) =>
+            prev.map((c) =>
+              c.id === clip.id
+                ? {
+                    ...c,
+                    status: "error",
+                    error: err instanceof Error ? err.message : "Falha ao processar",
+                  }
+                : c,
+            ),
+          );
+        }
+      }
+      toast.success("Lote concluído!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao processar.");
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  function downloadClip(clip: Clip) {
+    if (!clip.resultBlob || !clip.resultName) return;
+    const url = URL.createObjectURL(clip.resultBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = clip.resultName;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  async function downloadAll() {
+    if (doneClips.length === 0) return;
+    const { default: JSZip } = await import("jszip");
+    const zip = new JSZip();
+    for (const clip of doneClips) {
+      if (clip.resultBlob && clip.resultName) zip.file(clip.resultName, clip.resultBlob);
+    }
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "fabrica-de-reels.zip";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    navigate({ to: "/" });
+  }
+
+  const gridClips = grid === 1 ? (selected ? [selected] : []) : clips.slice(0, grid);
+  const { w: outW, h: outH } = ASPECTS[opts.aspect];
+
+  const framePreview = (clip: Clip | undefined, small: boolean) => (
+    <div
+      className="relative overflow-hidden rounded-md bg-black"
+      style={{ aspectRatio: `${outW} / ${outH}`, containerType: "inline-size" }}
+    >
+      {clip ? (
+        <video
+          key={clip.id}
+          src={clip.resultUrl ?? clip.previewUrl}
+          className="size-full object-cover"
+          style={{
+            transform: `scale(${opts.zoom}) ${opts.mirror ? "scaleX(-1)" : ""}`,
+            objectPosition: `${opts.posX * 100}% ${opts.posY * 100}%`,
+          }}
+          muted
+          loop
+          playsInline
+          controls={!small && grid === 1}
+          preload="metadata"
+        />
+      ) : (
+        <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
+          sem vídeo
+        </div>
+      )}
+      {opts.overlayOpacity > 0 && (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: opts.overlayColor, opacity: opts.overlayOpacity }}
+        />
+      )}
+      {opts.border.enabled && (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            border: `${((opts.border.width / outW) * 100).toFixed(2)}cqw solid ${opts.border.color}`,
+          }}
+        />
+      )}
+      {opts.title.enabled && (
+        <p
+          className="pointer-events-none absolute inset-x-[7%] top-[8%] text-center font-bold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+          style={{
+            color: opts.title.color,
+            fontSize: `${((opts.title.size / outW) * 100).toFixed(2)}cqw`,
+          }}
+        >
+          {titleFor(clips.findIndex((c) => c.id === clip?.id)) || "Título do vídeo"}
+        </p>
+      )}
+      {opts.bottom.enabled && opts.bottom.text && (
+        <p
+          className="pointer-events-none absolute inset-x-[7%] bottom-[8%] text-center font-bold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+          style={{
+            color: opts.bottom.color,
+            fontSize: `${((opts.bottom.size / outW) * 100).toFixed(2)}cqw`,
+          }}
+        >
+          {opts.bottom.text}
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
-      <SiteHeader />
-
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid-fade" aria-hidden />
-        <div
-          className="absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full opacity-30 blur-3xl"
-          style={{ background: "radial-gradient(closest-side, oklch(0.78 0.19 55 / 60%), transparent)" }}
-          aria-hidden
-        />
-        <div className="relative mx-auto max-w-6xl px-4 pb-24 pt-20 text-center md:pt-28">
-          <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-medium text-muted-foreground">
-            <Zap className="size-3.5 text-turbo" />
-            Plano Grátis: 7 vídeos no Modo Turbo por conta, grátis
-          </div>
-          <h1 className="mx-auto max-w-3xl font-display text-5xl font-bold leading-[1.05] tracking-tight md:text-7xl">
-            Edite vídeos <span className="text-gradient-brand">em massa</span> e economize horas.
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Suba até 50 clipes de uma vez, ajuste o enquadramento em segundos e baixe tudo pronto.
-            Com o Modo Turbo, cada vídeo fica pronto em cerca de 30 segundos.
-          </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            <Button asChild size="lg" className="glow-primary h-12 px-8 text-base font-semibold">
-              <Link to="/auth">
-                Começar grátis <ArrowRight className="ml-1 size-4" />
-              </Link>
+      {/* Top bar */}
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
+        <div className="flex h-14 items-center gap-3 px-4">
+          <Link
+            to="/"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" /> Voltar
+          </Link>
+          <span className="mx-auto flex items-center gap-2">
+            <Scissors className="size-4 text-primary" />
+            <span className="font-display text-base font-bold tracking-tight">
+              fabrica <span className="text-muted-foreground">de</span> reels
+            </span>
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground sm:inline">
+              {clips.length}/{MAX_CLIPS} na fila
+            </span>
+            <Link
+              to="/pricing"
+              className="rounded-full border border-turbo/50 bg-turbo/10 px-3 py-1 text-xs font-bold text-turbo"
+            >
+              {creditsLoading ? "…" : credits} vídeos / conta
+            </Link>
+            <Link
+              to="/pricing"
+              className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold md:inline"
+            >
+              Planos
+            </Link>
+            <a
+              href="mailto:suporte@fabricadereels.com.br"
+              className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold md:inline"
+            >
+              Suporte
+            </a>
+            <span className="hidden text-muted-foreground lg:inline">
+              <HelpCircle className="size-4" />
+            </span>
+            <Button variant="ghost" size="sm" onClick={() => void signOut()}>
+              <LogOut className="size-4" />
+              <span className="sr-only">Sair</span>
             </Button>
-            <Button asChild size="lg" variant="outline" className="h-12 px-8 text-base">
-              <Link to="/pricing">Ver planos</Link>
-            </Button>
-          </div>
-          <ul className="mx-auto mt-12 flex max-w-3xl flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
-            {BULLETS.map((b) => (
-              <li key={b.text} className="flex items-center gap-2">
-                <b.icon className="size-4 text-turbo" />
-                {b.text}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* Como funciona */}
-      <section id="como-funciona" className="border-t border-border/60 py-24">
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="text-center font-display text-3xl font-bold tracking-tight md:text-4xl">
-            Veja como funciona
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
-            Do upload ao download em três passos — sem instalar nada.
-          </p>
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
-            {STEPS.map((step, i) => (
-              <div
-                key={step.title}
-                className="group relative rounded-2xl border border-border bg-card p-8 transition-colors hover:border-primary/50"
-              >
-                <span className="absolute right-6 top-6 font-display text-5xl font-bold text-border transition-colors group-hover:text-primary/30">
-                  {i + 1}
-                </span>
-                <span className="flex size-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                  <step.icon className="size-6" />
-                </span>
-                <h3 className="mt-5 font-display text-xl font-semibold">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.text}</p>
-              </div>
-            ))}
           </div>
         </div>
-      </section>
+      </header>
 
-      {/* Planos */}
-      <section className="border-t border-border/60 py-24">
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="text-center font-display text-3xl font-bold tracking-tight md:text-4xl">
-            Créditos que não expiram
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
-            Sem mensalidade, sem renovação automática. Compre quando precisar.
-          </p>
-          <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {PLANS.map((plan) => (
-              <div
-                key={plan.id}
-                className={`relative flex flex-col rounded-2xl border p-7 ${
-                  plan.highlight
-                    ? "glow-primary border-primary/60 bg-card"
-                    : "border-border bg-card"
-                }`}
+      <div className="flex items-end justify-between gap-4 px-4 pt-5">
+        <h1 className="font-display text-xl font-bold tracking-tight">Editor em lote</h1>
+        <p className="text-xs text-muted-foreground">
+          Até {MAX_CLIPS} vídeos · processamento no seu navegador · 1 crédito por vídeo
+        </p>
+      </div>
+
+      <main className="grid gap-4 px-4 pb-24 pt-4 xl:grid-cols-[260px_minmax(0,1fr)_280px_300px]">
+        {/* ---------- Column 1: upload + queue ---------- */}
+        <section className="space-y-3">
+          <div
+            className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/40 px-4 py-8 text-center transition-colors hover:border-primary/60 hover:bg-card"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              addFiles(e.dataTransfer.files);
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+          >
+            <UploadCloud className="size-6 text-primary" />
+            <p className="mt-2 text-sm font-semibold">Arraste vídeos ou clique</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">MP4, MOV, WebM</p>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="video/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) addFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+          </div>
+
+          <div className="rounded-xl border border-border bg-card">
+            <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
+              <p className="text-xs font-semibold">
+                {clips.length} vídeo{clips.length === 1 ? "" : "s"} · {doneClips.length} prontos
+              </p>
+              <button
+                type="button"
+                onClick={clearAll}
+                disabled={running || clips.length === 0}
+                className="text-muted-foreground transition-colors hover:text-destructive disabled:opacity-40"
+                aria-label="Limpar fila"
               >
-                {plan.highlight && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
-                    Mais popular
-                  </span>
-                )}
-                <h3 className="font-display text-lg font-semibold">{plan.name}</h3>
-                <p className="mt-1 text-xs text-muted-foreground">{plan.description}</p>
-                <p className="mt-5 font-display text-4xl font-bold">
-                  {plan.priceBRL == null ? "R$ 0" : `R$ ${plan.priceBRL}`}
-                </p>
-                <p className="text-sm text-muted-foreground">{plan.credits} créditos</p>
-                <ul className="mt-6 flex-1 space-y-2.5 text-sm">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <Check className="mt-0.5 size-4 shrink-0 text-turbo" />
-                      <span className="text-muted-foreground">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  asChild
-                  className="mt-7 w-full font-semibold"
-                  variant={plan.highlight ? "default" : "outline"}
+                <Trash2 className="size-4" />
+              </button>
+            </div>
+
+            <Link
+              to="/pricing"
+              className="flex items-start gap-2 border-b border-border/60 bg-turbo/10 px-3 py-3 text-xs font-semibold text-turbo"
+            >
+              <Zap className="mt-0.5 size-4 shrink-0" />
+              <span className="flex-1">
+                Assine e leve de 30 a 300 vídeos, com títulos, overlay e suporte prioritário
+              </span>
+              <ArrowRight className="mt-0.5 size-4 shrink-0" />
+            </Link>
+
+            <ul className="max-h-[540px] divide-y divide-border/60 overflow-y-auto">
+              {clips.length === 0 && (
+                <li className="px-3 py-6 text-center text-xs text-muted-foreground">
+                  Sua fila está vazia.
+                </li>
+              )}
+              {clips.map((clip) => (
+                <li key={clip.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(clip.id)}
+                    className={`flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors ${
+                      selected?.id === clip.id ? "bg-primary/10" : "hover:bg-muted/40"
+                    }`}
+                  >
+                    <video
+                      src={clip.previewUrl}
+                      className="size-10 shrink-0 rounded object-cover"
+                      muted
+                      preload="metadata"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-semibold">{clip.file.name}</span>
+                      <span className="block text-[11px] text-muted-foreground">
+                        {(clip.file.size / 1024 / 1024).toFixed(1)} MB ·{" "}
+                        {statusLabel(clip.status, clip.progress)}
+                      </span>
+                    </span>
+                    {clip.status === "done" ? (
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadClip(clip);
+                        }}
+                        className="rounded p-1 text-turbo hover:bg-turbo/10"
+                      >
+                        <Download className="size-4" />
+                      </span>
+                    ) : (
+                      !running && (
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeClip(clip.id);
+                          }}
+                          className="rounded p-1 text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="size-4" />
+                        </span>
+                      )
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* ---------- Column 2: preview ---------- */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Prévia · {ASPECTS[opts.aspect].label}
+            </p>
+            <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
+              {([1, 4, 9] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGrid(g)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-bold transition-colors ${
+                    grid === g
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
-                  <Link to={plan.priceBRL == null ? "/auth" : "/pricing"}>
-                    {plan.priceBRL == null ? "Começar grátis" : "Comprar créditos"}
-                  </Link>
-                </Button>
-              </div>
-            ))}
+                  {g === 1 ? "1X" : g === 4 ? "2X2" : "3X3"}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
 
-      {/* FAQ */}
-      <section id="faq" className="border-t border-border/60 py-24">
-        <div className="mx-auto max-w-3xl px-4">
-          <h2 className="text-center font-display text-3xl font-bold tracking-tight md:text-4xl">
-            Perguntas frequentes
-          </h2>
-          <Accordion type="single" collapsible className="mt-12">
-            {FAQS.map((f, i) => (
-              <AccordionItem key={f.q} value={`faq-${i}`}>
-                <AccordionTrigger className="text-left font-display text-base font-semibold">
-                  {f.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">{f.a}</AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
-      </section>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div
+              className={`mx-auto grid gap-2 ${
+                grid === 1
+                  ? "max-w-[300px] grid-cols-1"
+                  : grid === 4
+                    ? "max-w-[420px] grid-cols-2"
+                    : "max-w-[520px] grid-cols-3"
+              }`}
+            >
+              {gridClips.length === 0
+                ? framePreview(undefined, grid !== 1)
+                : gridClips.map((clip) => (
+                    <div key={clip.id}>{framePreview(clip, grid !== 1)}</div>
+                  ))}
+            </div>
 
-      <SiteFooter />
+            {activeClip && (
+              <div className="mt-4">
+                <div className="flex items-center gap-2 text-xs">
+                  <Loader2 className="size-3.5 animate-spin text-primary" />
+                  <span className="flex-1 truncate">{activeClip.file.name}</span>
+                  <span className="text-muted-foreground">
+                    {Math.round(activeClip.progress * 100)}%
+                  </span>
+                </div>
+                <Progress value={activeClip.progress * 100} className="mt-2 h-1.5" />
+              </div>
+            )}
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
+              <div className="flex gap-1 rounded-lg border border-border bg-background p-1">
+                {(Object.keys(ASPECTS) as AspectId[]).map((a) => (
+                  <button
+                    key={a}
+                    type="button"
+                    onClick={() => patch({ aspect: a })}
+                    className={`rounded-md px-3 py-1 text-xs font-bold transition-colors ${
+                      opts.aspect === a
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-1 rounded-lg border border-border bg-background p-1">
+                {(["turbo", "completo"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => patch({ mode: m })}
+                    className={`rounded-md px-3 py-1 text-xs font-bold capitalize transition-colors ${
+                      opts.mode === m
+                        ? "bg-turbo text-turbo-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m === "turbo" ? "Turbo (corte)" : "Completo (fundo)"}
+                  </button>
+                ))}
+              </div>
+              {doneClips.length > 0 && (
+                <Button variant="outline" size="sm" onClick={() => void downloadAll()}>
+                  <Archive className="mr-1.5 size-4" /> Baixar tudo (.zip)
+                </Button>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- Column 3: batch fine-tune ---------- */}
+        <section className="space-y-3">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-bold">
+                Config. em lote{" "}
+                <span className="font-normal text-muted-foreground">
+                  ({clips.length || 0} vídeo{clips.length === 1 ? "" : "s"})
+                </span>
+              </p>
+              <button
+                type="button"
+                onClick={() => patch({ zoom: 1, posX: 0.5, posY: 0.5 })}
+                className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <RotateCcw className="size-3.5" /> Padrão
+              </button>
+            </div>
+
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Ajuste fino do vídeo
+            </p>
+
+            <div className="mt-3 space-y-4">
+              {[
+                {
+                  label: "Zoom",
+                  value: opts.zoom,
+                  display: `${Math.round(opts.zoom * 100)}%`,
+                  min: 1,
+                  max: 2,
+                  step: 0.01,
+                  set: (v: number) => patch({ zoom: v }),
+                },
+                {
+                  label: "Posição vertical",
+                  value: opts.posY,
+                  display: `${Math.round(opts.posY * 100)}%`,
+                  min: 0,
+                  max: 1,
+                  step: 0.01,
+                  set: (v: number) => patch({ posY: v }),
+                },
+                {
+                  label: "Posição horizontal",
+                  value: opts.posX,
+                  display: `${Math.round(opts.posX * 100)}%`,
+                  min: 0,
+                  max: 1,
+                  step: 0.01,
+                  set: (v: number) => patch({ posX: v }),
+                },
+              ].map((row) => (
+                <div key={row.label}>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{row.label}</span>
+                    <span className="font-bold">{row.display}</span>
+                  </div>
+                  <Slider
+                    className="mt-2"
+                    value={[row.value]}
+                    min={row.min}
+                    max={row.max}
+                    step={row.step}
+                    onValueChange={([v]) => row.set(v ?? row.value)}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+              Ajusta zoom e posição do recorte em todos os vídeos do lote.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-sm font-bold">Modo anti duplicidade</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  Aplica pequenas variações em todos os vídeos para reduzir detecção de duplicidade.
+                </p>
+              </div>
+              <Switch checked={antiDup} onCheckedChange={setAntiDup} />
+            </div>
+
+            <div className="mt-4 space-y-3 border-t border-border/60 pt-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">
+                  Velocidade {opts.speed.toFixed(2)}x
+                </span>
+                <div className="w-28">
+                  <Slider
+                    value={[opts.speed]}
+                    min={0.9}
+                    max={1.15}
+                    step={0.01}
+                    onValueChange={([v]) => patch({ speed: v ?? 1 })}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Espelhar vídeos</span>
+                <Switch
+                  checked={opts.mirror}
+                  onCheckedChange={(v) => patch({ mirror: v })}
+                />
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Fade de entrada</span>
+                <Switch checked={opts.fadeIn} onCheckedChange={(v) => patch({ fadeIn: v })} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- Column 4: edit tabs + process ---------- */}
+        <section className="space-y-3">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => setOpts(defaultEditOptions())}
+            disabled={running}
+          >
+            <RotateCcw className="mr-1.5 size-4" /> Resetar todas as edições
+          </Button>
+
+          <div className="rounded-xl border border-border bg-card p-2">
+            <div className="flex flex-wrap gap-1">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    tab === t.id
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-4">
+            {tab === "bordas" && (
+              <>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold">Borda no vídeo</p>
+                  <Switch
+                    checked={opts.border.enabled}
+                    onCheckedChange={(v) => patch({ border: { ...opts.border, enabled: v } })}
+                  />
+                </div>
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Cor</span>
+                    <Input
+                      type="color"
+                      value={opts.border.color}
+                      onChange={(e) => patch({ border: { ...opts.border, color: e.target.value } })}
+                      className="h-8 w-16 p-1"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Espessura</span>
+                      <span className="font-bold">{opts.border.width}px</span>
+                    </div>
+                    <Slider
+                      className="mt-2"
+                      value={[opts.border.width]}
+                      min={4}
+                      max={120}
+                      step={2}
+                      onValueChange={([v]) =>
+                        patch({ border: { ...opts.border, width: v ?? opts.border.width } })
+                      }
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {tab === "titulo" && (
+              <>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold">Título no vídeo</p>
+                  <Switch
+                    checked={opts.title.enabled}
+                    onCheckedChange={(v) => patch({ title: { ...opts.title, enabled: v } })}
+                  />
+                </div>
+                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                  Ative para escrever uma lista de títulos — um por linha. Cada linha vai para o
+                  vídeo correspondente da fila.
+                </p>
+                <Textarea
+                  className="mt-3 min-h-[120px] text-xs"
+                  placeholder={"Título do vídeo 1\nTítulo do vídeo 2\nTítulo do vídeo 3"}
+                  value={opts.title.text}
+                  onChange={(e) => patch({ title: { ...opts.title, text: e.target.value } })}
+                  disabled={!opts.title.enabled}
+                />
+                <div className="mt-3 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Cor</span>
+                    <Input
+                      type="color"
+                      value={opts.title.color}
+                      onChange={(e) => patch({ title: { ...opts.title, color: e.target.value } })}
+                      className="h-8 w-16 p-1"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Tamanho</span>
+                      <span className="font-bold">{opts.title.size}px</span>
+                    </div>
+                    <Slider
+                      className="mt-2"
+                      value={[opts.title.size]}
+                      min={28}
+                      max={120}
+                      step={2}
+                      onValueChange={([v]) =>
+                        patch({ title: { ...opts.title, size: v ?? opts.title.size } })
+                      }
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {titleLines.filter(Boolean).length} título(s) para {clips.length} vídeo(s)
+                  </p>
+                </div>
+              </>
+            )}
+
+            {tab === "inferior" && (
+              <>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold">Texto inferior</p>
+                  <Switch
+                    checked={opts.bottom.enabled}
+                    onCheckedChange={(v) => patch({ bottom: { ...opts.bottom, enabled: v } })}
+                  />
+                </div>
+                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                  Mesma legenda no rodapé de todos os vídeos — ideal para @ ou CTA.
+                </p>
+                <Input
+                  className="mt-3 text-xs"
+                  placeholder="@seuperfil · siga para mais"
+                  value={opts.bottom.text}
+                  onChange={(e) => patch({ bottom: { ...opts.bottom, text: e.target.value } })}
+                  disabled={!opts.bottom.enabled}
+                />
+                <div className="mt-3 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Cor</span>
+                    <Input
+                      type="color"
+                      value={opts.bottom.color}
+                      onChange={(e) => patch({ bottom: { ...opts.bottom, color: e.target.value } })}
+                      className="h-8 w-16 p-1"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Tamanho</span>
+                      <span className="font-bold">{opts.bottom.size}px</span>
+                    </div>
+                    <Slider
+                      className="mt-2"
+                      value={[opts.bottom.size]}
+                      min={20}
+                      max={90}
+                      step={2}
+                      onValueChange={([v]) =>
+                        patch({ bottom: { ...opts.bottom, size: v ?? opts.bottom.size } })
+                      }
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {tab === "overlay" && (
+              <>
+                <p className="text-sm font-bold">Overlay de cor</p>
+                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                  Uma camada de cor sobre o vídeo — útil para escurecer o fundo e destacar o título.
+                </p>
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Cor</span>
+                    <Input
+                      type="color"
+                      value={opts.overlayColor}
+                      onChange={(e) => patch({ overlayColor: e.target.value })}
+                      className="h-8 w-16 p-1"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Intensidade</span>
+                      <span className="font-bold">{Math.round(opts.overlayOpacity * 100)}%</span>
+                    </div>
+                    <Slider
+                      className="mt-2"
+                      value={[opts.overlayOpacity]}
+                      min={0}
+                      max={0.8}
+                      step={0.01}
+                      onValueChange={([v]) => patch({ overlayOpacity: v ?? 0 })}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {tab === "extras" && (
+              <div className="space-y-3 text-xs">
+                <p className="text-sm font-bold">Extras</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Espelhar vídeos</span>
+                  <Switch checked={opts.mirror} onCheckedChange={(v) => patch({ mirror: v })} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Fade de entrada</span>
+                  <Switch checked={opts.fadeIn} onCheckedChange={(v) => patch({ fadeIn: v })} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Anti duplicidade</span>
+                  <Switch checked={antiDup} onCheckedChange={setAntiDup} />
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  Todo o processamento roda no seu navegador: os arquivos nunca são enviados para
+                  nenhum servidor.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="flex items-center gap-1.5 text-sm font-bold">
+                  <Zap className="size-4 text-turbo" /> Modo Turbo
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  Processamento mais rápido com leve redução de qualidade.
+                </p>
+              </div>
+              <Switch
+                checked={opts.mode === "turbo"}
+                onCheckedChange={(v) => patch({ mode: v ? "turbo" : "completo" })}
+              />
+            </div>
+          </div>
+
+          <div className="sticky bottom-4 space-y-2">
+            <Button
+              className="h-12 w-full text-base"
+              onClick={() => void handleProcess()}
+              disabled={running || queuedClips.length === 0}
+            >
+              {running ? (
+                <>
+                  <Loader2 className="mr-2 size-5 animate-spin" /> Processando…
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 size-5" /> Processar {queuedClips.length} vídeo
+                  {queuedClips.length === 1 ? "" : "s"}
+                </>
+              )}
+            </Button>
+            {running && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  cancelledRef.current = true;
+                  toast.info("O lote será interrompido após o vídeo atual.");
+                }}
+              >
+                Cancelar lote
+              </Button>
+            )}
+            <p className="text-center text-[11px] text-muted-foreground">
+              Custo: {queuedClips.length} crédito(s) · saldo {credits}
+            </p>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
