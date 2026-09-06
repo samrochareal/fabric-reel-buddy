@@ -1153,7 +1153,14 @@ function EditorPage() {
                         duplicidade.
                       </p>
                     </div>
-                    <Switch checked={antiDup} onCheckedChange={setAntiDup} />
+                    <Switch
+                      checked={antiDup}
+                      onCheckedChange={(v) => {
+                        setAntiDup(v);
+                        patch({ speed: v ? 1.02 : 1 });
+                      }}
+                    />
+
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">
