@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { guestStore, isGuest } from "@/lib/guest-mode";
 
 export type TextAlign = "left" | "center" | "right";
 
@@ -66,7 +67,12 @@ const toPreset = (row: Row): OverlayPreset => ({
   updatedAt: new Date(row.updated_at).getTime(),
 });
 
+const guestOverlays = () => guestStore.overlays as Map<number, OverlayPreset>;
+
 export async function listOverlays(): Promise<OverlayPreset[]> {
+  if (isGuest()) {
+    return [...guestOverlays().values()].sort((a, b) => a.slot - b.slot);
+  }
   const { data, error } = await supabase
     .from("overlay_presets")
     .select("slot,name,data_url,config,updated_at")
@@ -76,6 +82,7 @@ export async function listOverlays(): Promise<OverlayPreset[]> {
 }
 
 export async function getOverlay(slot: number): Promise<OverlayPreset | null> {
+  if (isGuest()) return guestOverlays().get(slot) ?? null;
   const { data, error } = await supabase
     .from("overlay_presets")
     .select("slot,name,data_url,config,updated_at")
@@ -86,6 +93,10 @@ export async function getOverlay(slot: number): Promise<OverlayPreset | null> {
 }
 
 export async function saveOverlay(preset: OverlayPreset): Promise<OverlayPreset[]> {
+  if (isGuest()) {
+    guestOverlays().set(preset.slot, { ...preset, updatedAt: Date.now() });
+    return listOverlays();
+  }
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id;
   if (!userId) throw new Error("Sessão expirada");
@@ -105,7 +116,12 @@ export async function saveOverlay(preset: OverlayPreset): Promise<OverlayPreset[
 }
 
 export async function deleteOverlay(slot: number): Promise<OverlayPreset[]> {
+  if (isGuest()) {
+    guestOverlays().delete(slot);
+    return listOverlays();
+  }
   const { error } = await supabase.from("overlay_presets").delete().eq("slot", slot);
   if (error) throw error;
   return listOverlays();
 }
+

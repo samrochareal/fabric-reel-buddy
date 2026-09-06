@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, LogIn, Mail, Scissors } from "lucide-react";
+import { Loader2, LogIn, Mail, Scissors, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { getRememberMe, setRememberMe } from "@/lib/session-pref";
+import { enterGuestMode, exitGuestMode } from "@/lib/guest-mode";
 
 
 export const Route = createFileRoute("/auth")({
@@ -41,6 +42,7 @@ function AuthPage() {
 
   useEffect(() => {
     setRemember(getRememberMe());
+    exitGuestMode();
   }, []);
 
 
@@ -57,6 +59,11 @@ function AuthPage() {
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const asGuest = () => {
+    enterGuestMode();
+    void navigate({ to: "/", replace: true });
+  };
 
   const withGoogle = async () => {
     setBusy(true);
@@ -214,6 +221,16 @@ function AuthPage() {
               ? "Não tem conta? Criar uma agora"
               : "Já tem conta? Entrar com e-mail e senha"}
           </button>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-border bg-card p-5">
+          <Button variant="outline" className="h-11 w-full" onClick={asGuest} disabled={busy}>
+            <UserRound className="mr-2 size-4" /> Entrar como visitante
+          </Button>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Use o editor completo sem criar conta. Nada fica salvo no histórico: os projetos e
+            overlays desaparecem quando você fechar a página.
+          </p>
         </div>
       </div>
     </div>
