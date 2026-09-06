@@ -87,6 +87,12 @@ function EditorPage() {
   const [overrides, setOverrides] = useState<Record<string, FineTune>>({});
   const [running, setRunning] = useState(false);
   const [engineReady, setEngineReady] = useState(false);
+  const { projectId } = Route.useParams();
+  const [projectName, setProjectName] = useState<string | null>(null);
+  useEffect(() => {
+    setProjectName(getProject(projectId)?.name ?? null);
+  }, [projectId]);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
