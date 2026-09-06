@@ -59,15 +59,14 @@ function ProjectsPage() {
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = projects.filter((p) => {
-      const matchesQuery = !q || p.name.toLowerCase().includes(q) || p.note.toLowerCase().includes(q);
-      const matchesFilter = filter === "all" || p.status === filter;
-      return matchesQuery && matchesFilter;
-    });
+    const list = projects.filter(
+      (p) => !q || p.name.toLowerCase().includes(q) || p.note.toLowerCase().includes(q),
+    );
     return sortBy === "name"
       ? [...list].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
       : [...list].sort((a, b) => b.updatedAt - a.updatedAt);
-  }, [projects, query, filter, sortBy]);
+  }, [projects, query, sortBy]);
+
 
   const totalProcessed = projects.reduce((sum, p) => sum + p.processedCount, 0);
 
