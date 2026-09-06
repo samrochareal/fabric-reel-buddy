@@ -352,7 +352,7 @@ function EditorPage() {
         }
       }
 
-      if (rendered > 0) void registerProcessed(projectId, rendered);
+      void rendered;
       if (cancelledRef.current) {
         setPaused(true);
         toast.info("Processamento pausado. Clique em “Retomar processamento” para continuar.");
