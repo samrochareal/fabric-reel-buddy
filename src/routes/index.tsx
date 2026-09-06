@@ -572,7 +572,7 @@ function EditorPage() {
                   label: "Zoom",
                   value: opts.zoom,
                   display: `${Math.round(opts.zoom * 100)}%`,
-                  min: 1,
+                  min: 0.3,
                   max: 2,
                   step: 0.01,
                   set: (v: number) => patch({ zoom: v }),
@@ -611,10 +611,22 @@ function EditorPage() {
                   />
                 </div>
               ))}
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Cor de fundo</span>
+                <Input
+                  type="color"
+                  value={opts.bgColor}
+                  onChange={(e) => patch({ bgColor: e.target.value })}
+                  className="h-8 w-16 p-1"
+                />
+              </div>
             </div>
             <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-              Ajusta zoom e posição do recorte em todos os vídeos do lote.
+              Em 100% o vídeo preenche a tela toda. Abaixo de 100% ele diminui e aparece a cor de
+              fundo; acima de 100% ele amplia e as bordas são cortadas. A posição move o vídeo
+              dentro da tela.
             </p>
+
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
