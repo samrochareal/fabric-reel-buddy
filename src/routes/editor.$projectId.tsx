@@ -772,13 +772,6 @@ function EditorPage() {
                 />
               </div>
             </div>
-            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-              Zoom de 50% a 500%. Em 100% o vídeo preenche a tela inteira; abaixo de 100% ele fica
-              menor e aparece a cor de fundo; acima de 100% ele amplia e as sobras são cortadas.
-              {scope === "single"
-                ? " Estes valores valem só para o vídeo selecionado."
-                : " Estes valores valem para todos os vídeos da fila."}
-            </p>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
