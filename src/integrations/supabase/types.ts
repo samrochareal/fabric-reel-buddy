@@ -92,34 +92,22 @@ export type Database = {
         }
         Relationships: []
       }
-      projects: {
+      user_settings: {
         Row: {
           created_at: string
-          id: string
-          name: string
-          note: string
-          processed_count: number
-          status: string
+          edit_options: Json
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          id?: string
-          name?: string
-          note?: string
-          processed_count?: number
-          status?: string
+          edit_options?: Json
           updated_at?: string
-          user_id?: string
+          user_id: string
         }
         Update: {
           created_at?: string
-          id?: string
-          name?: string
-          note?: string
-          processed_count?: number
-          status?: string
+          edit_options?: Json
           updated_at?: string
           user_id?: string
         }
