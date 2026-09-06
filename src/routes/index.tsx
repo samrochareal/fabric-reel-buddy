@@ -239,29 +239,41 @@ function EditorPage() {
 
   const framePreview = (clip: Clip | undefined, small: boolean) => (
     <div
-      className="relative overflow-hidden rounded-md bg-black"
-      style={{ aspectRatio: `${outW} / ${outH}`, containerType: "inline-size" }}
+      className="relative overflow-hidden rounded-md"
+      style={{
+        aspectRatio: `${outW} / ${outH}`,
+        containerType: "inline-size",
+        background: opts.bgColor,
+      }}
     >
       {clip ? (
-        <video
-          key={clip.id}
-          src={clip.resultUrl ?? clip.previewUrl}
-          className="size-full object-cover"
+        <div
+          className="absolute"
           style={{
-            transform: `scale(${opts.zoom}) ${opts.mirror ? "scaleX(-1)" : ""}`,
-            objectPosition: `${opts.posX * 100}% ${opts.posY * 100}%`,
+            width: `${opts.zoom * 100}%`,
+            height: `${opts.zoom * 100}%`,
+            left: `${(1 - opts.zoom) * 100 * opts.posX}%`,
+            top: `${(1 - opts.zoom) * 100 * opts.posY}%`,
           }}
-          muted
-          loop
-          playsInline
-          controls={!small && grid === 1}
-          preload="metadata"
-        />
+        >
+          <video
+            key={clip.id}
+            src={clip.resultUrl ?? clip.previewUrl}
+            className="size-full object-cover"
+            style={{ transform: opts.mirror ? "scaleX(-1)" : undefined }}
+            muted
+            loop
+            playsInline
+            controls={!small && grid === 1}
+            preload="metadata"
+          />
+        </div>
       ) : (
         <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
           sem vídeo
         </div>
       )}
+
       {opts.overlayOpacity > 0 && (
         <div
           className="pointer-events-none absolute inset-0"
