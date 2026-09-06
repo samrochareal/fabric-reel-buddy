@@ -214,6 +214,8 @@ function EditorPage() {
 
     setRunning(true);
     cancelledRef.current = false;
+    let rendered = 0;
+
     try {
       const videoLib = await import("@/lib/video");
       if (!engineReady) {
