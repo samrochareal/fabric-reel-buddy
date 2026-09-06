@@ -164,7 +164,10 @@ export async function buildOverlayPng(
 }
 
 
-function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
+function buildFilterChain(
+  opts: EditOptions,
+  inputs: { bgIndex: number | null; overlayIndex: number | null },
+): string {
   const { w, h } = ASPECTS[opts.aspect];
   const zoom = Math.min(5, Math.max(0.5, opts.zoom));
   // zoom 1 = video covers the whole frame; below 1 it shrinks over the background.
@@ -175,14 +178,24 @@ function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
 
   const parts: string[] = [];
   // Cover-fit the source to the output frame, scale it by the zoom factor,
-  // then place it over the solid background colour.
+  // then place it over the background (solid colour, optionally an image).
   parts.push(
     `[0:v]${opts.mirror ? "hflip," : ""}scale=${w}:${h}:force_original_aspect_ratio=increase,` +
       `crop=${w}:${h},scale=${sw}:${sh},setsar=1[vid]`,
   );
   parts.push(`color=c=${opts.bgColor}:s=${w}x${h}:r=30[bgc]`);
+  let bgLabel = "bgc";
+  if (inputs.bgIndex !== null) {
+    const alpha = Math.min(1, Math.max(0, opts.bgImage.opacity));
+    parts.push(
+      `[${inputs.bgIndex}:v]scale=${w}:${h}:force_original_aspect_ratio=increase,` +
+        `crop=${w}:${h},format=rgba,colorchannelmixer=aa=${alpha.toFixed(3)}[bgimg]`,
+    );
+    parts.push(`[bgc][bgimg]overlay=0:0[bgm]`);
+    bgLabel = "bgm";
+  }
   parts.push(
-    `[bgc][vid]overlay=x=(W-w)*${px.toFixed(3)}:y=(H-h)*${py.toFixed(3)}:shortest=1[base]`,
+    `[${bgLabel}][vid]overlay=x=(W-w)*${px.toFixed(3)}:y=(H-h)*${py.toFixed(3)}:shortest=1[base]`,
   );
 
   let label = "base";
@@ -194,14 +207,15 @@ function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
 
   if (opts.speed !== 1) push(`setpts=PTS/${opts.speed.toFixed(3)}`, "spd");
   if (opts.fadeIn) push("fade=t=in:st=0:d=0.4", "fdi");
-  if (hasOverlay) {
-    parts.push(`[1:v]scale=${w}:${h}[ovl]`);
+  if (inputs.overlayIndex !== null) {
+    parts.push(`[${inputs.overlayIndex}:v]scale=${w}:${h}[ovl]`);
     parts.push(`[${label}][ovl]overlay=0:0[outv]`);
     label = "outv";
   }
   if (label !== "outv") parts.push(`[${label}]null[outv]`);
   return parts.join(";");
 }
+
 
 export async function processVideo(
   file: File,
