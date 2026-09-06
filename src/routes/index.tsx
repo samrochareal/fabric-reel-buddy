@@ -275,30 +275,32 @@ function EditorPage() {
   const gridClips = grid === 1 ? (selected ? [selected] : []) : clips.slice(0, grid);
   const { w: outW, h: outH } = ASPECTS[opts.aspect];
 
-  const framePreview = (clip: Clip | undefined, small: boolean) => (
+  const framePreview = (clip: Clip | undefined, small: boolean) => {
+    const o = optsFor(clip?.id);
+    return (
     <div
       className="relative overflow-hidden rounded-md"
       style={{
         aspectRatio: `${outW} / ${outH}`,
         containerType: "inline-size",
-        background: opts.bgColor,
+        background: o.bgColor,
       }}
     >
       {clip ? (
         <div
           className="absolute"
           style={{
-            width: `${opts.zoom * 100}%`,
-            height: `${opts.zoom * 100}%`,
-            left: `${(1 - opts.zoom) * 100 * opts.posX}%`,
-            top: `${(1 - opts.zoom) * 100 * opts.posY}%`,
+            width: `${o.zoom * 100}%`,
+            height: `${o.zoom * 100}%`,
+            left: `${(1 - o.zoom) * 100 * o.posX}%`,
+            top: `${(1 - o.zoom) * 100 * o.posY}%`,
           }}
         >
           <video
             key={clip.id}
             src={clip.resultUrl ?? clip.previewUrl}
             className="size-full object-cover"
-            style={{ transform: opts.mirror ? "scaleX(-1)" : undefined }}
+            style={{ transform: o.mirror ? "scaleX(-1)" : undefined }}
             muted
             loop
             playsInline
@@ -312,44 +314,64 @@ function EditorPage() {
         </div>
       )}
 
-      {opts.overlayOpacity > 0 && (
+      {o.overlayOpacity > 0 && (
         <div
           className="pointer-events-none absolute inset-0"
-          style={{ background: opts.overlayColor, opacity: opts.overlayOpacity }}
+          style={{ background: o.overlayColor, opacity: o.overlayOpacity }}
         />
       )}
-      {opts.border.enabled && (
+
+      {/* solid bars that cover the original top/bottom borders */}
+      {o.border.top > 0 && (
         <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            border: `${((opts.border.width / outW) * 100).toFixed(2)}cqw solid ${opts.border.color}`,
-          }}
+          className="pointer-events-none absolute inset-x-0 top-0"
+          style={{ height: `${o.border.top * 100}%`, background: o.border.color }}
         />
       )}
-      {opts.title.enabled && (
+      {o.border.bottom > 0 && (
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0"
+          style={{ height: `${o.border.bottom * 100}%`, background: o.border.color }}
+        />
+      )}
+      {(o.border.top > 0 || o.border.bottom > 0) && !small && (
+        <>
+          <div
+            className="pointer-events-none absolute inset-x-0 border-t border-dashed border-primary/70"
+            style={{ top: `${o.border.top * 100}%` }}
+          />
+          <div
+            className="pointer-events-none absolute inset-x-0 border-t border-dashed border-primary/70"
+            style={{ bottom: `${o.border.bottom * 100}%` }}
+          />
+        </>
+      )}
+
+      {o.title.enabled && (
         <p
           className="pointer-events-none absolute inset-x-[7%] top-[8%] text-center font-bold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
           style={{
-            color: opts.title.color,
-            fontSize: `${((opts.title.size / outW) * 100).toFixed(2)}cqw`,
+            color: o.title.color,
+            fontSize: `${((o.title.size / outW) * 100).toFixed(2)}cqw`,
           }}
         >
           {titleFor(clips.findIndex((c) => c.id === clip?.id)) || "Título do vídeo"}
         </p>
       )}
-      {opts.bottom.enabled && opts.bottom.text && (
+      {o.bottom.enabled && o.bottom.text && (
         <p
           className="pointer-events-none absolute inset-x-[7%] bottom-[8%] text-center font-bold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
           style={{
-            color: opts.bottom.color,
-            fontSize: `${((opts.bottom.size / outW) * 100).toFixed(2)}cqw`,
+            color: o.bottom.color,
+            fontSize: `${((o.bottom.size / outW) * 100).toFixed(2)}cqw`,
           }}
         >
-          {opts.bottom.text}
+          {o.bottom.text}
         </p>
       )}
     </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
