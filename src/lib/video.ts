@@ -83,19 +83,34 @@ export async function getFFmpeg(onLog?: (msg: string) => void): Promise<FFmpeg> 
  * canvas (browser fonts) instead of ffmpeg's drawtext, which keeps typography
  * identical to the live preview.
  */
-export function buildOverlayPng(opts: EditOptions, titleText: string): Promise<Blob | null> {
+function loadImage(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+export async function buildOverlayPng(
+  opts: EditOptions,
+  titleText: string,
+): Promise<Blob | null> {
   const { w, h } = ASPECTS[opts.aspect];
   const hasTitle = opts.title.enabled && titleText.trim().length > 0;
   const hasBottom = opts.bottom.enabled && opts.bottom.text.trim().length > 0;
   const hasBorder = opts.border.top > 0 || opts.border.bottom > 0;
   const hasTint = opts.overlayOpacity > 0;
-  if (!hasTitle && !hasBottom && !hasBorder && !hasTint) return Promise.resolve(null);
+  const hasLogo = opts.logo.enabled && !!opts.logo.src;
+  if (!hasTitle && !hasBottom && !hasBorder && !hasTint && !hasLogo) return null;
 
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return Promise.resolve(null);
+  if (!ctx) return null;
+
 
   if (hasTint) {
     ctx.fillStyle = opts.overlayColor;
