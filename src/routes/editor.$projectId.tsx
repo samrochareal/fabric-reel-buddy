@@ -483,15 +483,6 @@ function EditorPage() {
             <span className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground sm:inline">
               {clips.length}/{MAX_CLIPS} na fila
             </span>
-            <span className="rounded-full border border-turbo/50 bg-turbo/10 px-3 py-1 text-xs font-bold text-turbo">
-              Premium · ilimitado
-            </span>
-            <a
-              href="mailto:suporte@fabricadereels.com.br"
-              className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold md:inline"
-            >
-              Suporte
-            </a>
             <span className="hidden text-muted-foreground lg:inline">
               <HelpCircle className="size-4" />
             </span>
