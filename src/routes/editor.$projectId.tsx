@@ -229,7 +229,9 @@ function EditorPage() {
     }
 
     setRunning(true);
+    setPaused(false);
     cancelledRef.current = false;
+
     let rendered = 0;
 
     try {
