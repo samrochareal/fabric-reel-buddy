@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { guestStore, isGuest } from "@/lib/guest-mode";
 
 export type TextAlign = "left" | "center" | "right";
 
