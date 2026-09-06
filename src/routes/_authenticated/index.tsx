@@ -106,11 +106,23 @@ function EditorPage() {
   const [paused, setPaused] = useState(false);
 
   const [engineReady, setEngineReady] = useState(false);
-  const { projectId } = Route.useParams();
-  const [projectName, setProjectName] = useState<string | null>(null);
+
+  // restore the last used edit settings for this account
+  const settingsLoaded = useRef(false);
   useEffect(() => {
-    void getProject(projectId).then((p) => setProjectName(p?.name ?? null));
-  }, [projectId]);
+    void loadEditSettings<EditOptions>().then((saved) => {
+      if (saved) setOpts((prev) => ({ ...prev, ...saved }));
+      settingsLoaded.current = true;
+    });
+  }, []);
+
+  // keep them saved as the user edits
+  useEffect(() => {
+    if (!settingsLoaded.current) return;
+    const id = setTimeout(() => void saveEditSettings(opts), 800);
+    return () => clearTimeout(id);
+  }, [opts]);
+
 
   const inputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
