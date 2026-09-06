@@ -86,6 +86,8 @@ function EditorPage() {
   const [scope, setScope] = useState<"batch" | "single">("batch");
   const [overrides, setOverrides] = useState<Record<string, FineTune>>({});
   const [running, setRunning] = useState(false);
+  const [paused, setPaused] = useState(false);
+
   const [engineReady, setEngineReady] = useState(false);
   const { projectId } = Route.useParams();
   const [projectName, setProjectName] = useState<string | null>(null);
