@@ -1321,7 +1321,7 @@ function EditorPage() {
               </Button>
             )}
             <p className="text-center text-[11px] text-muted-foreground">
-              Sem custo por vídeo · todas as funções desbloqueadas
+              {"\n"}
             </p>
           </div>
         </section>
