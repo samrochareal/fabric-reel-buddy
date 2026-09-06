@@ -776,16 +776,6 @@ function EditorPage() {
 
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-sm font-bold">Bordas do vídeo</p>
-            <div className="mt-3 flex items-start gap-2 rounded-lg border border-border/70 bg-background/60 p-3">
-              <Scissors className="mt-0.5 size-4 shrink-0 text-primary" />
-              <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Ajuste manualmente o quanto cortar do{" "}
-                <span className="font-bold text-foreground">topo e do rodapé do vídeo</span>{" "}
-                (marcas d’água, legendas, logos). O corte remove só o vídeo — a imagem de fundo
-                continua visível nessa área.
-              </p>
-            </div>
-
             <div className="mt-4 space-y-4">
               {[
                 {
