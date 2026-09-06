@@ -227,6 +227,7 @@ export async function processVideo(
   const stamp = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const inputName = `in_${stamp}.mp4`;
   const overlayName = `ovl_${stamp}.png`;
+  const bgName = `bg_${stamp}.png`;
   const outputName = `out_${stamp}.mp4`;
 
   ff.on("progress", ({ progress }) => {
@@ -235,12 +236,31 @@ export async function processVideo(
 
   await ff.writeFile(inputName, await fetchFile(file));
 
+  const useBg = opts.bgImage.enabled && !!opts.bgImage.src;
+  if (useBg && opts.bgImage.src) await ff.writeFile(bgName, await fetchFile(opts.bgImage.src));
+
   const overlayPng = await buildOverlayPng(opts, titleText);
   if (overlayPng) await ff.writeFile(overlayName, await fetchFile(overlayPng));
 
   const args = ["-i", inputName];
-  if (overlayPng) args.push("-i", overlayName);
-  args.push("-filter_complex", buildFilterChain(opts, !!overlayPng), "-map", "[outv]");
+  let next = 1;
+  let bgIndex: number | null = null;
+  let overlayIndex: number | null = null;
+  if (useBg) {
+    args.push("-i", bgName);
+    bgIndex = next++;
+  }
+  if (overlayPng) {
+    args.push("-i", overlayName);
+    overlayIndex = next++;
+  }
+  args.push(
+    "-filter_complex",
+    buildFilterChain(opts, { bgIndex, overlayIndex }),
+    "-map",
+    "[outv]",
+  );
+
 
   if (opts.speed !== 1) {
     args.push("-filter:a", `atempo=${Math.min(2, Math.max(0.5, opts.speed)).toFixed(3)}`);
