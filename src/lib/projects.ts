@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { guestStore, isGuest } from "@/lib/guest-mode";
 
 export type Project = {
   id: string;
@@ -30,7 +31,12 @@ const toProject = (row: Row): Project => ({
   processedCount: row.processed_count ?? 0,
 });
 
+const guestProjects = () => guestStore.projects as Project[];
+
 export async function listProjects(): Promise<Project[]> {
+  if (isGuest()) {
+    return [...guestProjects()].sort((a, b) => b.updatedAt - a.updatedAt);
+  }
   const { data, error } = await supabase
     .from("projects")
     .select("id,name,note,status,processed_count,created_at,updated_at")
@@ -40,6 +46,7 @@ export async function listProjects(): Promise<Project[]> {
 }
 
 export async function getProject(id: string): Promise<Project | null> {
+  if (isGuest()) return guestProjects().find((p) => p.id === id) ?? null;
   const { data, error } = await supabase
     .from("projects")
     .select("id,name,note,status,processed_count,created_at,updated_at")
@@ -50,6 +57,20 @@ export async function getProject(id: string): Promise<Project | null> {
 }
 
 export async function createProject(name: string, note = ""): Promise<Project> {
+  if (isGuest()) {
+    const now = Date.now();
+    const project: Project = {
+      id: crypto.randomUUID(),
+      name: name.trim() || "Novo projeto",
+      note: note.trim(),
+      status: "draft",
+      createdAt: now,
+      updatedAt: now,
+      processedCount: 0,
+    };
+    guestProjects().push(project);
+    return project;
+  }
   const { data, error } = await supabase
     .from("projects")
     .insert({ name: name.trim() || "Novo projeto", note: note.trim() })
@@ -63,6 +84,11 @@ export async function updateProject(
   id: string,
   patch: Partial<Pick<Project, "name" | "note" | "status" | "processedCount">>,
 ) {
+  if (isGuest()) {
+    const project = guestProjects().find((p) => p.id === id);
+    if (project) Object.assign(project, patch, { updatedAt: Date.now() });
+    return;
+  }
   const payload: {
     updated_at: string;
     name?: string;
@@ -79,6 +105,10 @@ export async function updateProject(
 }
 
 export async function deleteProject(id: string) {
+  if (isGuest()) {
+    guestStore.projects = guestProjects().filter((p) => p.id !== id);
+    return;
+  }
   const { error } = await supabase.from("projects").delete().eq("id", id);
   if (error) throw error;
 }
