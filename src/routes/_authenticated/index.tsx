@@ -20,7 +20,7 @@ import {
   type Project,
 } from "@/lib/projects";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Meus Projetos — Fábrica de Reels" },

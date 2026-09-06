@@ -27,7 +27,7 @@ import {
   type TextAlign,
 } from "@/lib/overlays";
 
-export const Route = createFileRoute("/criador-de-overlay")({
+export const Route = createFileRoute("/_authenticated/criador-de-overlay")({
   head: () => ({
     meta: [
       { title: "Criador de Overlay — Fábrica de Reels" },
