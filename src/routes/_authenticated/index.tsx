@@ -359,7 +359,10 @@ function EditorPage() {
         }
       }
 
-      void rendered;
+      if (rendered > 0) {
+        void logVideoJobs({ clips: rendered, outputBytes: renderedBytes });
+      }
+
       if (cancelledRef.current) {
         setPaused(true);
         toast.info("Processamento pausado. Clique em “Retomar processamento” para continuar.");
