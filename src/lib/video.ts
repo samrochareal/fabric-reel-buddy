@@ -224,7 +224,7 @@ function buildFilterChain(
   parts.push(
     // one scale pass straight to the final size (cover fit) instead of
     // scaling to the frame and rescaling by the zoom factor.
-    `[0:v]${opts.mirror ? "hflip," : ""}scale=${sw}:${sh}:force_original_aspect_ratio=increase,` +
+    `[0:v]${opts.mirror ? "hflip," : ""}scale=${sw}:${sh}:force_original_aspect_ratio=increase:flags=fast_bilinear,` +
       `crop=${sw}:${sh}` +
       (cutTop > 0 || cutBottom > 0 ? `,crop=${sw}:${vh}:0:${cutTop}` : "") +
       `,setsar=1[vid]`,
