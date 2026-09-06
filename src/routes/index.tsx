@@ -94,9 +94,8 @@ function ProjectsPage() {
           <span className="font-display text-base font-bold tracking-tight">
             fabrica <span className="text-muted-foreground">de</span> reels
           </span>
-          <span className="ml-auto rounded-full border border-turbo/50 bg-turbo/10 px-3 py-1 text-xs font-bold text-turbo">
-            Premium · ilimitado
-          </span>
+
+
         </div>
       </header>
 

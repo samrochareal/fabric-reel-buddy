@@ -287,7 +287,12 @@ function EditorPage() {
       }
 
       if (rendered > 0) registerProcessed(projectId, rendered);
-      toast.success("Lote concluído! Use “Baixar todos” para salvar tudo.");
+      if (cancelledRef.current) {
+        toast.info("Processamento pausado. Clique em “Processar vídeos” para continuar.");
+      } else {
+        toast.success("Lote concluído! Use “Baixar todos” para salvar tudo.");
+      }
+
 
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao processar.");
@@ -580,7 +585,11 @@ function EditorPage() {
                         {(clip.file.size / 1024 / 1024).toFixed(1)} MB ·{" "}
                         {statusLabel(clip.status, clip.progress)}
                       </span>
+                      {clip.status === "processing" && (
+                        <Progress value={clip.progress * 100} className="mt-1.5 h-1" />
+                      )}
                     </span>
+
                     {clip.status === "done" ? (
                       <span
                         onClick={(e) => {
@@ -1174,7 +1183,7 @@ function EditorPage() {
 
           <div className="sticky bottom-4 space-y-2">
             <Button
-              className="h-12 w-full text-base"
+              className="h-12 w-full text-base disabled:opacity-100"
               onClick={() => void handleProcess()}
               disabled={running || queuedClips.length === 0}
             >
@@ -1195,10 +1204,10 @@ function EditorPage() {
                 className="w-full"
                 onClick={() => {
                   cancelledRef.current = true;
-                  toast.info("O lote será interrompido após o vídeo atual.");
+                  toast.info("O processamento será pausado após o vídeo atual.");
                 }}
               >
-                Cancelar lote
+                <Pause className="mr-2 size-4" /> Pausar processamento
               </Button>
             )}
             <p className="text-center text-[11px] text-muted-foreground">
@@ -1210,3 +1219,4 @@ function EditorPage() {
     </div>
   );
 }
+
