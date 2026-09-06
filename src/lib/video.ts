@@ -208,9 +208,10 @@ export async function processVideo(
     "-c:v",
     "libx264",
     "-preset",
-    opts.mode === "turbo" ? "ultrafast" : "veryfast",
+    "veryfast",
     "-crf",
-    opts.mode === "turbo" ? "30" : "26",
+    "26",
+
     "-pix_fmt",
     "yuv420p",
     "-c:a",
