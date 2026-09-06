@@ -472,7 +472,9 @@ function OverlayCreator() {
             <div>
               <p className="text-sm font-bold">Pré-definições</p>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                {editingSlot ? `Editando Perfil ${editingSlot}` : "Nenhum perfil selecionado"}
+                {editingSlot
+                  ? `Editando ${presets.find((p) => p.slot === editingSlot)?.name || `Perfil ${editingSlot}`}`
+                  : "Nenhum perfil selecionado"}
               </p>
             </div>
             <Button
@@ -481,10 +483,24 @@ function OverlayCreator() {
               onClick={() => {
                 setCfg(defaultOverlayConfig());
                 setEditingSlot(null);
+                setPresetName("");
               }}
             >
               Novo
             </Button>
+          </div>
+
+          <div className="mt-3">
+            <p className="text-xs font-semibold">Nome do perfil</p>
+            <Input
+              className="mt-1.5"
+              placeholder="Ex: Perfil cinema"
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Esse nome aparece na lista de overlays salvos dentro do editor.
+            </p>
           </div>
 
           <div className="mt-4 max-h-[70vh] space-y-3 overflow-y-auto pr-1">
@@ -499,10 +515,18 @@ function OverlayCreator() {
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-xs font-bold">
-                      {preset?.name || `Perfil ${slot}`}
-                      {active && <span className="ml-1 text-primary">• editando</span>}
-                    </p>
+                    {preset ? (
+                      <Input
+                        value={preset.name}
+                        onChange={(e) => rename(preset, e.target.value)}
+                        className="h-7 text-xs font-bold"
+                        aria-label={`Renomear perfil ${slot}`}
+                      />
+                    ) : (
+                      <p className="truncate text-xs font-bold text-muted-foreground">
+                        Vazio · slot {slot}
+                      </p>
+                    )}
                     {preset && (
                       <button
                         type="button"
@@ -510,13 +534,14 @@ function OverlayCreator() {
                           setPresets(deleteOverlay(slot));
                           if (editingSlot === slot) setEditingSlot(null);
                         }}
-                        className="text-muted-foreground transition-colors hover:text-destructive"
+                        className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
                         aria-label={`Excluir Perfil ${slot}`}
                       >
                         <Trash2 className="size-3.5" />
                       </button>
                     )}
                   </div>
+
                   <div className="mt-2 flex items-center gap-2">
                     {preset && (
                       <img
