@@ -957,11 +957,6 @@ function EditorPage() {
                     onCheckedChange={(v) => patch({ bgImage: { ...opts.bgImage, enabled: v } })}
                   />
                 </div>
-                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                  A imagem entra em 9:16 preenchendo toda a tela. Por padrão ela fica atrás do
-                  vídeo: diminua o zoom do vídeo para ela aparecer.
-                </p>
-
                 <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg border border-border p-1">
                   {([
                     { id: "back", label: "Atrás do vídeo" },
