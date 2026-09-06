@@ -35,7 +35,7 @@ export type EditOptions = {
   bottom: { enabled: boolean; text: string; color: string; size: number };
   overlayOpacity: number;
   overlayColor: string;
-  logo: LogoOverlay;
+  bgImage: BackgroundImage;
   fadeIn: boolean;
 };
 
@@ -52,7 +52,7 @@ export const defaultEditOptions = (): EditOptions => ({
   bottom: { enabled: false, text: "", color: "#ffffff", size: 44 },
   overlayOpacity: 0,
   overlayColor: "#000000",
-  logo: { enabled: false, src: null, scale: 0.3, x: 0.5, y: 0.08, opacity: 1 },
+  bgImage: { enabled: false, src: null, opacity: 1 },
   fadeIn: false,
 });
 
@@ -98,8 +98,7 @@ export async function buildOverlayPng(
   const hasBottom = opts.bottom.enabled && opts.bottom.text.trim().length > 0;
   const hasBorder = opts.border.top > 0 || opts.border.bottom > 0;
   const hasTint = opts.overlayOpacity > 0;
-  const hasLogo = opts.logo.enabled && !!opts.logo.src;
-  if (!hasTitle && !hasBottom && !hasBorder && !hasTint && !hasLogo) return null;
+  if (!hasTitle && !hasBottom && !hasBorder && !hasTint) return null;
 
   const canvas = document.createElement("canvas");
   canvas.width = w;
@@ -153,19 +152,6 @@ export async function buildOverlayPng(
     });
     ctx.shadowBlur = 0;
   };
-
-  if (hasLogo && opts.logo.src) {
-    const img = await loadImage(opts.logo.src);
-    if (img && img.width > 0) {
-      const lw = Math.max(8, w * Math.min(1, Math.max(0.05, opts.logo.scale)));
-      const lh = (img.height / img.width) * lw;
-      const lx = (w - lw) * Math.min(1, Math.max(0, opts.logo.x));
-      const ly = (h - lh) * Math.min(1, Math.max(0, opts.logo.y));
-      ctx.globalAlpha = Math.min(1, Math.max(0, opts.logo.opacity));
-      ctx.drawImage(img, lx, ly, lw, lh);
-      ctx.globalAlpha = 1;
-    }
-  }
 
   if (hasTitle) {
     drawWrapped(titleText.trim(), opts.title.size, opts.title.color, h * 0.12, true);
