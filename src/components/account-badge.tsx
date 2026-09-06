@@ -13,6 +13,8 @@ export function AccountBadge() {
   const queryClient = useQueryClient();
   const [label, setLabel] = useState<string | null>(null);
   const [guest, setGuest] = useState(false);
+  const { isAdmin } = useIsAdmin();
+
 
   useEffect(() => {
     if (isGuest()) {
