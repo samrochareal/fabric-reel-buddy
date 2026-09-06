@@ -58,9 +58,8 @@ type Clip = {
 };
 
 const MAX_CLIPS = 100;
-type EditTab = "bordas" | "titulo" | "inferior" | "overlay" | "extras";
+type EditTab = "titulo" | "inferior" | "overlay" | "extras";
 const TABS: { id: EditTab; label: string }[] = [
-  { id: "bordas", label: "Bordas" },
   { id: "titulo", label: "Título" },
   { id: "inferior", label: "Inferior" },
   { id: "overlay", label: "Overlay" },
@@ -217,7 +216,7 @@ function EditorPage() {
         return rest;
       });
     } else {
-      patch({ zoom: 1, posX: 0.5, posY: 0.5 });
+      patch({ zoom: 1, posX: 2.5, posY: 2.5 });
     }
   };
 
@@ -361,8 +360,8 @@ function EditorPage() {
           style={{
             width: `${o.zoom * 100}%`,
             height: `${o.zoom * 100}%`,
-            left: `${(1 - o.zoom) * 100 * o.posX}%`,
-            top: `${(1 - o.zoom) * 100 * o.posY}%`,
+            left: `${(1 - o.zoom) * 50 + ((o.posX - 2.5) / 2.5) * 100}%`,
+            top: `${(1 - o.zoom) * 50 + ((o.posY - 2.5) / 2.5) * 100}%`,
           }}
         >
 
@@ -762,19 +761,19 @@ function EditorPage() {
                 {
                   label: "Posição vertical",
                   value: fine.posY,
-                  display: fine.posY === 0.5 ? "centro" : `${fine.posY > 0.5 ? "+" : ""}${Math.round((fine.posY - 0.5) * 200)}`,
+                  display: `${Math.round(fine.posY * 100)}%`,
                   min: 0,
-                  max: 1,
-                  step: 0.01,
+                  max: 5,
+                  step: 0.05,
                   set: (v: number) => patchFine({ posY: v }),
                 },
                 {
                   label: "Posição horizontal",
                   value: fine.posX,
-                  display: fine.posX === 0.5 ? "centro" : `${fine.posX > 0.5 ? "+" : ""}${Math.round((fine.posX - 0.5) * 200)}`,
+                  display: `${Math.round(fine.posX * 100)}%`,
                   min: 0,
-                  max: 1,
-                  step: 0.01,
+                  max: 5,
+                  step: 0.05,
                   set: (v: number) => patchFine({ posX: v }),
                 },
               ].map((row) => (
@@ -811,6 +810,56 @@ function EditorPage() {
                 : " Estes valores valem para todos os vídeos da fila."}
             </p>
           </div>
+
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-sm font-bold">Bordas do vídeo</p>
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-border/70 bg-background/60 p-3">
+              <Scissors className="mt-0.5 size-4 shrink-0 text-primary" />
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Ajuste manualmente o quanto cortar do{" "}
+                <span className="font-bold text-foreground">topo e do rodapé do vídeo</span>{" "}
+                (marcas d’água, legendas, logos). O corte remove só o vídeo — a imagem de fundo
+                continua visível nessa área.
+              </p>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              {[
+                {
+                  label: "Cortar no topo",
+                  value: opts.border.top,
+                  set: (v: number) => patch({ border: { ...opts.border, top: v } }),
+                },
+                {
+                  label: "Cortar no rodapé",
+                  value: opts.border.bottom,
+                  set: (v: number) => patch({ border: { ...opts.border, bottom: v } }),
+                },
+              ].map((row) => (
+                <div key={row.label}>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{row.label}</span>
+                    <span className="font-bold">{(row.value * 100).toFixed(1)}%</span>
+                  </div>
+                  <Slider
+                    className="mt-2"
+                    value={[row.value]}
+                    min={0}
+                    max={0.4}
+                    step={0.005}
+                    onValueChange={([v]) => row.set(v ?? row.value)}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-xs">
+              Conteúdo central:{" "}
+              <span className="font-bold">
+                {Math.max(0, 100 - (opts.border.top + opts.border.bottom) * 100).toFixed(0)}%
+              </span>
+            </div>
+          </div>
         </section>
 
         {/* ---------- Column 4: edit tabs + process ---------- */}
@@ -844,82 +893,6 @@ function EditorPage() {
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
-            {tab === "bordas" && (
-              <>
-                <div className="flex items-start gap-2 rounded-lg border border-border/70 bg-background/60 p-3">
-                  <Scissors className="mt-0.5 size-4 shrink-0 text-primary" />
-                  <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    Aqui você <span className="font-bold text-foreground">corta o topo e o
-                    rodapé do vídeo</span> (marcas d’água, legendas, logos). O corte remove só o
-                    vídeo — a imagem de fundo continua visível nessa área.
-                  </p>
-                </div>
-
-
-                <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1">
-                  {(["manual", "auto"] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() =>
-                        patch({
-                          border:
-                            m === "auto"
-                              ? { ...opts.border, mode: m, top: 0.08, bottom: 0.08 }
-                              : { ...opts.border, mode: m },
-                        })
-                      }
-                      className={`rounded-md px-2 py-2 text-xs font-semibold transition-colors ${
-                        opts.border.mode === m
-                          ? "bg-card text-foreground shadow"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {m === "manual" ? "Manual" : "Automático"}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-4 space-y-4">
-                  {[
-                    {
-                      label: "Cortar no topo",
-                      value: opts.border.top,
-                      set: (v: number) => patch({ border: { ...opts.border, top: v } }),
-                    },
-                    {
-                      label: "Cortar no rodapé",
-                      value: opts.border.bottom,
-                      set: (v: number) => patch({ border: { ...opts.border, bottom: v } }),
-                    },
-                  ].map((row) => (
-                    <div key={row.label}>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">{row.label}</span>
-                        <span className="font-bold">{(row.value * 100).toFixed(1)}%</span>
-                      </div>
-                      <Slider
-                        className="mt-2"
-                        value={[row.value]}
-                        min={0}
-                        max={0.4}
-                        step={0.005}
-                        disabled={opts.border.mode === "auto"}
-                        onValueChange={([v]) => row.set(v ?? row.value)}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-4 rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-xs">
-                  Conteúdo central:{" "}
-                  <span className="font-bold">
-                    {Math.max(0, 100 - (opts.border.top + opts.border.bottom) * 100).toFixed(0)}%
-                  </span>
-                </div>
-              </>
-            )}
-
             {tab === "titulo" && (
               <>
                 <div className="flex items-center justify-between">
@@ -1213,10 +1186,6 @@ function EditorPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Espelhar vídeos</span>
                   <Switch checked={opts.mirror} onCheckedChange={(v) => patch({ mirror: v })} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Fade de entrada</span>
-                  <Switch checked={opts.fadeIn} onCheckedChange={(v) => patch({ fadeIn: v })} />
                 </div>
                 <div className="mt-2 space-y-3 border-t border-border/60 pt-3">
                   <div className="flex items-start justify-between gap-2">
