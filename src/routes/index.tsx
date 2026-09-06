@@ -11,6 +11,11 @@ import {
   X,
   RotateCcw,
   Play,
+  Pause,
+  Plus,
+  Sparkles,
+  Volume2,
+  VolumeX,
   HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,12 +25,8 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import {
-  ASPECTS,
-  defaultEditOptions,
-  type AspectId,
-  type EditOptions,
-} from "@/lib/video";
+import { ASPECTS, defaultEditOptions, type EditOptions } from "@/lib/video";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
