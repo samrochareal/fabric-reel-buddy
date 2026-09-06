@@ -1,5 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft } from "lucide-react";
+import { getProject, registerProcessed } from "@/lib/projects";
+
 import {
   Scissors,
   UploadCloud,
