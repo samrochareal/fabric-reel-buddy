@@ -441,12 +441,23 @@ function EditorPage() {
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
         <div className="flex h-14 items-center gap-3 px-4">
+          <Link
+            to="/"
+            className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold hover:border-primary/60"
+          >
+            <ArrowLeft className="size-3.5" /> Projetos
+          </Link>
           <span className="mx-auto flex items-center gap-2">
             <Scissors className="size-4 text-primary" />
             <span className="font-display text-base font-bold tracking-tight">
-              fabrica <span className="text-muted-foreground">de</span> reels
+              {projectName ?? (
+                <>
+                  fabrica <span className="text-muted-foreground">de</span> reels
+                </>
+              )}
             </span>
           </span>
+
           <div className="flex items-center gap-2">
             <span className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground sm:inline">
               {clips.length}/{MAX_CLIPS} na fila
