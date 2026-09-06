@@ -33,11 +33,20 @@ export function AccountBadge() {
 
   return (
     <div className="ml-auto flex items-center gap-2">
+      {isAdmin && (
+        <Link
+          to="/admin"
+          className="flex items-center gap-1.5 rounded-full border border-primary/50 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
+        >
+          <ShieldCheck className="size-3.5" /> Painel master
+        </Link>
+      )}
       {label && (
         <span className="hidden max-w-[220px] truncate rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground sm:inline">
           {label}
         </span>
       )}
+
       <button
         type="button"
         onClick={signOut}
