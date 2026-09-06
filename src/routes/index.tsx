@@ -41,14 +41,13 @@ export const Route = createFileRoute("/")({
   component: ProjectsPage,
 });
 
-type Filter = "all" | "active" | "draft";
 type SortBy = "recent" | "name";
 
 function ProjectsPage() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
+
   const [sortBy, setSortBy] = useState<SortBy>("recent");
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
@@ -60,15 +59,14 @@ function ProjectsPage() {
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = projects.filter((p) => {
-      const matchesQuery = !q || p.name.toLowerCase().includes(q) || p.note.toLowerCase().includes(q);
-      const matchesFilter = filter === "all" || p.status === filter;
-      return matchesQuery && matchesFilter;
-    });
+    const list = projects.filter(
+      (p) => !q || p.name.toLowerCase().includes(q) || p.note.toLowerCase().includes(q),
+    );
     return sortBy === "name"
       ? [...list].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
       : [...list].sort((a, b) => b.updatedAt - a.updatedAt);
-  }, [projects, query, filter, sortBy]);
+  }, [projects, query, sortBy]);
+
 
   const totalProcessed = projects.reduce((sum, p) => sum + p.processedCount, 0);
 
@@ -149,28 +147,7 @@ function ProjectsPage() {
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1 rounded-full border border-border bg-card p-1">
-              {(
-                [
-                  ["all", "Todos"],
-                  ["active", "Ativos"],
-                  ["draft", "Rascunhos"],
-                ] as [Filter, string][]
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setFilter(value)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                    filter === value
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+
             <button
               type="button"
               onClick={() => setSortBy((s) => (s === "recent" ? "name" : "recent"))}
@@ -244,15 +221,6 @@ function ProjectsPage() {
                       Atualizado em {formatDate(project.updatedAt)}
                     </p>
                   </div>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                      project.status === "active"
-                        ? "bg-turbo/15 text-turbo"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {project.status === "active" ? "Ativo" : "Rascunho"}
-                  </span>
                 </div>
                 {project.note && (
                   <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{project.note}</p>

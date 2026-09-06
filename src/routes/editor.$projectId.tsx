@@ -86,6 +86,8 @@ function EditorPage() {
   const [scope, setScope] = useState<"batch" | "single">("batch");
   const [overrides, setOverrides] = useState<Record<string, FineTune>>({});
   const [running, setRunning] = useState(false);
+  const [paused, setPaused] = useState(false);
+
   const [engineReady, setEngineReady] = useState(false);
   const { projectId } = Route.useParams();
   const [projectName, setProjectName] = useState<string | null>(null);
@@ -227,7 +229,9 @@ function EditorPage() {
     }
 
     setRunning(true);
+    setPaused(false);
     cancelledRef.current = false;
+
     let rendered = 0;
 
     try {
@@ -288,10 +292,12 @@ function EditorPage() {
 
       if (rendered > 0) registerProcessed(projectId, rendered);
       if (cancelledRef.current) {
-        toast.info("Processamento pausado. Clique em “Processar vídeos” para continuar.");
+        setPaused(true);
+        toast.info("Processamento pausado. Clique em “Retomar processamento” para continuar.");
       } else {
         toast.success("Lote concluído! Use “Baixar todos” para salvar tudo.");
       }
+
 
 
     } catch (err) {
@@ -1153,7 +1159,14 @@ function EditorPage() {
                         duplicidade.
                       </p>
                     </div>
-                    <Switch checked={antiDup} onCheckedChange={setAntiDup} />
+                    <Switch
+                      checked={antiDup}
+                      onCheckedChange={(v) => {
+                        setAntiDup(v);
+                        patch({ speed: v ? 1.02 : 1 });
+                      }}
+                    />
+
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">
@@ -1191,12 +1204,17 @@ function EditorPage() {
                 <>
                   <Loader2 className="mr-2 size-5 animate-spin" /> Processando…
                 </>
+              ) : paused && queuedClips.length > 0 ? (
+                <>
+                  <Play className="mr-2 size-5" /> Retomar processamento ({queuedClips.length})
+                </>
               ) : (
                 <>
                   <Play className="mr-2 size-5" /> Processar {queuedClips.length} vídeo
                   {queuedClips.length === 1 ? "" : "s"}
                 </>
               )}
+
             </Button>
             {running && (
               <Button
