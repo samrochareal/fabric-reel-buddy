@@ -351,6 +351,12 @@ function EditorPage() {
 
       {clip ? (
         <div
+          className="absolute inset-0"
+          style={{
+            clipPath: `inset(${(o.border.top * 100).toFixed(2)}% 0% ${(o.border.bottom * 100).toFixed(2)}% 0%)`,
+          }}
+        >
+        <div
           className="absolute"
           style={{
             width: `${o.zoom * 100}%`,
@@ -359,6 +365,7 @@ function EditorPage() {
             top: `${(1 - o.zoom) * 100 * o.posY}%`,
           }}
         >
+
           <video
             key={clip.id}
             ref={isMain ? playerRef : undefined}
