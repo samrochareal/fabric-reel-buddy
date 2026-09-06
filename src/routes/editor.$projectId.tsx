@@ -1204,12 +1204,17 @@ function EditorPage() {
                 <>
                   <Loader2 className="mr-2 size-5 animate-spin" /> Processando…
                 </>
+              ) : paused && queuedClips.length > 0 ? (
+                <>
+                  <Play className="mr-2 size-5" /> Retomar processamento ({queuedClips.length})
+                </>
               ) : (
                 <>
                   <Play className="mr-2 size-5" /> Processar {queuedClips.length} vídeo
                   {queuedClips.length === 1 ? "" : "s"}
                 </>
               )}
+
             </Button>
             {running && (
               <Button
