@@ -341,6 +341,8 @@ function EditorPage() {
             ),
           );
           rendered += 1;
+          renderedBytes += blob.size;
+
         } catch (err) {
 
           setClips((prev) =>
