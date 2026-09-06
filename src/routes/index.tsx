@@ -221,15 +221,6 @@ function ProjectsPage() {
                       Atualizado em {formatDate(project.updatedAt)}
                     </p>
                   </div>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                      project.status === "active"
-                        ? "bg-turbo/15 text-turbo"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {project.status === "active" ? "Ativo" : "Rascunho"}
-                  </span>
                 </div>
                 {project.note && (
                   <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{project.note}</p>
