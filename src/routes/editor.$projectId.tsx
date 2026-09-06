@@ -268,8 +268,8 @@ function EditorPage() {
             ),
           );
         }
-        rendered += 1;
       }
+
       if (rendered > 0) registerProcessed(projectId, rendered);
       toast.success("Lote concluído! Use “Baixar todos” para salvar tudo.");
 
