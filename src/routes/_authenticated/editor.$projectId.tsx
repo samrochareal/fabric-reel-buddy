@@ -135,12 +135,44 @@ function EditorPage() {
 
   const patch = (next: Partial<EditOptions>) => setOpts((prev) => ({ ...prev, ...next }));
 
-  const addFiles = useCallback((files: FileList | File[]) => {
-    const incoming = Array.from(files).filter((f) => f.type.startsWith("video/"));
-    if (incoming.length === 0) {
+  const addFiles = useCallback(async (files: FileList | File[]) => {
+    const videos = Array.from(files).filter((f) => f.type.startsWith("video/"));
+    if (videos.length === 0) {
       toast.error("Selecione arquivos de vídeo.");
       return;
     }
+
+    const tooBig = videos.filter((f) => f.size > MAX_FILE_BYTES);
+    const sized = videos.filter((f) => f.size <= MAX_FILE_BYTES);
+    if (tooBig.length > 0) {
+      toast.error(`${tooBig.length} vídeo(s) acima de ${MAX_FILE_MB} MB foram ignorados.`);
+    }
+
+    const readDuration = (file: File) =>
+      new Promise<number>((resolve) => {
+        const el = document.createElement("video");
+        const url = URL.createObjectURL(file);
+        el.preload = "metadata";
+        el.onloadedmetadata = () => {
+          const d = el.duration;
+          URL.revokeObjectURL(url);
+          resolve(Number.isFinite(d) ? d : 0);
+        };
+        el.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(0);
+        };
+        el.src = url;
+      });
+
+    const durations = await Promise.all(sized.map(readDuration));
+    const incoming = sized.filter((_, i) => (durations[i] ?? 0) <= MAX_DURATION_S);
+    const tooLong = sized.length - incoming.length;
+    if (tooLong > 0) {
+      toast.error(`${tooLong} vídeo(s) acima de ${MAX_DURATION_S}s foram ignorados.`);
+    }
+    if (incoming.length === 0) return;
+
     setClips((prev) => {
       const room = MAX_CLIPS - prev.length;
       if (incoming.length > room) toast.error(`Máximo de ${MAX_CLIPS} vídeos por lote.`);
@@ -156,6 +188,7 @@ function EditorPage() {
       return merged;
     });
   }, [selectedId]);
+
 
   const removeClip = (id: string) =>
     setClips((prev) => {
