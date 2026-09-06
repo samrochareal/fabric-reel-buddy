@@ -7,18 +7,14 @@ export const ASPECTS: Record<AspectId, { label: string; w: number; h: number }> 
   "9:16": { label: "9:16 · Reels/Shorts", w: 1080, h: 1920 },
 };
 
-/** logo / brand image burned on top of the frame */
-export type LogoOverlay = {
+/** image painted BEHIND the video, filling the solid background area */
+export type BackgroundImage = {
   enabled: boolean;
-  /** data URL of the PNG/JPG the user uploaded */
+  /** data URL of the PNG/JPG the user uploaded or created */
   src: string | null;
-  /** width of the logo as a fraction of the frame width */
-  scale: number;
-  /** 0..1 placement anchor inside the frame */
-  x: number;
-  y: number;
   opacity: number;
 };
+
 
 /** Every knob the batch editor exposes. */
 export type EditOptions = {
@@ -39,7 +35,7 @@ export type EditOptions = {
   bottom: { enabled: boolean; text: string; color: string; size: number };
   overlayOpacity: number;
   overlayColor: string;
-  logo: LogoOverlay;
+  bgImage: BackgroundImage;
   fadeIn: boolean;
 };
 
@@ -56,7 +52,7 @@ export const defaultEditOptions = (): EditOptions => ({
   bottom: { enabled: false, text: "", color: "#ffffff", size: 44 },
   overlayOpacity: 0,
   overlayColor: "#000000",
-  logo: { enabled: false, src: null, scale: 0.3, x: 0.5, y: 0.08, opacity: 1 },
+  bgImage: { enabled: false, src: null, opacity: 1 },
   fadeIn: false,
 });
 
@@ -83,7 +79,7 @@ export async function getFFmpeg(onLog?: (msg: string) => void): Promise<FFmpeg> 
  * canvas (browser fonts) instead of ffmpeg's drawtext, which keeps typography
  * identical to the live preview.
  */
-function loadImage(src: string): Promise<HTMLImageElement | null> {
+export function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -102,8 +98,7 @@ export async function buildOverlayPng(
   const hasBottom = opts.bottom.enabled && opts.bottom.text.trim().length > 0;
   const hasBorder = opts.border.top > 0 || opts.border.bottom > 0;
   const hasTint = opts.overlayOpacity > 0;
-  const hasLogo = opts.logo.enabled && !!opts.logo.src;
-  if (!hasTitle && !hasBottom && !hasBorder && !hasTint && !hasLogo) return null;
+  if (!hasTitle && !hasBottom && !hasBorder && !hasTint) return null;
 
   const canvas = document.createElement("canvas");
   canvas.width = w;
@@ -158,19 +153,6 @@ export async function buildOverlayPng(
     ctx.shadowBlur = 0;
   };
 
-  if (hasLogo && opts.logo.src) {
-    const img = await loadImage(opts.logo.src);
-    if (img && img.width > 0) {
-      const lw = Math.max(8, w * Math.min(1, Math.max(0.05, opts.logo.scale)));
-      const lh = (img.height / img.width) * lw;
-      const lx = (w - lw) * Math.min(1, Math.max(0, opts.logo.x));
-      const ly = (h - lh) * Math.min(1, Math.max(0, opts.logo.y));
-      ctx.globalAlpha = Math.min(1, Math.max(0, opts.logo.opacity));
-      ctx.drawImage(img, lx, ly, lw, lh);
-      ctx.globalAlpha = 1;
-    }
-  }
-
   if (hasTitle) {
     drawWrapped(titleText.trim(), opts.title.size, opts.title.color, h * 0.12, true);
   }
@@ -182,7 +164,10 @@ export async function buildOverlayPng(
 }
 
 
-function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
+function buildFilterChain(
+  opts: EditOptions,
+  inputs: { bgIndex: number | null; overlayIndex: number | null },
+): string {
   const { w, h } = ASPECTS[opts.aspect];
   const zoom = Math.min(5, Math.max(0.5, opts.zoom));
   // zoom 1 = video covers the whole frame; below 1 it shrinks over the background.
@@ -193,14 +178,24 @@ function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
 
   const parts: string[] = [];
   // Cover-fit the source to the output frame, scale it by the zoom factor,
-  // then place it over the solid background colour.
+  // then place it over the background (solid colour, optionally an image).
   parts.push(
     `[0:v]${opts.mirror ? "hflip," : ""}scale=${w}:${h}:force_original_aspect_ratio=increase,` +
       `crop=${w}:${h},scale=${sw}:${sh},setsar=1[vid]`,
   );
   parts.push(`color=c=${opts.bgColor}:s=${w}x${h}:r=30[bgc]`);
+  let bgLabel = "bgc";
+  if (inputs.bgIndex !== null) {
+    const alpha = Math.min(1, Math.max(0, opts.bgImage.opacity));
+    parts.push(
+      `[${inputs.bgIndex}:v]scale=${w}:${h}:force_original_aspect_ratio=increase,` +
+        `crop=${w}:${h},format=rgba,colorchannelmixer=aa=${alpha.toFixed(3)}[bgimg]`,
+    );
+    parts.push(`[bgc][bgimg]overlay=0:0[bgm]`);
+    bgLabel = "bgm";
+  }
   parts.push(
-    `[bgc][vid]overlay=x=(W-w)*${px.toFixed(3)}:y=(H-h)*${py.toFixed(3)}:shortest=1[base]`,
+    `[${bgLabel}][vid]overlay=x=(W-w)*${px.toFixed(3)}:y=(H-h)*${py.toFixed(3)}:shortest=1[base]`,
   );
 
   let label = "base";
@@ -212,14 +207,15 @@ function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
 
   if (opts.speed !== 1) push(`setpts=PTS/${opts.speed.toFixed(3)}`, "spd");
   if (opts.fadeIn) push("fade=t=in:st=0:d=0.4", "fdi");
-  if (hasOverlay) {
-    parts.push(`[1:v]scale=${w}:${h}[ovl]`);
+  if (inputs.overlayIndex !== null) {
+    parts.push(`[${inputs.overlayIndex}:v]scale=${w}:${h}[ovl]`);
     parts.push(`[${label}][ovl]overlay=0:0[outv]`);
     label = "outv";
   }
   if (label !== "outv") parts.push(`[${label}]null[outv]`);
   return parts.join(";");
 }
+
 
 export async function processVideo(
   file: File,
@@ -231,6 +227,7 @@ export async function processVideo(
   const stamp = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const inputName = `in_${stamp}.mp4`;
   const overlayName = `ovl_${stamp}.png`;
+  const bgName = `bg_${stamp}.png`;
   const outputName = `out_${stamp}.mp4`;
 
   ff.on("progress", ({ progress }) => {
@@ -239,12 +236,31 @@ export async function processVideo(
 
   await ff.writeFile(inputName, await fetchFile(file));
 
+  const useBg = opts.bgImage.enabled && !!opts.bgImage.src;
+  if (useBg && opts.bgImage.src) await ff.writeFile(bgName, await fetchFile(opts.bgImage.src));
+
   const overlayPng = await buildOverlayPng(opts, titleText);
   if (overlayPng) await ff.writeFile(overlayName, await fetchFile(overlayPng));
 
   const args = ["-i", inputName];
-  if (overlayPng) args.push("-i", overlayName);
-  args.push("-filter_complex", buildFilterChain(opts, !!overlayPng), "-map", "[outv]");
+  let next = 1;
+  let bgIndex: number | null = null;
+  let overlayIndex: number | null = null;
+  if (useBg) {
+    args.push("-i", bgName);
+    bgIndex = next++;
+  }
+  if (overlayPng) {
+    args.push("-i", overlayName);
+    overlayIndex = next++;
+  }
+  args.push(
+    "-filter_complex",
+    buildFilterChain(opts, { bgIndex, overlayIndex }),
+    "-map",
+    "[outv]",
+  );
+
 
   if (opts.speed !== 1) {
     args.push("-filter:a", `atempo=${Math.min(2, Math.max(0.5, opts.speed)).toFixed(3)}`);
@@ -275,6 +291,7 @@ export async function processVideo(
   await ff.deleteFile(inputName).catch(() => {});
   await ff.deleteFile(outputName).catch(() => {});
   if (overlayPng) await ff.deleteFile(overlayName).catch(() => {});
+  if (useBg) await ff.deleteFile(bgName).catch(() => {});
 
   const bytes = data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
   const copy = new Uint8Array(bytes.length);
