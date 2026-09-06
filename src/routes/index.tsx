@@ -899,22 +899,7 @@ function EditorPage() {
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="flex items-center gap-1.5 text-sm font-bold">
-                  <Zap className="size-4 text-turbo" /> Modo Turbo
-                </p>
-                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  Processamento mais rápido com leve redução de qualidade.
-                </p>
-              </div>
-              <Switch
-                checked={opts.mode === "turbo"}
-                onCheckedChange={(v) => patch({ mode: v ? "turbo" : "completo" })}
-              />
-            </div>
-          </div>
+
 
           <div className="sticky bottom-4 space-y-2">
             <Button
