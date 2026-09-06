@@ -11,6 +11,11 @@ import {
   X,
   RotateCcw,
   Play,
+  Pause,
+  Plus,
+  Sparkles,
+  Volume2,
+  VolumeX,
   HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,12 +25,8 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import {
-  ASPECTS,
-  defaultEditOptions,
-  type AspectId,
-  type EditOptions,
-} from "@/lib/video";
+import { ASPECTS, defaultEditOptions, type EditOptions } from "@/lib/video";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -84,7 +85,36 @@ function EditorPage() {
   const [running, setRunning] = useState(false);
   const [engineReady, setEngineReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
+
+  // our own player state, so the play button never moves with the video
+  const playerRef = useRef<HTMLVideoElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [pos, setPos] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [muted, setMuted] = useState(true);
+
+  const togglePlay = () => {
+    const el = playerRef.current;
+    if (!el) return;
+    if (el.paused) void el.play();
+    else el.pause();
+  };
+
+  const seekTo = (ratio: number) => {
+    const el = playerRef.current;
+    setPos(ratio);
+    if (el && el.duration) el.currentTime = ratio * el.duration;
+  };
+
+  const fmtTime = (s: number) => {
+    if (!Number.isFinite(s) || s <= 0) return "0:00";
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  };
+
 
 
   const patch = (next: Partial<EditOptions>) => setOpts((prev) => ({ ...prev, ...next }));
@@ -277,6 +307,8 @@ function EditorPage() {
 
   const framePreview = (clip: Clip | undefined, small: boolean) => {
     const o = optsFor(clip?.id);
+    const isMain = !small && !!clip && clip.id === selected?.id;
+
     return (
     <div
       className="relative overflow-hidden rounded-md"
@@ -298,14 +330,29 @@ function EditorPage() {
         >
           <video
             key={clip.id}
+            ref={isMain ? playerRef : undefined}
             src={clip.resultUrl ?? clip.previewUrl}
             className="size-full object-cover"
             style={{ transform: o.mirror ? "scaleX(-1)" : undefined }}
-            muted
+            muted={isMain ? muted : true}
             loop
             playsInline
-            controls={!small && grid === 1}
             preload="metadata"
+            onLoadedMetadata={
+              isMain
+                ? (e) => setDuration(e.currentTarget.duration || 0)
+                : undefined
+            }
+            onTimeUpdate={
+              isMain
+                ? (e) => {
+                    const el = e.currentTarget;
+                    if (el.duration) setPos(el.currentTime / el.duration);
+                  }
+                : undefined
+            }
+            onPlay={isMain ? () => setPlaying(true) : undefined}
+            onPause={isMain ? () => setPlaying(false) : undefined}
           />
         </div>
       ) : (
@@ -320,6 +367,22 @@ function EditorPage() {
           style={{ background: o.overlayColor, opacity: o.overlayOpacity }}
         />
       )}
+
+      {o.logo.enabled && o.logo.src && (
+        <img
+          src={o.logo.src}
+          alt=""
+          className="pointer-events-none absolute"
+          style={{
+            width: `${o.logo.scale * 100}%`,
+            left: `${o.logo.x * 100}%`,
+            top: `${o.logo.y * 100}%`,
+            transform: `translate(-${o.logo.x * 100}%, -${o.logo.y * 100}%)`,
+            opacity: o.logo.opacity,
+          }}
+        />
+      )}
+
 
       {/* solid bars that cover the original top/bottom borders */}
       {o.border.top > 0 && (
@@ -564,6 +627,38 @@ function EditorPage() {
                   ))}
             </div>
 
+            {/* our own player controls — always in the same spot */}
+            <div className="mt-4 flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2">
+              <button
+                type="button"
+                onClick={togglePlay}
+                disabled={!selected}
+                className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-40"
+                aria-label={playing ? "Pausar" : "Reproduzir"}
+              >
+                {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
+              </button>
+              <Slider
+                className="flex-1"
+                value={[pos]}
+                min={0}
+                max={1}
+                step={0.001}
+                onValueChange={([v]) => seekTo(v ?? 0)}
+              />
+              <span className="w-20 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
+                {fmtTime(pos * duration)} / {fmtTime(duration)}
+              </span>
+              <button
+                type="button"
+                onClick={() => setMuted((m) => !m)}
+                className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                aria-label={muted ? "Ativar som" : "Silenciar"}
+              >
+                {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+              </button>
+            </div>
+
             {activeClip && (
               <div className="mt-4">
                 <div className="flex items-center gap-2 text-xs">
@@ -578,28 +673,16 @@ function EditorPage() {
             )}
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
-              <div className="flex gap-1 rounded-lg border border-border bg-background p-1">
-                {(Object.keys(ASPECTS) as AspectId[]).map((a) => (
-                  <button
-                    key={a}
-                    type="button"
-                    onClick={() => patch({ aspect: a })}
-                    className={`rounded-md px-3 py-1 text-xs font-bold transition-colors ${
-                      opts.aspect === a
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {a}
-                  </button>
-                ))}
-              </div>
+              <span className="rounded-md border border-border bg-background px-3 py-1 text-xs font-bold">
+                9:16 · 1080×1920
+              </span>
               {doneClips.length > 0 && (
                 <Button variant="outline" size="sm" onClick={() => void downloadAll()}>
                   <Archive className="mr-1.5 size-4" /> Baixar tudo (.zip)
                 </Button>
               )}
             </div>
+
           </div>
         </section>
 
@@ -979,37 +1062,183 @@ function EditorPage() {
 
             {tab === "overlay" && (
               <>
-                <p className="text-sm font-bold">Overlay de cor</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold">Overlay (marca/logo)</p>
+                  <Switch
+                    checked={opts.logo.enabled}
+                    onCheckedChange={(v) => patch({ logo: { ...opts.logo, enabled: v } })}
+                  />
+                </div>
                 <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                  Uma camada de cor sobre o vídeo — útil para escurecer o fundo e destacar o título.
+                  Envie uma imagem de overlay (PNG com fundo transparente funciona melhor) e ajuste
+                  tamanho, posição e transparência.
                 </p>
-                <div className="mt-4 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Cor</span>
-                    <Input
-                      type="color"
-                      value={opts.overlayColor}
-                      onChange={(e) => patch({ overlayColor: e.target.value })}
-                      className="h-8 w-16 p-1"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Intensidade</span>
-                      <span className="font-bold">{Math.round(opts.overlayOpacity * 100)}%</span>
+
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      patch({
+                        logo: { ...opts.logo, enabled: true, src: String(reader.result) },
+                      });
+                      toast.success("Overlay carregada.");
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  className="mt-4 w-full"
+                  onClick={() => logoInputRef.current?.click()}
+                >
+                  <Plus className="mr-1.5 size-4" /> Enviar imagem de overlay
+                </Button>
+
+                {opts.logo.src && (
+                  <div className="mt-3 space-y-3 rounded-lg border border-border bg-background/60 p-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={opts.logo.src}
+                        alt="Overlay atual"
+                        className="size-12 rounded border border-border object-contain"
+                      />
+                      <p className="flex-1 text-[11px] font-semibold text-muted-foreground">
+                        Editar ajustes da overlay atual
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => patch({ logo: { ...opts.logo, src: null, enabled: false } })}
+                        className="text-muted-foreground transition-colors hover:text-destructive"
+                        aria-label="Remover overlay"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
                     </div>
-                    <Slider
-                      className="mt-2"
-                      value={[opts.overlayOpacity]}
-                      min={0}
-                      max={0.8}
-                      step={0.01}
-                      onValueChange={([v]) => patch({ overlayOpacity: v ?? 0 })}
-                    />
+                    <div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Tamanho</span>
+                        <span className="font-bold">{Math.round(opts.logo.scale * 100)}%</span>
+                      </div>
+                      <Slider
+                        className="mt-2"
+                        value={[opts.logo.scale]}
+                        min={0.05}
+                        max={1}
+                        step={0.01}
+                        onValueChange={([v]) =>
+                          patch({ logo: { ...opts.logo, scale: v ?? opts.logo.scale } })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Posição horizontal</span>
+                        <span className="font-bold">{Math.round(opts.logo.x * 100)}%</span>
+                      </div>
+                      <Slider
+                        className="mt-2"
+                        value={[opts.logo.x]}
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        onValueChange={([v]) => patch({ logo: { ...opts.logo, x: v ?? opts.logo.x } })}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Posição vertical</span>
+                        <span className="font-bold">{Math.round(opts.logo.y * 100)}%</span>
+                      </div>
+                      <Slider
+                        className="mt-2"
+                        value={[opts.logo.y]}
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        onValueChange={([v]) => patch({ logo: { ...opts.logo, y: v ?? opts.logo.y } })}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Transparência</span>
+                        <span className="font-bold">{Math.round(opts.logo.opacity * 100)}%</span>
+                      </div>
+                      <Slider
+                        className="mt-2"
+                        value={[opts.logo.opacity]}
+                        min={0.1}
+                        max={1}
+                        step={0.01}
+                        onValueChange={([v]) =>
+                          patch({ logo: { ...opts.logo, opacity: v ?? opts.logo.opacity } })
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-4 rounded-lg border border-border bg-background/60 p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="flex items-center gap-2 text-xs font-bold">
+                      <Sparkles className="size-4 text-primary" /> Criador de Overlay
+                    </p>
+                    <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                      NOVO
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                    Crie uma overlay personalizada com seu nome, @ e foto — estilo redes sociais.
+                    Abre em uma nova aba.
+                  </p>
+                  <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
+                    <a href="/criador-de-overlay" target="_blank" rel="noreferrer">
+                      Abrir criador
+                    </a>
+                  </Button>
+                </div>
+
+                <div className="mt-5 border-t border-border/60 pt-4">
+                  <p className="text-sm font-bold">Overlay de cor</p>
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                    Uma camada de cor sobre o vídeo — útil para escurecer o fundo e destacar o
+                    título.
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Cor</span>
+                      <Input
+                        type="color"
+                        value={opts.overlayColor}
+                        onChange={(e) => patch({ overlayColor: e.target.value })}
+                        className="h-8 w-16 p-1"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Intensidade</span>
+                        <span className="font-bold">{Math.round(opts.overlayOpacity * 100)}%</span>
+                      </div>
+                      <Slider
+                        className="mt-2"
+                        value={[opts.overlayOpacity]}
+                        min={0}
+                        max={0.8}
+                        step={0.01}
+                        onValueChange={([v]) => patch({ overlayOpacity: v ?? 0 })}
+                      />
+                    </div>
                   </div>
                 </div>
               </>
             )}
+
 
             {tab === "extras" && (
               <div className="space-y-3 text-xs">

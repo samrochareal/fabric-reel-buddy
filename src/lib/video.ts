@@ -1,12 +1,23 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 
-export type AspectId = "9:16" | "1:1" | "4:5";
+export type AspectId = "9:16";
 
 export const ASPECTS: Record<AspectId, { label: string; w: number; h: number }> = {
   "9:16": { label: "9:16 · Reels/Shorts", w: 1080, h: 1920 },
-  "1:1": { label: "1:1 · Feed", w: 1080, h: 1080 },
-  "4:5": { label: "4:5 · Feed vertical", w: 1080, h: 1350 },
+};
+
+/** logo / brand image burned on top of the frame */
+export type LogoOverlay = {
+  enabled: boolean;
+  /** data URL of the PNG/JPG the user uploaded */
+  src: string | null;
+  /** width of the logo as a fraction of the frame width */
+  scale: number;
+  /** 0..1 placement anchor inside the frame */
+  x: number;
+  y: number;
+  opacity: number;
 };
 
 /** Every knob the batch editor exposes. */
@@ -28,6 +39,7 @@ export type EditOptions = {
   bottom: { enabled: boolean; text: string; color: string; size: number };
   overlayOpacity: number;
   overlayColor: string;
+  logo: LogoOverlay;
   fadeIn: boolean;
 };
 
@@ -44,8 +56,10 @@ export const defaultEditOptions = (): EditOptions => ({
   bottom: { enabled: false, text: "", color: "#ffffff", size: 44 },
   overlayOpacity: 0,
   overlayColor: "#000000",
+  logo: { enabled: false, src: null, scale: 0.3, x: 0.5, y: 0.08, opacity: 1 },
   fadeIn: false,
 });
+
 
 
 let ffmpeg: FFmpeg | null = null;
@@ -69,19 +83,34 @@ export async function getFFmpeg(onLog?: (msg: string) => void): Promise<FFmpeg> 
  * canvas (browser fonts) instead of ffmpeg's drawtext, which keeps typography
  * identical to the live preview.
  */
-export function buildOverlayPng(opts: EditOptions, titleText: string): Promise<Blob | null> {
+function loadImage(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+export async function buildOverlayPng(
+  opts: EditOptions,
+  titleText: string,
+): Promise<Blob | null> {
   const { w, h } = ASPECTS[opts.aspect];
   const hasTitle = opts.title.enabled && titleText.trim().length > 0;
   const hasBottom = opts.bottom.enabled && opts.bottom.text.trim().length > 0;
   const hasBorder = opts.border.top > 0 || opts.border.bottom > 0;
   const hasTint = opts.overlayOpacity > 0;
-  if (!hasTitle && !hasBottom && !hasBorder && !hasTint) return Promise.resolve(null);
+  const hasLogo = opts.logo.enabled && !!opts.logo.src;
+  if (!hasTitle && !hasBottom && !hasBorder && !hasTint && !hasLogo) return null;
 
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return Promise.resolve(null);
+  if (!ctx) return null;
+
 
   if (hasTint) {
     ctx.fillStyle = opts.overlayColor;
@@ -129,6 +158,19 @@ export function buildOverlayPng(opts: EditOptions, titleText: string): Promise<B
     ctx.shadowBlur = 0;
   };
 
+  if (hasLogo && opts.logo.src) {
+    const img = await loadImage(opts.logo.src);
+    if (img && img.width > 0) {
+      const lw = Math.max(8, w * Math.min(1, Math.max(0.05, opts.logo.scale)));
+      const lh = (img.height / img.width) * lw;
+      const lx = (w - lw) * Math.min(1, Math.max(0, opts.logo.x));
+      const ly = (h - lh) * Math.min(1, Math.max(0, opts.logo.y));
+      ctx.globalAlpha = Math.min(1, Math.max(0, opts.logo.opacity));
+      ctx.drawImage(img, lx, ly, lw, lh);
+      ctx.globalAlpha = 1;
+    }
+  }
+
   if (hasTitle) {
     drawWrapped(titleText.trim(), opts.title.size, opts.title.color, h * 0.12, true);
   }
@@ -136,8 +178,9 @@ export function buildOverlayPng(opts: EditOptions, titleText: string): Promise<B
     drawWrapped(opts.bottom.text.trim(), opts.bottom.size, opts.bottom.color, h * 0.9, false);
   }
 
-  return new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
+  return await new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
 }
+
 
 function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
   const { w, h } = ASPECTS[opts.aspect];
