@@ -57,7 +57,7 @@ type Clip = {
   error?: string;
 };
 
-const MAX_CLIPS = 500;
+const MAX_CLIPS = 100;
 type EditTab = "bordas" | "titulo" | "inferior" | "overlay" | "extras";
 const TABS: { id: EditTab; label: string }[] = [
   { id: "bordas", label: "Bordas" },
