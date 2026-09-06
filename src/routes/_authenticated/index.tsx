@@ -31,6 +31,9 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ASPECTS, defaultEditOptions, type EditOptions } from "@/lib/video";
+import { logVideoJobs } from "@/lib/admin";
+import { useBranding } from "@/lib/branding";
+
 
 
 export const Route = createFileRoute("/_authenticated/")({
