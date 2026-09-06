@@ -7,18 +7,14 @@ export const ASPECTS: Record<AspectId, { label: string; w: number; h: number }> 
   "9:16": { label: "9:16 · Reels/Shorts", w: 1080, h: 1920 },
 };
 
-/** logo / brand image burned on top of the frame */
-export type LogoOverlay = {
+/** image painted BEHIND the video, filling the solid background area */
+export type BackgroundImage = {
   enabled: boolean;
-  /** data URL of the PNG/JPG the user uploaded */
+  /** data URL of the PNG/JPG the user uploaded or created */
   src: string | null;
-  /** width of the logo as a fraction of the frame width */
-  scale: number;
-  /** 0..1 placement anchor inside the frame */
-  x: number;
-  y: number;
   opacity: number;
 };
+
 
 /** Every knob the batch editor exposes. */
 export type EditOptions = {
