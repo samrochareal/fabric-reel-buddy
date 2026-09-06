@@ -9,6 +9,8 @@ import {
   Trash2,
   Video,
 } from "lucide-react";
+import { toast } from "sonner";
+import { AccountBadge } from "@/components/account-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -185,7 +187,7 @@ function ProjectsPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nome do projeto (ex.: Campanha Setembro)"
-                onKeyDown={(e) => e.key === "Enter" && submit()}
+                onKeyDown={(e) => e.key === "Enter" && void submit()}
               />
               <Textarea
                 value={note}
@@ -195,7 +197,7 @@ function ProjectsPage() {
               />
             </div>
             <div className="mt-3 flex gap-2">
-              <Button size="sm" onClick={submit}>
+              <Button size="sm" onClick={() => void submit()}>
                 Criar e abrir editor
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setCreating(false)}>
@@ -261,7 +263,7 @@ function ProjectsPage() {
                   </Button>
                   <button
                     type="button"
-                    onClick={() => remove(project.id)}
+                    onClick={() => void remove(project.id)}
                     aria-label={`Excluir ${project.name}`}
                     className="rounded-md border border-border p-2 text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
                   >
