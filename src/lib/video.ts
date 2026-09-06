@@ -1,7 +1,7 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 // Bundled by Vite so the worker URL always resolves (see classWorkerURL below).
-import ffmpegWorkerUrl from "@ffmpeg/ffmpeg/worker?worker&url";
+import ffmpegWorkerUrl from "./ffmpeg-worker?worker&url";
 
 export type AspectId = "9:16";
 
