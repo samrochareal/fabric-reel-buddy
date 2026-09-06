@@ -849,36 +849,12 @@ function EditorPage() {
                 <div className="flex items-start gap-2 rounded-lg border border-border/70 bg-background/60 p-3">
                   <Scissors className="mt-0.5 size-4 shrink-0 text-primary" />
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    Aqui você <span className="font-bold text-foreground">remove as bordas
-                    superior e inferior</span> do vídeo original (marcas d\u2019água, legendas,
-                    logos). As linhas tracejadas no preview mostram exatamente onde será o corte.
+                    Aqui você <span className="font-bold text-foreground">corta o topo e o
+                    rodapé do vídeo</span> (marcas d’água, legendas, logos). O corte remove só o
+                    vídeo — a imagem de fundo continua visível nessa área.
                   </p>
                 </div>
 
-                <p className="mt-4 text-xs font-semibold text-muted-foreground">Cor das bordas</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <Input
-                    type="color"
-                    value={opts.border.color}
-                    onChange={(e) => patch({ border: { ...opts.border, color: e.target.value } })}
-                    className="h-9 w-14 p-1"
-                  />
-                  <Input
-                    value={opts.border.color}
-                    onChange={(e) => patch({ border: { ...opts.border, color: e.target.value } })}
-                    className="h-9 flex-1 text-xs"
-                  />
-                  {["#ffffff", "#000000"].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      aria-label={`Cor ${preset}`}
-                      onClick={() => patch({ border: { ...opts.border, color: preset } })}
-                      className="size-9 rounded-md border border-border"
-                      style={{ background: preset }}
-                    />
-                  ))}
-                </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1">
                   {(["manual", "auto"] as const).map((m) => (
