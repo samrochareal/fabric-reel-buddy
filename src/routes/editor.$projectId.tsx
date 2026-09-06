@@ -253,7 +253,9 @@ function EditorPage() {
                 : c,
             ),
           );
+          rendered += 1;
         } catch (err) {
+
           setClips((prev) =>
             prev.map((c) =>
               c.id === clip.id
