@@ -13,6 +13,8 @@ export type BackgroundImage = {
   /** data URL of the PNG/JPG the user uploaded or created */
   src: string | null;
   opacity: number;
+  /** "back" = atrás do vídeo (padrão), "front" = por cima do vídeo */
+  layer: "back" | "front";
 };
 
 
@@ -52,7 +54,7 @@ export const defaultEditOptions = (): EditOptions => ({
   bottom: { enabled: false, text: "", color: "#ffffff", size: 44 },
   overlayOpacity: 0,
   overlayColor: "#000000",
-  bgImage: { enabled: false, src: null, opacity: 1 },
+  bgImage: { enabled: false, src: null, opacity: 1, layer: "back" },
   fadeIn: false,
 });
 
@@ -177,6 +179,7 @@ function buildFilterChain(
   const py = Math.min(1, Math.max(0, opts.posY));
 
   const parts: string[] = [];
+  const bgFront = opts.bgImage.layer === "front";
   // Cover-fit the source to the output frame, scale it by the zoom factor,
   // then place it over the background (solid colour, optionally an image).
   parts.push(
@@ -191,14 +194,20 @@ function buildFilterChain(
       `[${inputs.bgIndex}:v]scale=${w}:${h}:force_original_aspect_ratio=increase,` +
         `crop=${w}:${h},format=rgba,colorchannelmixer=aa=${alpha.toFixed(3)}[bgimg]`,
     );
-    parts.push(`[bgc][bgimg]overlay=0:0[bgm]`);
-    bgLabel = "bgm";
+    if (!bgFront) {
+      parts.push(`[bgc][bgimg]overlay=0:0[bgm]`);
+      bgLabel = "bgm";
+    }
   }
   parts.push(
     `[${bgLabel}][vid]overlay=x=(W-w)*${px.toFixed(3)}:y=(H-h)*${py.toFixed(3)}:shortest=1[base]`,
   );
 
   let label = "base";
+  if (inputs.bgIndex !== null && bgFront) {
+    parts.push(`[base][bgimg]overlay=0:0[bfr]`);
+    label = "bfr";
+  }
   const push = (filter: string, next: string) => {
     parts.push(`[${label}]${filter}[${next}]`);
     label = next;
