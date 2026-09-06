@@ -84,7 +84,36 @@ function EditorPage() {
   const [running, setRunning] = useState(false);
   const [engineReady, setEngineReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
+
+  // our own player state, so the play button never moves with the video
+  const playerRef = useRef<HTMLVideoElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [pos, setPos] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [muted, setMuted] = useState(true);
+
+  const togglePlay = () => {
+    const el = playerRef.current;
+    if (!el) return;
+    if (el.paused) void el.play();
+    else el.pause();
+  };
+
+  const seekTo = (ratio: number) => {
+    const el = playerRef.current;
+    setPos(ratio);
+    if (el && el.duration) el.currentTime = ratio * el.duration;
+  };
+
+  const fmtTime = (s: number) => {
+    if (!Number.isFinite(s) || s <= 0) return "0:00";
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  };
+
 
 
   const patch = (next: Partial<EditOptions>) => setOpts((prev) => ({ ...prev, ...next }));
