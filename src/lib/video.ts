@@ -1,7 +1,5 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
-// Bundled by Vite so the worker URL always resolves (see classWorkerURL below).
-import ffmpegWorkerUrl from "./ffmpeg-worker?worker&url";
 
 export type AspectId = "9:16";
 
@@ -100,7 +98,7 @@ let cachedWorkerURL: string | null = null;
 async function classWorkerURL(): Promise<string | undefined> {
   if (cachedWorkerURL) return cachedWorkerURL;
   try {
-    const res = await fetch(ffmpegWorkerUrl);
+    const res = await fetch("/ffmpeg-worker.js");
     const code = await res.text();
     cachedWorkerURL = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
     return cachedWorkerURL;
