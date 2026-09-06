@@ -1183,7 +1183,7 @@ function EditorPage() {
 
           <div className="sticky bottom-4 space-y-2">
             <Button
-              className="h-12 w-full text-base"
+              className="h-12 w-full text-base disabled:opacity-100"
               onClick={() => void handleProcess()}
               disabled={running || queuedClips.length === 0}
             >
@@ -1204,10 +1204,10 @@ function EditorPage() {
                 className="w-full"
                 onClick={() => {
                   cancelledRef.current = true;
-                  toast.info("O lote será interrompido após o vídeo atual.");
+                  toast.info("O processamento será pausado após o vídeo atual.");
                 }}
               >
-                Cancelar lote
+                <Pause className="mr-2 size-4" /> Pausar processamento
               </Button>
             )}
             <p className="text-center text-[11px] text-muted-foreground">
@@ -1219,3 +1219,4 @@ function EditorPage() {
     </div>
   );
 }
+
