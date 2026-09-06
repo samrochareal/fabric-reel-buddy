@@ -90,10 +90,23 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
  * resolve — the worker then never boots and `load()` hangs forever. Building it
  * ourselves with Vite's `?worker&url` gives a stable, bundled worker URL.
  */
-export const __workerUrl = ffmpegWorkerUrl;
+let cachedWorkerURL: string | null = null;
 
-function classWorkerURL(): string | undefined {
-  return ffmpegWorkerUrl || undefined;
+/**
+ * The worker script is turned into a blob URL: a same-origin worker script has
+ * to carry the COEP header itself under cross-origin isolation, while a blob
+ * worker simply inherits the page's policy.
+ */
+async function classWorkerURL(): Promise<string | undefined> {
+  if (cachedWorkerURL) return cachedWorkerURL;
+  try {
+    const res = await fetch(ffmpegWorkerUrl);
+    const code = await res.text();
+    cachedWorkerURL = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+    return cachedWorkerURL;
+  } catch {
+    return undefined;
+  }
 }
 
 async function tryLoad(
@@ -114,7 +127,7 @@ async function tryLoad(
 }
 
 async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
-  const worker = classWorkerURL();
+  const worker = await classWorkerURL();
   const cores = typeof navigator !== "undefined" ? (navigator.hardwareConcurrency ?? 4) : 4;
   const canThread =
     typeof window !== "undefined" &&
