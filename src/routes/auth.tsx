@@ -35,6 +35,12 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const [remember, setRemember] = useState(true);
+
+  useEffect(() => {
+    setRemember(getRememberMe());
+  }, []);
+
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
