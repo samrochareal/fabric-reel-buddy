@@ -323,7 +323,7 @@ function EditorPage() {
   }
 
 
-  const gridClips = grid === 1 ? (selected ? [selected] : []) : clips.slice(0, grid);
+  const previewClip = selected;
   const { w: outW, h: outH } = ASPECTS[opts.aspect];
 
   const framePreview = (clip: Clip | undefined, small: boolean) => {
