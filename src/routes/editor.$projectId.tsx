@@ -1076,7 +1076,7 @@ function EditorPage() {
                       Você ainda não salvou nenhum perfil no Criador de Overlay.
                     </p>
                   ) : (
-                    <div className="mt-3 grid grid-cols-4 gap-2">
+                    <div className="mt-3 grid grid-cols-3 gap-2">
                       {savedOverlays.map((preset) => (
                         <button
                           key={preset.slot}
@@ -1087,17 +1087,19 @@ function EditorPage() {
                             });
                             toast.success(`Overlay “${preset.name}” aplicada.`);
                           }}
-                          className={`overflow-hidden rounded border transition-colors ${
+                          className={`overflow-hidden rounded border p-1 text-left transition-colors ${
                             opts.bgImage.src === preset.dataUrl
-                              ? "border-primary"
+                              ? "border-primary bg-primary/10"
                               : "border-border hover:border-primary/60"
                           }`}
                           title={preset.name}
                         >
-                          <img src={preset.dataUrl} alt={preset.name} className="aspect-[9/16] w-full object-cover" />
+                          <img src={preset.dataUrl} alt={preset.name} className="aspect-[9/16] w-full rounded-sm object-cover" />
+                          <p className="mt-1 truncate text-[10px] font-semibold">{preset.name}</p>
                         </button>
                       ))}
                     </div>
+
                   )}
                   <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
                     <a href="/criador-de-overlay" target="_blank" rel="noreferrer">
