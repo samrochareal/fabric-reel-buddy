@@ -521,12 +521,15 @@ function EditorPage() {
               </button>
             </div>
 
-            <div className="flex items-start gap-2 border-b border-border/60 bg-turbo/10 px-3 py-3 text-xs font-semibold text-turbo">
-              <Zap className="mt-0.5 size-4 shrink-0" />
-              <span className="flex-1">
-                Todas as funções liberadas: títulos, bordas, overlay, velocidade e lotes sem limite
-              </span>
-            </div>
+            {doneClips.length > 0 && !running && (
+              <div className="border-b border-border/60 px-3 py-3">
+                <Button className="w-full" size="sm" onClick={() => void downloadAll()}>
+                  <Archive className="mr-1.5 size-4" /> Baixar todos ({doneClips.length})
+                </Button>
+              </div>
+            )}
+
+
 
             <ul className="max-h-[540px] divide-y divide-border/60 overflow-y-auto">
               {clips.length === 0 && (
