@@ -134,6 +134,21 @@ function AuthPage() {
             Seus projetos e perfis de overlay ficam salvos na sua conta.
           </p>
 
+          <label className="mt-5 flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-background/60 p-3">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 accent-primary"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+            />
+            <span className="text-xs">
+              <span className="font-semibold">Continuar conectado</span>
+              <span className="block text-muted-foreground">
+                Mantenha o acesso salvo neste dispositivo e não precise entrar novamente.
+              </span>
+            </span>
+          </label>
+
           <Button
             variant="secondary"
             className="mt-5 h-11 w-full"
