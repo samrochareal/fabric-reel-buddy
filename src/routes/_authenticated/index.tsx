@@ -300,6 +300,8 @@ function EditorPage() {
     cancelledRef.current = false;
 
     let rendered = 0;
+    let renderedBytes = 0;
+
 
     try {
       const videoLib = await import("@/lib/video");
