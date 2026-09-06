@@ -55,7 +55,9 @@ function OverlayCreator() {
   const [cfg, setCfg] = useState<OverlayConfig>(defaultOverlayConfig);
   const [presets, setPresets] = useState<OverlayPreset[]>([]);
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
+  const [presetName, setPresetName] = useState("");
   const [hint, setHint] = useState(true);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
