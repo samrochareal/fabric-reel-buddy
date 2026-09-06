@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedCriadorDeOverlayRouteImport } from './routes/_authenticated/criador-de-overlay'
+import { Route as ApiPublicBootstrapMasterRouteImport } from './routes/api/public/bootstrap-master'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -46,6 +47,12 @@ const AuthenticatedCriadorDeOverlayRoute =
     path: '/criador-de-overlay',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicBootstrapMasterRoute =
+  ApiPublicBootstrapMasterRouteImport.update({
+    id: '/api/public/bootstrap-master',
+    path: '/api/public/bootstrap-master',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -53,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/criador-de-overlay': typeof AuthenticatedCriadorDeOverlayRoute
+  '/api/public/bootstrap-master': typeof ApiPublicBootstrapMasterRoute
 }
 export interface FileRoutesByTo {
   '/app': typeof AppRoute
@@ -60,6 +68,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/criador-de-overlay': typeof AuthenticatedCriadorDeOverlayRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/bootstrap-master': typeof ApiPublicBootstrapMasterRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,12 +78,25 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/criador-de-overlay': typeof AuthenticatedCriadorDeOverlayRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/bootstrap-master': typeof ApiPublicBootstrapMasterRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/auth' | '/admin' | '/criador-de-overlay'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/admin'
+    | '/criador-de-overlay'
+    | '/api/public/bootstrap-master'
   fileRoutesByTo: FileRoutesByTo
-  to: '/app' | '/auth' | '/admin' | '/criador-de-overlay' | '/'
+  to:
+    | '/app'
+    | '/auth'
+    | '/admin'
+    | '/criador-de-overlay'
+    | '/'
+    | '/api/public/bootstrap-master'
   id:
     | '__root__'
     | '/_authenticated'
@@ -83,12 +105,14 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/criador-de-overlay'
     | '/_authenticated/'
+    | '/api/public/bootstrap-master'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRoute
+  ApiPublicBootstrapMasterRoute: typeof ApiPublicBootstrapMasterRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -135,6 +159,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCriadorDeOverlayRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/bootstrap-master': {
+      id: '/api/public/bootstrap-master'
+      path: '/api/public/bootstrap-master'
+      fullPath: '/api/public/bootstrap-master'
+      preLoaderRoute: typeof ApiPublicBootstrapMasterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -157,6 +188,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AppRoute: AppRoute,
   AuthRoute: AuthRoute,
+  ApiPublicBootstrapMasterRoute: ApiPublicBootstrapMasterRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
