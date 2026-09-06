@@ -1,5 +1,7 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
+// Bundled by Vite so the worker URL always resolves (see classWorkerURL below).
+import ffmpegWorkerUrl from "@ffmpeg/ffmpeg/worker?worker&url";
 
 export type AspectId = "9:16";
 
@@ -88,15 +90,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
  * resolve — the worker then never boots and `load()` hangs forever. Building it
  * ourselves with Vite's `?worker&url` gives a stable, bundled worker URL.
  */
-async function classWorkerURL(): Promise<string | undefined> {
-  try {
-    const mod = (await import("@ffmpeg/ffmpeg/dist/esm/worker.js?worker&url")) as {
-      default: string;
-    };
-    return mod.default;
-  } catch {
-    return undefined;
-  }
+function classWorkerURL(): string | undefined {
+  return ffmpegWorkerUrl || undefined;
 }
 
 async function tryLoad(
@@ -117,7 +112,7 @@ async function tryLoad(
 }
 
 async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
-  const worker = await classWorkerURL();
+  const worker = classWorkerURL();
   const cores = typeof navigator !== "undefined" ? (navigator.hardwareConcurrency ?? 4) : 4;
   const canThread =
     typeof window !== "undefined" &&
