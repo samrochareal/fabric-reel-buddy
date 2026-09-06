@@ -22,7 +22,8 @@ export type EditOptions = {
   /** playback rate, e.g. 1.02 for anti-duplication */
   speed: number;
   mirror: boolean;
-  border: { enabled: boolean; color: string; width: number };
+  /** solid bars painted over the top/bottom of the frame to hide watermarks */
+  border: { color: string; mode: "manual" | "auto"; top: number; bottom: number };
   title: { enabled: boolean; text: string; color: string; size: number };
   bottom: { enabled: boolean; text: string; color: string; size: number };
   overlayOpacity: number;
@@ -38,7 +39,7 @@ export const defaultEditOptions = (): EditOptions => ({
   bgColor: "#000000",
   speed: 1,
   mirror: false,
-  border: { enabled: false, color: "#ffffff", width: 24 },
+  border: { color: "#ffffff", mode: "manual", top: 0, bottom: 0 },
   title: { enabled: false, text: "", color: "#ffffff", size: 64 },
   bottom: { enabled: false, text: "", color: "#ffffff", size: 44 },
   overlayOpacity: 0,
@@ -72,7 +73,7 @@ export function buildOverlayPng(opts: EditOptions, titleText: string): Promise<B
   const { w, h } = ASPECTS[opts.aspect];
   const hasTitle = opts.title.enabled && titleText.trim().length > 0;
   const hasBottom = opts.bottom.enabled && opts.bottom.text.trim().length > 0;
-  const hasBorder = opts.border.enabled && opts.border.width > 0;
+  const hasBorder = opts.border.top > 0 || opts.border.bottom > 0;
   const hasTint = opts.overlayOpacity > 0;
   if (!hasTitle && !hasBottom && !hasBorder && !hasTint) return Promise.resolve(null);
 
@@ -90,9 +91,12 @@ export function buildOverlayPng(opts: EditOptions, titleText: string): Promise<B
   }
 
   if (hasBorder) {
-    ctx.strokeStyle = opts.border.color;
-    ctx.lineWidth = opts.border.width;
-    ctx.strokeRect(opts.border.width / 2, opts.border.width / 2, w - opts.border.width, h - opts.border.width);
+    ctx.fillStyle = opts.border.color;
+    if (opts.border.top > 0) ctx.fillRect(0, 0, w, Math.round(h * opts.border.top));
+    if (opts.border.bottom > 0) {
+      const bh = Math.round(h * opts.border.bottom);
+      ctx.fillRect(0, h - bh, w, bh);
+    }
   }
 
   const drawWrapped = (text: string, size: number, color: string, baselineY: number, fromTop: boolean) => {
@@ -137,7 +141,7 @@ export function buildOverlayPng(opts: EditOptions, titleText: string): Promise<B
 
 function buildFilterChain(opts: EditOptions, hasOverlay: boolean): string {
   const { w, h } = ASPECTS[opts.aspect];
-  const zoom = Math.min(2, Math.max(0.2, opts.zoom));
+  const zoom = Math.min(5, Math.max(0.5, opts.zoom));
   // zoom 1 = video covers the whole frame; below 1 it shrinks over the background.
   const sw = Math.max(2, Math.round((w * zoom) / 2) * 2);
   const sh = Math.max(2, Math.round((h * zoom) / 2) * 2);
