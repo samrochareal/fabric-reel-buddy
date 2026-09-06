@@ -540,7 +540,7 @@ function EditorPage() {
       <div className="flex items-end justify-between gap-4 px-4 pt-5">
         <h1 className="font-display text-xl font-bold tracking-tight">Editor em lote</h1>
         <p className="text-xs text-muted-foreground">
-          Até {MAX_CLIPS} vídeos por lote · processamento no seu navegador · uso ilimitado
+          Até {MAX_CLIPS} vídeos por lote · máximo {MAX_FILE_MB}MB · {MAX_DURATION_S}s cada
         </p>
       </div>
 
@@ -557,7 +557,7 @@ function EditorPage() {
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
-              addFiles(e.dataTransfer.files);
+              void addFiles(e.dataTransfer.files);
             }}
             role="button"
             tabIndex={0}
@@ -565,7 +565,9 @@ function EditorPage() {
           >
             <UploadCloud className="size-6 text-primary" />
             <p className="mt-2 text-sm font-semibold">Arraste vídeos ou clique</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">MP4, MOV, WebM</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              MP4, MOV, WebM · máximo {MAX_FILE_MB}MB · {MAX_DURATION_S}s cada
+            </p>
             <input
               ref={inputRef}
               type="file"
@@ -573,10 +575,11 @@ function EditorPage() {
               multiple
               className="hidden"
               onChange={(e) => {
-                if (e.target.files) addFiles(e.target.files);
+                if (e.target.files) void addFiles(e.target.files);
                 e.target.value = "";
               }}
             />
+
           </div>
 
           <div className="rounded-xl border border-border bg-card">
