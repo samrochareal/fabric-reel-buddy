@@ -298,14 +298,29 @@ function EditorPage() {
         >
           <video
             key={clip.id}
+            ref={isMain ? playerRef : undefined}
             src={clip.resultUrl ?? clip.previewUrl}
             className="size-full object-cover"
             style={{ transform: o.mirror ? "scaleX(-1)" : undefined }}
-            muted
+            muted={isMain ? muted : true}
             loop
             playsInline
-            controls={!small && grid === 1}
             preload="metadata"
+            onLoadedMetadata={
+              isMain
+                ? (e) => setDuration(e.currentTarget.duration || 0)
+                : undefined
+            }
+            onTimeUpdate={
+              isMain
+                ? (e) => {
+                    const el = e.currentTarget;
+                    if (el.duration) setPos(el.currentTime / el.duration);
+                  }
+                : undefined
+            }
+            onPlay={isMain ? () => setPlaying(true) : undefined}
+            onPause={isMain ? () => setPlaying(false) : undefined}
           />
         </div>
       ) : (
@@ -320,6 +335,22 @@ function EditorPage() {
           style={{ background: o.overlayColor, opacity: o.overlayOpacity }}
         />
       )}
+
+      {o.logo.enabled && o.logo.src && (
+        <img
+          src={o.logo.src}
+          alt=""
+          className="pointer-events-none absolute"
+          style={{
+            width: `${o.logo.scale * 100}%`,
+            left: `${o.logo.x * 100}%`,
+            top: `${o.logo.y * 100}%`,
+            transform: `translate(-${o.logo.x * 100}%, -${o.logo.y * 100}%)`,
+            opacity: o.logo.opacity,
+          }}
+        />
+      )}
+
 
       {/* solid bars that cover the original top/bottom borders */}
       {o.border.top > 0 && (
