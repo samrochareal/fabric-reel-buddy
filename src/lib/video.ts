@@ -59,18 +59,54 @@ export const defaultEditOptions = (): EditOptions => ({
 
 
 let ffmpeg: FFmpeg | null = null;
+let loading: Promise<FFmpeg> | null = null;
+/** true when the multi-threaded core is in use (needs cross-origin isolation) */
+export let ffmpegThreads = 1;
+
+async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
+  const instance = new FFmpeg();
+  if (onLog) instance.on("log", ({ message }) => onLog(message));
+
+  const cores = typeof navigator !== "undefined" ? (navigator.hardwareConcurrency ?? 4) : 4;
+  const canThread =
+    typeof window !== "undefined" &&
+    typeof SharedArrayBuffer !== "undefined" &&
+    (window as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated === true &&
+    cores > 1;
+
+  if (canThread) {
+    const mt = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.10/dist/esm";
+    try {
+      await instance.load({
+        coreURL: await toBlobURL(`${mt}/ffmpeg-core.js`, "text/javascript"),
+        wasmURL: await toBlobURL(`${mt}/ffmpeg-core.wasm`, "application/wasm"),
+        workerURL: await toBlobURL(`${mt}/ffmpeg-core.worker.js`, "text/javascript"),
+      });
+      ffmpegThreads = Math.min(8, cores);
+      return instance;
+    } catch {
+      ffmpegThreads = 1;
+    }
+  }
+
+  const base = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
+  await instance.load({
+    coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
+    wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
+  });
+  ffmpegThreads = 1;
+  return instance;
+}
 
 export async function getFFmpeg(onLog?: (msg: string) => void): Promise<FFmpeg> {
-  if (!ffmpeg) {
-    ffmpeg = new FFmpeg();
-    if (onLog) ffmpeg.on("log", ({ message }) => onLog(message));
-    const base = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
+  if (ffmpeg) return ffmpeg;
+  if (!loading) {
+    loading = loadCore(onLog).then((i) => {
+      ffmpeg = i;
+      return i;
     });
   }
-  return ffmpeg;
+  return loading;
 }
 
 /**
@@ -186,8 +222,10 @@ function buildFilterChain(
   // Cover-fit the source to the output frame, scale it by the zoom factor,
   // then place it over the background (solid colour, optionally an image).
   parts.push(
-    `[0:v]${opts.mirror ? "hflip," : ""}scale=${w}:${h}:force_original_aspect_ratio=increase,` +
-      `crop=${w}:${h},scale=${sw}:${sh}` +
+    // one scale pass straight to the final size (cover fit) instead of
+    // scaling to the frame and rescaling by the zoom factor.
+    `[0:v]${opts.mirror ? "hflip," : ""}scale=${sw}:${sh}:force_original_aspect_ratio=increase,` +
+      `crop=${sw}:${sh}` +
       (cutTop > 0 || cutBottom > 0 ? `,crop=${sw}:${vh}:0:${cutTop}` : "") +
       `,setsar=1[vid]`,
   );
@@ -287,18 +325,23 @@ export async function processVideo(
     "-preset",
     "veryfast",
     "-crf",
-    "26",
-
+    "23",
+    "-g",
+    "60",
+    "-threads",
+    String(ffmpegThreads),
     "-pix_fmt",
     "yuv420p",
-    "-c:a",
-    "aac",
-    "-b:a",
-    "128k",
-    "-movflags",
-    "+faststart",
-    outputName,
   );
+  const mp4Audio = /mp4|quicktime|m4v/i.test(file.type);
+  if (opts.speed !== 1 || !mp4Audio) {
+    // audio was re-timed (or comes from a container whose codec MP4 cannot hold)
+    args.push("-c:a", "aac", "-b:a", "128k");
+  } else {
+    // untouched audio is copied straight through — no quality loss, no cost
+    args.push("-c:a", "copy");
+  }
+  args.push("-movflags", "+faststart", outputName);
 
   await ff.exec(args);
   const data = await ff.readFile(outputName);

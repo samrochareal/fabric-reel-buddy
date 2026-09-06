@@ -511,7 +511,11 @@ function EditorPage() {
         {/* ---------- Column 1: upload + queue ---------- */}
         <section className="space-y-3">
           <div
-            className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/40 px-4 py-8 text-center transition-colors hover:border-primary/60 hover:bg-card"
+            className={`flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/40 px-4 py-8 text-center transition-colors ${
+              running
+                ? "pointer-events-none opacity-50"
+                : "cursor-pointer hover:border-primary/60 hover:bg-card"
+            }`}
             onClick={() => inputRef.current?.click()}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
@@ -697,7 +701,10 @@ function EditorPage() {
         </section>
 
         {/* ---------- Column 3: batch fine-tune ---------- */}
-        <section className="space-y-3">
+        <section
+          className={`space-y-3 ${running ? "pointer-events-none opacity-50" : ""}`}
+          aria-disabled={running}
+        >
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1">
               <button
@@ -841,7 +848,11 @@ function EditorPage() {
             <RotateCcw className="mr-1.5 size-4" /> Resetar todas as edições
           </Button>
 
-          <div className="rounded-xl border border-border bg-card p-2">
+          <div
+            className={`rounded-xl border border-border bg-card p-2 ${
+              running ? "pointer-events-none opacity-50" : ""
+            }`}
+          >
             <div className="flex flex-wrap gap-1">
               {TABS.map((t) => (
                 <button
@@ -860,7 +871,12 @@ function EditorPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4">
+          <div
+            className={`rounded-xl border border-border bg-card p-4 ${
+              running ? "pointer-events-none opacity-50" : ""
+            }`}
+            aria-disabled={running}
+          >
             {tab === "titulo" && (
               <>
                 <div className="flex items-center justify-between">
