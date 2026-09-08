@@ -30,7 +30,14 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ASPECTS, defaultEditOptions, type EditOptions } from "@/lib/video";
+import {
+  ASPECTS,
+  defaultEditOptions,
+  fontStack,
+  TEXT_FONTS,
+  type EditOptions,
+  type TextBlock,
+} from "@/lib/video";
 import { logVideoJobs } from "@/lib/admin";
 import { useBranding } from "@/lib/branding";
 
@@ -78,10 +85,9 @@ const MAX_FILE_MB = 100;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 const MAX_DURATION_S = 180;
 
-type EditTab = "titulo" | "inferior" | "overlay" | "extras";
+type EditTab = "texto" | "overlay" | "extras";
 const TABS: { id: EditTab; label: string }[] = [
-  { id: "titulo", label: "Título" },
-  { id: "inferior", label: "Inferior" },
+  { id: "texto", label: "Texto" },
   { id: "overlay", label: "Overlay" },
   { id: "extras", label: "Extras" },
 ];
@@ -103,7 +109,7 @@ function EditorPage() {
   const [opts, setOpts] = useState<EditOptions>(defaultEditOptions);
 
   
-  const [tab, setTab] = useState<EditTab>("titulo");
+  const [tab, setTab] = useState<EditTab>("texto");
   const [antiDup, setAntiDup] = useState(false);
   const [scope, setScope] = useState<"batch" | "single">("batch");
   const [overrides, setOverrides] = useState<Record<string, FineTune>>({});
@@ -116,7 +122,15 @@ function EditorPage() {
   const settingsLoaded = useRef(false);
   useEffect(() => {
     void loadEditSettings<EditOptions>().then((saved) => {
-      if (saved) setOpts((prev) => ({ ...prev, ...saved }));
+      if (saved)
+        setOpts((prev) => ({
+          ...prev,
+          ...saved,
+          title: { ...prev.title, ...(saved.title ?? {}) },
+          bottom: { ...prev.bottom, ...(saved.bottom ?? {}) },
+          border: { ...prev.border, ...(saved.border ?? {}) },
+          bgImage: { ...prev.bgImage, ...(saved.bgImage ?? {}) },
+        }));
       settingsLoaded.current = true;
     });
   }, []);
@@ -391,6 +405,15 @@ function EditorPage() {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
+  /** fires one download per finished video, slightly staggered so the browser keeps them all */
+  function downloadEach() {
+    if (doneClips.length === 0) return;
+    doneClips.forEach((clip, i) => {
+      setTimeout(() => downloadClip(clip), i * 300);
+    });
+    toast.success(`Baixando ${doneClips.length} vídeo(s) separadamente…`);
+  }
+
   async function downloadAll() {
     if (doneClips.length === 0) return;
     const { default: JSZip } = await import("jszip");
@@ -407,6 +430,85 @@ function EditorPage() {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
+
+  /** shared font / colour / size / position controls for a text block */
+  const textControls = (
+    block: TextBlock,
+    set: (next: Partial<TextBlock>) => void,
+    minSize: number,
+    maxSize: number,
+  ) => (
+    <div className="mt-3 space-y-3">
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <span className="text-muted-foreground">Fonte</span>
+        <select
+          value={block.font}
+          onChange={(e) => set({ font: e.target.value })}
+          className="h-8 flex-1 rounded-md border border-border bg-background px-2 text-xs"
+          style={{ fontFamily: fontStack(block.font) }}
+        >
+          {TEXT_FONTS.map((f) => (
+            <option key={f.id} value={f.id} style={{ fontFamily: f.stack }}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">Cor</span>
+        <Input
+          type="color"
+          value={block.color}
+          onChange={(e) => set({ color: e.target.value })}
+          className="h-8 w-16 p-1"
+        />
+      </div>
+      {[
+        {
+          label: "Tamanho",
+          value: block.size,
+          display: `${block.size}px`,
+          min: minSize,
+          max: maxSize,
+          step: 2,
+          apply: (v: number) => set({ size: v }),
+        },
+        {
+          label: "Posição horizontal",
+          value: block.x,
+          display: `${Math.round(block.x)}%`,
+          min: 0,
+          max: 100,
+          step: 1,
+          apply: (v: number) => set({ x: v }),
+        },
+        {
+          label: "Posição vertical",
+          value: block.y,
+          display: `${Math.round(block.y)}%`,
+          min: 0,
+          max: 100,
+          step: 1,
+          apply: (v: number) => set({ y: v }),
+        },
+      ].map((row) => (
+        <div key={row.label}>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">{row.label}</span>
+            <span className="font-bold">{row.display}</span>
+          </div>
+          <Slider
+            className="mt-2"
+            value={[row.value]}
+            min={row.min}
+            max={row.max}
+            step={row.step}
+            onValueChange={([v]) => row.apply(v ?? row.value)}
+          />
+        </div>
+      ))}
+    </div>
+  );
 
   const previewClip = selected;
   const { w: outW, h: outH } = ASPECTS[opts.aspect];
@@ -454,7 +556,7 @@ function EditorPage() {
             key={clip.id}
             ref={isMain ? playerRef : undefined}
             src={clip.resultUrl ?? clip.previewUrl}
-            className="size-full object-cover"
+            className={`size-full ${o.fit === "cover" ? "object-cover" : "object-contain"}`}
             style={{ transform: o.mirror ? "scaleX(-1)" : undefined }}
             muted={isMain ? muted : true}
             loop
@@ -517,9 +619,12 @@ function EditorPage() {
 
       {o.title.enabled && (
         <p
-          className="pointer-events-none absolute inset-x-[7%] top-[8%] text-center font-bold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+          className="pointer-events-none absolute w-[86%] -translate-x-1/2 -translate-y-1/2 text-center font-bold leading-tight"
           style={{
+            left: `${o.title.x}%`,
+            top: `${o.title.y}%`,
             color: o.title.color,
+            fontFamily: fontStack(o.title.font),
             fontSize: `${((o.title.size / outW) * 100).toFixed(2)}cqw`,
           }}
         >
@@ -528,9 +633,12 @@ function EditorPage() {
       )}
       {o.bottom.enabled && o.bottom.text && (
         <p
-          className="pointer-events-none absolute inset-x-[7%] bottom-[8%] text-center font-bold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+          className="pointer-events-none absolute w-[86%] -translate-x-1/2 -translate-y-1/2 text-center font-bold leading-tight"
           style={{
+            left: `${o.bottom.x}%`,
+            top: `${o.bottom.y}%`,
             color: o.bottom.color,
+            fontFamily: fontStack(o.bottom.font),
             fontSize: `${((o.bottom.size / outW) * 100).toFixed(2)}cqw`,
           }}
         >
@@ -674,29 +782,32 @@ function EditorPage() {
                       )}
                     </span>
 
-                    {clip.status === "done" ? (
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          downloadClip(clip);
-                        }}
-                        className="rounded p-1 text-turbo hover:bg-turbo/10"
-                      >
-                        <Download className="size-4" />
-                      </span>
-                    ) : (
-                      !running && (
+                    <span className="flex shrink-0 items-center gap-0.5">
+                      {clip.status === "done" && (
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadClip(clip);
+                          }}
+                          className="rounded p-1 text-turbo hover:bg-turbo/10"
+                          title="Baixar este vídeo"
+                        >
+                          <Download className="size-4" />
+                        </span>
+                      )}
+                      {clip.status !== "processing" && (
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
                             removeClip(clip.id);
                           }}
                           className="rounded p-1 text-muted-foreground hover:text-destructive"
+                          title="Remover da fila"
                         >
                           <X className="size-4" />
                         </span>
-                      )
-                    )}
+                      )}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -765,9 +876,14 @@ function EditorPage() {
                 9:16 · 1080×1920
               </span>
               {doneClips.length > 0 && (
-                <Button variant="outline" size="sm" onClick={() => void downloadAll()}>
-                  <Archive className="mr-1.5 size-4" /> Baixar tudo (.zip)
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => void downloadAll()}>
+                    <Archive className="mr-1.5 size-4" /> Baixar tudo (.zip)
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadEach}>
+                    <Download className="mr-1.5 size-4" /> Baixar separados ({doneClips.length})
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -800,6 +916,29 @@ function EditorPage() {
               >
                 Só este vídeo
               </button>
+            </div>
+
+            <div className="mt-4">
+              <p className="text-xs text-muted-foreground">Enquadramento</p>
+              <div className="mt-2 grid grid-cols-2 gap-1 rounded-lg border border-border p-1">
+                {([
+                  { id: "contain", label: "Sem cortar" },
+                  { id: "cover", label: "Preencher" },
+                ] as const).map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => patch({ fit: f.id })}
+                    className={`rounded-md px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+                      (opts.fit ?? "contain") === f.id
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="mt-4 flex items-center justify-between">
@@ -951,106 +1090,54 @@ function EditorPage() {
             }`}
             aria-disabled={running}
           >
-            {tab === "titulo" && (
-              <>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold">Título no vídeo</p>
-                  <Switch
-                    checked={opts.title.enabled}
-                    onCheckedChange={(v) => patch({ title: { ...opts.title, enabled: v } })}
+            {tab === "texto" && (
+              <div className="space-y-5">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold">Título no vídeo</p>
+                    <Switch
+                      checked={opts.title.enabled}
+                      onCheckedChange={(v) => patch({ title: { ...opts.title, enabled: v } })}
+                    />
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                    Uma lista de títulos — um por linha. Cada linha vai para o vídeo
+                    correspondente da fila.
+                  </p>
+                  <Textarea
+                    className="mt-3 min-h-[110px] text-xs"
+                    placeholder={"Título do vídeo 1\nTítulo do vídeo 2"}
+                    value={opts.title.text}
+                    onChange={(e) => patch({ title: { ...opts.title, text: e.target.value } })}
+                    disabled={!opts.title.enabled}
                   />
-                </div>
-                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                  Ative para escrever uma lista de títulos — um por linha. Cada linha vai para o
-                  vídeo correspondente da fila.
-                </p>
-                <Textarea
-                  className="mt-3 min-h-[120px] text-xs"
-                  placeholder={"Título do vídeo 1\nTítulo do vídeo 2\nTítulo do vídeo 3"}
-                  value={opts.title.text}
-                  onChange={(e) => patch({ title: { ...opts.title, text: e.target.value } })}
-                  disabled={!opts.title.enabled}
-                />
-                <div className="mt-3 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Cor</span>
-                    <Input
-                      type="color"
-                      value={opts.title.color}
-                      onChange={(e) => patch({ title: { ...opts.title, color: e.target.value } })}
-                      className="h-8 w-16 p-1"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Tamanho</span>
-                      <span className="font-bold">{opts.title.size}px</span>
-                    </div>
-                    <Slider
-                      className="mt-2"
-                      value={[opts.title.size]}
-                      min={28}
-                      max={120}
-                      step={2}
-                      onValueChange={([v]) =>
-                        patch({ title: { ...opts.title, size: v ?? opts.title.size } })
-                      }
-                    />
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
+                  {textControls(opts.title, (next) => patch({ title: { ...opts.title, ...next } }), 28, 120)}
+                  <p className="mt-2 text-[11px] text-muted-foreground">
                     {titleLines.filter(Boolean).length} título(s) para {clips.length} vídeo(s)
                   </p>
                 </div>
-              </>
-            )}
 
-            {tab === "inferior" && (
-              <>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold">Texto inferior</p>
-                  <Switch
-                    checked={opts.bottom.enabled}
-                    onCheckedChange={(v) => patch({ bottom: { ...opts.bottom, enabled: v } })}
+                <div className="border-t border-border/60 pt-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold">Texto inferior</p>
+                    <Switch
+                      checked={opts.bottom.enabled}
+                      onCheckedChange={(v) => patch({ bottom: { ...opts.bottom, enabled: v } })}
+                    />
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                    Mesma legenda em todos os vídeos — ideal para @ ou CTA.
+                  </p>
+                  <Input
+                    className="mt-3 text-xs"
+                    placeholder="@seuperfil · siga para mais"
+                    value={opts.bottom.text}
+                    onChange={(e) => patch({ bottom: { ...opts.bottom, text: e.target.value } })}
+                    disabled={!opts.bottom.enabled}
                   />
+                  {textControls(opts.bottom, (next) => patch({ bottom: { ...opts.bottom, ...next } }), 20, 90)}
                 </div>
-                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                  Mesma legenda no rodapé de todos os vídeos — ideal para @ ou CTA.
-                </p>
-                <Input
-                  className="mt-3 text-xs"
-                  placeholder="@seuperfil · siga para mais"
-                  value={opts.bottom.text}
-                  onChange={(e) => patch({ bottom: { ...opts.bottom, text: e.target.value } })}
-                  disabled={!opts.bottom.enabled}
-                />
-                <div className="mt-3 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Cor</span>
-                    <Input
-                      type="color"
-                      value={opts.bottom.color}
-                      onChange={(e) => patch({ bottom: { ...opts.bottom, color: e.target.value } })}
-                      className="h-8 w-16 p-1"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Tamanho</span>
-                      <span className="font-bold">{opts.bottom.size}px</span>
-                    </div>
-                    <Slider
-                      className="mt-2"
-                      value={[opts.bottom.size]}
-                      min={20}
-                      max={90}
-                      step={2}
-                      onValueChange={([v]) =>
-                        patch({ bottom: { ...opts.bottom, size: v ?? opts.bottom.size } })
-                      }
-                    />
-                  </div>
-                </div>
-              </>
+              </div>
             )}
 
             {tab === "overlay" && (

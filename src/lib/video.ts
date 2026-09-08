@@ -18,9 +18,39 @@ export type BackgroundImage = {
 };
 
 
+/** fonts offered for the on-video texts (all loaded in the document head) */
+export const TEXT_FONTS: { id: string; label: string; stack: string }[] = [
+  { id: "instrument", label: "Padrão", stack: '"Instrument Sans", Arial, sans-serif' },
+  { id: "anton", label: "Anton", stack: '"Anton", Impact, sans-serif' },
+  { id: "bebas", label: "Bebas Neue", stack: '"Bebas Neue", Impact, sans-serif' },
+  { id: "montserrat", label: "Montserrat", stack: '"Montserrat", Arial, sans-serif' },
+  { id: "oswald", label: "Oswald", stack: '"Oswald", Arial, sans-serif' },
+  { id: "poppins", label: "Poppins", stack: '"Poppins", Arial, sans-serif' },
+  { id: "playfair", label: "Playfair Display", stack: '"Playfair Display", Georgia, serif' },
+];
+
+export const fontStack = (id: string): string =>
+  TEXT_FONTS.find((f) => f.id === id)?.stack ?? TEXT_FONTS[0]!.stack;
+
+/** a text block painted over the frame */
+export type TextBlock = {
+  enabled: boolean;
+  text: string;
+  color: string;
+  size: number;
+  /** font id from TEXT_FONTS */
+  font: string;
+  /** horizontal centre, 0..100 (% of the frame width) */
+  x: number;
+  /** vertical centre, 0..100 (% of the frame height) */
+  y: number;
+};
+
 /** Every knob the batch editor exposes. */
 export type EditOptions = {
   aspect: AspectId;
+  /** "contain" keeps the whole original frame visible; "cover" fills and crops */
+  fit: "contain" | "cover";
   /** 1 = video fills the frame; below 1 it shrinks and the background shows */
   zoom: number;
   /** 0..5 placement anchor (2.5 = centered); 0 and 5 push the video off-frame */
@@ -33,8 +63,8 @@ export type EditOptions = {
   mirror: boolean;
   /** solid bars painted over the top/bottom of the frame to hide watermarks */
   border: { color: string; mode: "manual" | "auto"; top: number; bottom: number };
-  title: { enabled: boolean; text: string; color: string; size: number };
-  bottom: { enabled: boolean; text: string; color: string; size: number };
+  title: TextBlock;
+  bottom: TextBlock;
   overlayOpacity: number;
   overlayColor: string;
   bgImage: BackgroundImage;
@@ -42,6 +72,7 @@ export type EditOptions = {
 
 export const defaultEditOptions = (): EditOptions => ({
   aspect: "9:16",
+  fit: "contain",
   zoom: 1,
   posX: 2.5,
   posY: 2.5,
@@ -49,8 +80,24 @@ export const defaultEditOptions = (): EditOptions => ({
   speed: 1,
   mirror: false,
   border: { color: "#ffffff", mode: "manual", top: 0, bottom: 0 },
-  title: { enabled: false, text: "", color: "#ffffff", size: 64 },
-  bottom: { enabled: false, text: "", color: "#ffffff", size: 44 },
+  title: {
+    enabled: false,
+    text: "",
+    color: "#000000",
+    size: 64,
+    font: "instrument",
+    x: 50,
+    y: 12,
+  },
+  bottom: {
+    enabled: false,
+    text: "",
+    color: "#000000",
+    size: 44,
+    font: "instrument",
+    x: 50,
+    y: 90,
+  },
   overlayOpacity: 0,
   overlayColor: "#000000",
   bgImage: { enabled: false, src: null, opacity: 1, layer: "back" },
@@ -224,12 +271,23 @@ export async function buildOverlayPng(
   }
 
 
-  const drawWrapped = (text: string, size: number, color: string, baselineY: number, fromTop: boolean) => {
-    ctx.font = `700 ${size}px Inter, "Helvetica Neue", Arial, sans-serif`;
+  // make sure the chosen web fonts are ready before measuring/painting text
+  try {
+    await Promise.all([
+      document.fonts.load(`700 ${opts.title.size}px ${fontStack(opts.title.font)}`),
+      document.fonts.load(`700 ${opts.bottom.size}px ${fontStack(opts.bottom.font)}`),
+      document.fonts.ready,
+    ]);
+  } catch {
+    /* ignore */
+  }
+
+  const drawBlock = (block: TextBlock, text: string) => {
+    ctx.font = `700 ${block.size}px ${fontStack(block.font)}`;
     ctx.textAlign = "center";
-    ctx.fillStyle = color;
-    ctx.shadowColor = "rgba(0,0,0,0.65)";
-    ctx.shadowBlur = size * 0.35;
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = block.color;
+    ctx.shadowBlur = 0;
     const maxWidth = w * 0.86;
     const words = text.split(/\s+/);
     const lines: string[] = [];
@@ -244,22 +302,17 @@ export async function buildOverlayPng(
       }
     }
     if (current) lines.push(current);
-    const lineHeight = size * 1.2;
+    const lineHeight = block.size * 1.2;
+    const cx = (block.x / 100) * w;
+    const cy = (block.y / 100) * h;
+    const top = cy - ((lines.length - 1) * lineHeight) / 2;
     lines.forEach((line, i) => {
-      const y = fromTop
-        ? baselineY + i * lineHeight
-        : baselineY - (lines.length - 1 - i) * lineHeight;
-      ctx.fillText(line, w / 2, y);
+      ctx.fillText(line, cx, top + i * lineHeight);
     });
-    ctx.shadowBlur = 0;
   };
 
-  if (hasTitle) {
-    drawWrapped(titleText.trim(), opts.title.size, opts.title.color, h * 0.12, true);
-  }
-  if (hasBottom) {
-    drawWrapped(opts.bottom.text.trim(), opts.bottom.size, opts.bottom.color, h * 0.9, false);
-  }
+  if (hasTitle) drawBlock(opts.title, titleText.trim());
+  if (hasBottom) drawBlock(opts.bottom, opts.bottom.text.trim());
 
   return await new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
 }
@@ -295,11 +348,15 @@ function buildFilterChain(
   const bgFront = opts.bgImage.layer === "front";
   // Cover-fit the source to the output frame, scale it by the zoom factor,
   // then place it over the background (solid colour, optionally an image).
+  // "contain" keeps the whole original frame: it is scaled down inside the box
+  // and the empty area is transparent, so the background shows through.
+  const fitContain = opts.fit !== "cover";
+  const fitChain = fitContain
+    ? `scale=${sw}:${sh}:force_original_aspect_ratio=decrease:flags=fast_bilinear,` +
+      `format=rgba,pad=${sw}:${sh}:(ow-iw)/2:(oh-ih)/2:color=0x00000000`
+    : `scale=${sw}:${sh}:force_original_aspect_ratio=increase:flags=fast_bilinear,crop=${sw}:${sh}`;
   parts.push(
-    // one scale pass straight to the final size (cover fit) instead of
-    // scaling to the frame and rescaling by the zoom factor.
-    `[0:v]${opts.mirror ? "hflip," : ""}scale=${sw}:${sh}:force_original_aspect_ratio=increase:flags=fast_bilinear,` +
-      `crop=${sw}:${sh}` +
+    `[0:v]${opts.mirror ? "hflip," : ""}${fitChain}` +
       (cutTop > 0 || cutBottom > 0 ? `,crop=${sw}:${vh}:0:${cutTop}` : "") +
       `,setsar=1[vid]`,
   );
