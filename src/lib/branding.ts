@@ -17,6 +17,8 @@ export type Branding = {
   logo_url: string | null;
   icon_url: string | null;
   external_links: ExternalLink[];
+  referral_enabled: boolean;
+  referral_reward_credits: number;
 };
 
 export const defaultBranding: Branding = {
@@ -26,6 +28,8 @@ export const defaultBranding: Branding = {
   logo_url: null,
   icon_url: null,
   external_links: [],
+  referral_enabled: false,
+  referral_reward_credits: 5,
 };
 
 export const brandingQueryKey = ["branding"] as const;
