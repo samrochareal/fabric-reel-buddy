@@ -348,11 +348,15 @@ function buildFilterChain(
   const bgFront = opts.bgImage.layer === "front";
   // Cover-fit the source to the output frame, scale it by the zoom factor,
   // then place it over the background (solid colour, optionally an image).
+  // "contain" keeps the whole original frame: it is scaled down inside the box
+  // and the empty area is transparent, so the background shows through.
+  const fitContain = opts.fit !== "cover";
+  const fitChain = fitContain
+    ? `scale=${sw}:${sh}:force_original_aspect_ratio=decrease:flags=fast_bilinear,` +
+      `format=rgba,pad=${sw}:${sh}:(ow-iw)/2:(oh-ih)/2:color=0x00000000`
+    : `scale=${sw}:${sh}:force_original_aspect_ratio=increase:flags=fast_bilinear,crop=${sw}:${sh}`;
   parts.push(
-    // one scale pass straight to the final size (cover fit) instead of
-    // scaling to the frame and rescaling by the zoom factor.
-    `[0:v]${opts.mirror ? "hflip," : ""}scale=${sw}:${sh}:force_original_aspect_ratio=increase:flags=fast_bilinear,` +
-      `crop=${sw}:${sh}` +
+    `[0:v]${opts.mirror ? "hflip," : ""}${fitChain}` +
       (cutTop > 0 || cutBottom > 0 ? `,crop=${sw}:${vh}:0:${cutTop}` : "") +
       `,setsar=1[vid]`,
   );
