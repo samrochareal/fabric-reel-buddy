@@ -132,8 +132,13 @@ function applyBranding(branding: Branding) {
   const root = document.documentElement;
   root.style.setProperty("--primary", branding.palette.primary);
   root.style.setProperty("--ring", branding.palette.primary);
-  root.style.setProperty("--background", branding.palette.background);
-  root.style.setProperty("--accent", branding.palette.accent);
+  if (root.classList.contains("light")) {
+    root.style.removeProperty("--background");
+    root.style.removeProperty("--accent");
+  } else {
+    root.style.setProperty("--background", branding.palette.background);
+    root.style.setProperty("--accent", branding.palette.accent);
+  }
   document.title = branding.tagline
     ? `${branding.system_name} — ${branding.tagline}`
     : branding.system_name;
