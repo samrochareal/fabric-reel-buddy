@@ -30,7 +30,14 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ASPECTS, defaultEditOptions, type EditOptions } from "@/lib/video";
+import {
+  ASPECTS,
+  defaultEditOptions,
+  fontStack,
+  TEXT_FONTS,
+  type EditOptions,
+  type TextBlock,
+} from "@/lib/video";
 import { logVideoJobs } from "@/lib/admin";
 import { useBranding } from "@/lib/branding";
 
@@ -78,10 +85,9 @@ const MAX_FILE_MB = 100;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 const MAX_DURATION_S = 180;
 
-type EditTab = "titulo" | "inferior" | "overlay" | "extras";
+type EditTab = "texto" | "overlay" | "extras";
 const TABS: { id: EditTab; label: string }[] = [
-  { id: "titulo", label: "Título" },
-  { id: "inferior", label: "Inferior" },
+  { id: "texto", label: "Texto" },
   { id: "overlay", label: "Overlay" },
   { id: "extras", label: "Extras" },
 ];
@@ -103,7 +109,7 @@ function EditorPage() {
   const [opts, setOpts] = useState<EditOptions>(defaultEditOptions);
 
   
-  const [tab, setTab] = useState<EditTab>("titulo");
+  const [tab, setTab] = useState<EditTab>("texto");
   const [antiDup, setAntiDup] = useState(false);
   const [scope, setScope] = useState<"batch" | "single">("batch");
   const [overrides, setOverrides] = useState<Record<string, FineTune>>({});
@@ -116,7 +122,15 @@ function EditorPage() {
   const settingsLoaded = useRef(false);
   useEffect(() => {
     void loadEditSettings<EditOptions>().then((saved) => {
-      if (saved) setOpts((prev) => ({ ...prev, ...saved }));
+      if (saved)
+        setOpts((prev) => ({
+          ...prev,
+          ...saved,
+          title: { ...prev.title, ...(saved.title ?? {}) },
+          bottom: { ...prev.bottom, ...(saved.bottom ?? {}) },
+          border: { ...prev.border, ...(saved.border ?? {}) },
+          bgImage: { ...prev.bgImage, ...(saved.bgImage ?? {}) },
+        }));
       settingsLoaded.current = true;
     });
   }, []);
@@ -454,7 +468,7 @@ function EditorPage() {
             key={clip.id}
             ref={isMain ? playerRef : undefined}
             src={clip.resultUrl ?? clip.previewUrl}
-            className="size-full object-cover"
+            className={`size-full ${o.fit === "cover" ? "object-cover" : "object-contain"}`}
             style={{ transform: o.mirror ? "scaleX(-1)" : undefined }}
             muted={isMain ? muted : true}
             loop
@@ -517,9 +531,12 @@ function EditorPage() {
 
       {o.title.enabled && (
         <p
-          className="pointer-events-none absolute inset-x-[7%] top-[8%] text-center font-bold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+          className="pointer-events-none absolute w-[86%] -translate-x-1/2 -translate-y-1/2 text-center font-bold leading-tight"
           style={{
+            left: `${o.title.x}%`,
+            top: `${o.title.y}%`,
             color: o.title.color,
+            fontFamily: fontStack(o.title.font),
             fontSize: `${((o.title.size / outW) * 100).toFixed(2)}cqw`,
           }}
         >
@@ -528,9 +545,12 @@ function EditorPage() {
       )}
       {o.bottom.enabled && o.bottom.text && (
         <p
-          className="pointer-events-none absolute inset-x-[7%] bottom-[8%] text-center font-bold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+          className="pointer-events-none absolute w-[86%] -translate-x-1/2 -translate-y-1/2 text-center font-bold leading-tight"
           style={{
+            left: `${o.bottom.x}%`,
+            top: `${o.bottom.y}%`,
             color: o.bottom.color,
+            fontFamily: fontStack(o.bottom.font),
             fontSize: `${((o.bottom.size / outW) * 100).toFixed(2)}cqw`,
           }}
         >
