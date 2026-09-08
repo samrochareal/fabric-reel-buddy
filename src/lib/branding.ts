@@ -8,7 +8,7 @@ export type Palette = {
   accent: string;
 };
 
-export type ExternalLink = { title: string; url: string };
+export type ExternalLink = { title: string; url: string; icon?: string };
 
 export type Branding = {
   system_name: string;
@@ -44,7 +44,11 @@ function normalizeLinks(value: unknown): ExternalLink[] {
   return value
     .map((raw) => {
       const l = (raw ?? {}) as Partial<ExternalLink>;
-      return { title: String(l.title ?? "").trim(), url: String(l.url ?? "").trim() };
+      return {
+        title: String(l.title ?? "").trim(),
+        url: String(l.url ?? "").trim(),
+        icon: String(l.icon ?? "link").trim() || "link",
+      };
     })
     .filter((l) => l.title && l.url);
 }
