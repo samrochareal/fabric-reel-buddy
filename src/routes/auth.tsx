@@ -1,13 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, LogIn, Mail, Scissors, UserRound } from "lucide-react";
+import { Loader2, LogIn, Mail, Scissors } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { getRememberMe, setRememberMe } from "@/lib/session-pref";
-import { enterGuestMode, exitGuestMode } from "@/lib/guest-mode";
+import { exitGuestMode } from "@/lib/guest-mode";
 import { useBranding } from "@/lib/branding";
 import { LanguageToggle, useT } from "@/lib/i18n";
 
@@ -64,11 +64,6 @@ function AuthPage() {
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
-
-  const asGuest = () => {
-    enterGuestMode();
-    void navigate({ to: "/", replace: true });
-  };
 
   const withGoogle = async () => {
     setBusy(true);
@@ -253,14 +248,6 @@ function AuthPage() {
           </button>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-border bg-card p-5">
-          <Button variant="outline" className="h-11 w-full" onClick={asGuest} disabled={busy}>
-            <UserRound className="mr-2 size-4" /> {t("Continue as guest")}
-          </Button>
-          <p className="mt-2 text-center text-xs text-muted-foreground">
-            {t("Use the full editor without an account. Nothing is saved: everything disappears when you close the page.")}
-          </p>
-        </div>
       </div>
     </div>
   );

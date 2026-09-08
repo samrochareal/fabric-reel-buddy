@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LogOut, Menu, ShieldCheck, UserRound } from "lucide-react";
+import { LogOut, Menu, ShieldCheck } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { exitGuestMode, isGuest } from "@/lib/guest-mode";
@@ -51,20 +51,15 @@ export function SideMenu() {
       <SheetContent side="left" className="flex w-[300px] flex-col gap-0 p-0 sm:w-[320px]">
         {/* person */}
         <div className="border-b border-border px-5 pb-5 pt-6">
-          <div className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-full border border-border bg-card">
-              <UserRound className="size-4 text-primary" />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold">
-                {guest
-                  ? t("Guest · nothing is saved")
-                  : account?.full_name || email || t("no name")}
-              </p>
-              {!guest && email && account?.full_name && (
-                <p className="truncate text-xs text-muted-foreground">{email}</p>
-              )}
-            </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold">
+              {guest
+                ? t("Guest · nothing is saved")
+                : account?.full_name || email || t("no name")}
+            </p>
+            {!guest && email && account?.full_name && (
+              <p className="truncate text-xs text-muted-foreground">{email}</p>
+            )}
           </div>
 
           {account && !guest && (

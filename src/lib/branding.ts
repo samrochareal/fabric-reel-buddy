@@ -39,6 +39,14 @@ function normalizePalette(value: unknown): Palette {
   };
 }
 
+/** Makes sure a saved link always points outside the platform. */
+export function toExternalUrl(raw: string): string {
+  const url = String(raw ?? "").trim();
+  if (!url) return "";
+  if (/^(https?:|mailto:|tel:)/i.test(url)) return url;
+  return `https://${url.replace(/^\/+/, "")}`;
+}
+
 function normalizeLinks(value: unknown): ExternalLink[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -46,7 +54,7 @@ function normalizeLinks(value: unknown): ExternalLink[] {
       const l = (raw ?? {}) as Partial<ExternalLink>;
       return {
         title: String(l.title ?? "").trim(),
-        url: String(l.url ?? "").trim(),
+        url: toExternalUrl(String(l.url ?? "")),
         icon: String(l.icon ?? "link").trim() || "link",
       };
     })
@@ -110,14 +118,23 @@ function applyBranding(branding: Branding) {
     ? `${branding.system_name} — ${branding.tagline}`
     : branding.system_name;
   if (branding.icon_url) {
-    let link = document.querySelector<HTMLLinkElement>("link#brand-icon");
-    if (!link) {
-      link = document.createElement("link");
-      link.id = "brand-icon";
-      link.rel = "icon";
-      document.head.appendChild(link);
-    }
-    link.href = branding.icon_url;
+    // the saved icon becomes the tab icon everywhere in the system
+    document
+      .querySelectorAll<HTMLLinkElement>('link[rel~="icon"]:not(#brand-icon), link[rel="shortcut icon"]:not(#brand-icon), link[rel="apple-touch-icon"]:not(#brand-apple-icon)')
+      .forEach((el) => el.remove());
+
+    const ensure = (id: string, rel: string) => {
+      let link = document.querySelector<HTMLLinkElement>(`link#${id}`);
+      if (!link) {
+        link = document.createElement("link");
+        link.id = id;
+        link.rel = rel;
+        document.head.appendChild(link);
+      }
+      link.href = branding.icon_url as string;
+    };
+    ensure("brand-icon", "icon");
+    ensure("brand-apple-icon", "apple-touch-icon");
   }
 }
 
