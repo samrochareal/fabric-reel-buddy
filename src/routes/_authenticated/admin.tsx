@@ -44,6 +44,7 @@ import {
   type Palette as BrandPalette,
 } from "@/lib/branding";
 import { LanguageToggle, useT } from "@/lib/i18n";
+import { LINK_ICON_NAMES, LinkGlyph } from "@/components/link-icons";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -345,7 +346,7 @@ function AdminPage() {
     try {
       await saveExternalLinks(
         links
-          .map((l) => ({ title: l.title.trim(), url: l.url.trim() }))
+          .map((l) => ({ title: l.title.trim(), url: l.url.trim(), icon: l.icon ?? "link" }))
           .filter((l) => l.title && l.url),
       );
       refreshBranding();
