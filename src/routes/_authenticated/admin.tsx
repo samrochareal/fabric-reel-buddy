@@ -46,6 +46,7 @@ import {
   type Palette as BrandPalette,
 } from "@/lib/branding";
 import { LanguageToggle, useT } from "@/lib/i18n";
+import { ThemeToggle } from "@/lib/theme";
 import { LINK_ICON_NAMES, LinkGlyph } from "@/components/link-icons";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -406,7 +407,7 @@ function AdminPage() {
             {branding.ready ? branding.system_name : ""} {t("Master panel")}
           </span>
           <div className="ml-auto">
-            <LanguageToggle />
+            <div className="flex items-center gap-2"><ThemeToggle /><LanguageToggle /></div>
           </div>
         </div>
       </header>

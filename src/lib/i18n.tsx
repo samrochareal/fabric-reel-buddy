@@ -82,6 +82,8 @@ const PT: Record<string, string> = {
   "Guest · nothing is saved": "Visitante · nada é salvo",
   "in queue": "na fila",
   "Language": "Idioma",
+  "Dark theme": "Tema escuro",
+  "Light theme": "Tema claro",
 
   // limits line
   "Up to {max} videos per batch · {mb}MB max · {s}s each":

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useBranding } from "@/lib/branding";
 import { LanguageToggle, useT } from "@/lib/i18n";
+import { ThemeToggle } from "@/lib/theme";
 import { inviteUrl, useMyReferral } from "@/lib/referral";
 
 export const Route = createFileRoute("/_authenticated/referrals")({
@@ -62,7 +63,7 @@ function ReferralsPage() {
             {branding.ready ? branding.system_name : ""} {t("Referrals")}
           </span>
           <div className="ml-auto">
-            <LanguageToggle />
+            <div className="flex items-center gap-2"><ThemeToggle /><LanguageToggle /></div>
           </div>
         </div>
       </header>

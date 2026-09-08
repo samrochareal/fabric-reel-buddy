@@ -9,6 +9,7 @@ import { useIsAdmin } from "@/lib/admin";
 import { useBranding } from "@/lib/branding";
 import { useMyAccount } from "@/lib/account";
 import { LanguageToggle, useT } from "@/lib/i18n";
+import { ThemeToggle } from "@/lib/theme";
 import { LinkGlyph } from "@/components/link-icons";
 
 /** Hamburger menu with the signed-in person, master links, language and sign out. */
@@ -129,7 +130,7 @@ export function SideMenu() {
         <div className="space-y-3 border-t border-border px-5 py-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">{t("Language")}</span>
-            <LanguageToggle />
+            <div className="flex items-center gap-2"><ThemeToggle /><LanguageToggle /></div>
           </div>
           <button
             type="button"
