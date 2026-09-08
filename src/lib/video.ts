@@ -302,22 +302,17 @@ export async function buildOverlayPng(
       }
     }
     if (current) lines.push(current);
-    const lineHeight = size * 1.2;
+    const lineHeight = block.size * 1.2;
+    const cx = (block.x / 100) * w;
+    const cy = (block.y / 100) * h;
+    const top = cy - ((lines.length - 1) * lineHeight) / 2;
     lines.forEach((line, i) => {
-      const y = fromTop
-        ? baselineY + i * lineHeight
-        : baselineY - (lines.length - 1 - i) * lineHeight;
-      ctx.fillText(line, w / 2, y);
+      ctx.fillText(line, cx, top + i * lineHeight);
     });
-    ctx.shadowBlur = 0;
   };
 
-  if (hasTitle) {
-    drawWrapped(titleText.trim(), opts.title.size, opts.title.color, h * 0.12, true);
-  }
-  if (hasBottom) {
-    drawWrapped(opts.bottom.text.trim(), opts.bottom.size, opts.bottom.color, h * 0.9, false);
-  }
+  if (hasTitle) drawBlock(opts.title, titleText.trim());
+  if (hasBottom) drawBlock(opts.bottom, opts.bottom.text.trim());
 
   return await new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
 }
