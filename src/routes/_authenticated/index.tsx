@@ -709,11 +709,13 @@ function EditorPage() {
     <div className="min-h-screen bg-background">
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
-        <div className="flex h-14 items-center gap-3 px-4">
-          <span className="flex min-w-0 items-center gap-2">
+        <div className="grid h-14 grid-cols-[auto_1fr_auto] items-center gap-3 px-4">
+          <SideMenu />
+
+          <span className="flex min-w-0 items-center justify-center gap-2">
             {branding.ready &&
               (branding.logo_url ? (
-                <img src={branding.logo_url} alt={branding.system_name} className="h-6 w-auto" />
+                <img src={branding.logo_url} alt={branding.system_name} className="h-7 w-auto" />
               ) : (
                 <Scissors className="size-4 text-primary" />
               ))}
@@ -722,40 +724,11 @@ function EditorPage() {
             </span>
           </span>
 
-          {branding.external_links.length > 0 && (
-            <span className="hidden items-center gap-1 sm:flex">
-              {branding.external_links.map((link) => (
-                <a
-                  key={link.url}
-                  href={link.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  title={link.title}
-                  className="flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
-                >
-                  <ExternalLinkIcon className="size-3.5" />
-                  <span className="hidden lg:inline">{link.title}</span>
-                </a>
-              ))}
-            </span>
-          )}
-
-          <AccountBadge />
-
-          <div className="flex items-center gap-2">
-            {account && (
-              <span
-                className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold"
-                title={t("1 credit = 1 processed video")}
-              >
-                <Coins className="size-3.5 text-primary" />
-                {account.premium ? t("Unlimited") : `${account.credits} ${t("credits left")}`}
-              </span>
-            )}
-            <span className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground sm:inline">
+          <div className="flex items-center justify-end gap-2">
+            <span className="hidden rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground sm:inline">
               {clips.length}/{MAX_CLIPS} {t("in queue")}
             </span>
-            <LanguageToggle />
+            <CreditMeter account={account} />
           </div>
         </div>
       </header>
