@@ -878,7 +878,7 @@ function EditorPage() {
         </section>
 
         {/* ---------- Column 2: preview ---------- */}
-        <section className="space-y-3 self-start lg:sticky lg:top-20">
+        <section className="space-y-3 self-start lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("Preview")} · {ASPECTS[opts.aspect].label}
           </p>

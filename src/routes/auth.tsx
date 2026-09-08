@@ -10,6 +10,7 @@ import { getRememberMe, setRememberMe } from "@/lib/session-pref";
 import { exitGuestMode } from "@/lib/guest-mode";
 import { useBranding } from "@/lib/branding";
 import { LanguageToggle, useT } from "@/lib/i18n";
+import { rememberInviteCode } from "@/lib/referral";
 
 
 export const Route = createFileRoute("/auth")({
@@ -48,6 +49,7 @@ function AuthPage() {
   useEffect(() => {
     setRemember(getRememberMe());
     exitGuestMode();
+    rememberInviteCode();
   }, []);
 
 

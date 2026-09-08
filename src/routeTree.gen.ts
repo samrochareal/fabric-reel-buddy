@@ -14,7 +14,8 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
-import { Route as AuthenticatedCriadorDeOverlayRouteImport } from './routes/_authenticated/criador-de-overlay'
+import { Route as AuthenticatedOverlayCreatorRouteImport } from './routes/_authenticated/overlay-creator'
+import { Route as AuthenticatedReferralsRouteImport } from './routes/_authenticated/referrals'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -40,25 +41,32 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedCriadorDeOverlayRoute =
-  AuthenticatedCriadorDeOverlayRouteImport.update({
-    id: '/criador-de-overlay',
-    path: '/criador-de-overlay',
+const AuthenticatedOverlayCreatorRoute =
+  AuthenticatedOverlayCreatorRouteImport.update({
+    id: '/overlay-creator',
+    path: '/overlay-creator',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReferralsRoute = AuthenticatedReferralsRouteImport.update({
+  id: '/referrals',
+  path: '/referrals',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/criador-de-overlay': typeof AuthenticatedCriadorDeOverlayRoute
+  '/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
+  '/referrals': typeof AuthenticatedReferralsRoute
 }
 export interface FileRoutesByTo {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/criador-de-overlay': typeof AuthenticatedCriadorDeOverlayRoute
+  '/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
+  '/referrals': typeof AuthenticatedReferralsRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
@@ -67,21 +75,24 @@ export interface FileRoutesById {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
-  '/_authenticated/criador-de-overlay': typeof AuthenticatedCriadorDeOverlayRoute
+  '/_authenticated/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
+  '/_authenticated/referrals': typeof AuthenticatedReferralsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/auth' | '/admin' | '/criador-de-overlay'
+  fullPaths:
+    '/' | '/app' | '/auth' | '/admin' | '/overlay-creator' | '/referrals'
   fileRoutesByTo: FileRoutesByTo
-  to: '/app' | '/auth' | '/admin' | '/criador-de-overlay' | '/'
+  to: '/app' | '/auth' | '/admin' | '/overlay-creator' | '/referrals' | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/app'
     | '/auth'
     | '/_authenticated/admin'
-    | '/_authenticated/criador-de-overlay'
+    | '/_authenticated/overlay-creator'
+    | '/_authenticated/referrals'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
@@ -128,11 +139,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/criador-de-overlay': {
-      id: '/_authenticated/criador-de-overlay'
-      path: '/criador-de-overlay'
-      fullPath: '/criador-de-overlay'
-      preLoaderRoute: typeof AuthenticatedCriadorDeOverlayRouteImport
+    '/_authenticated/overlay-creator': {
+      id: '/_authenticated/overlay-creator'
+      path: '/overlay-creator'
+      fullPath: '/overlay-creator'
+      preLoaderRoute: typeof AuthenticatedOverlayCreatorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/referrals': {
+      id: '/_authenticated/referrals'
+      path: '/referrals'
+      fullPath: '/referrals'
+      preLoaderRoute: typeof AuthenticatedReferralsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -140,13 +158,15 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedCriadorDeOverlayRoute: typeof AuthenticatedCriadorDeOverlayRoute
+  AuthenticatedOverlayCreatorRoute: typeof AuthenticatedOverlayCreatorRoute
+  AuthenticatedReferralsRoute: typeof AuthenticatedReferralsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedCriadorDeOverlayRoute: AuthenticatedCriadorDeOverlayRoute,
+  AuthenticatedOverlayCreatorRoute: AuthenticatedOverlayCreatorRoute,
+  AuthenticatedReferralsRoute: AuthenticatedReferralsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
