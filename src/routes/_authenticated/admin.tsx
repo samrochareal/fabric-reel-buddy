@@ -46,7 +46,6 @@ import {
   type Palette as BrandPalette,
 } from "@/lib/branding";
 import { LanguageToggle, useT } from "@/lib/i18n";
-import { ThemeToggle } from "@/lib/theme";
 import { LINK_ICON_NAMES, LinkGlyph } from "@/components/link-icons";
 
 export const Route = createFileRoute("/_authenticated/admin")({
