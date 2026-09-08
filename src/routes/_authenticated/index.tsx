@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccountBadge } from "@/components/account-badge";
+import { SideMenu } from "@/components/side-menu";
+import { CreditMeter } from "@/components/credit-meter";
 import { loadEditSettings, saveEditSettings } from "@/lib/settings";
 import { listOverlays, type OverlayPreset } from "@/lib/overlays";
 
@@ -21,8 +23,6 @@ import {
   Sparkles,
   Volume2,
   VolumeX,
-  Coins,
-  ExternalLink as ExternalLinkIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
