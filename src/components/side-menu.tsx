@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LogOut, Menu, ShieldCheck } from "lucide-react";
+import { Gift, LogOut, Menu, ShieldCheck } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { exitGuestMode, isGuest } from "@/lib/guest-mode";
@@ -91,6 +91,16 @@ export function SideMenu() {
               className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
             >
               <ShieldCheck className="size-4" /> {t("Master panel")}
+            </Link>
+          )}
+
+          {branding.referral_enabled && !guest && (
+            <Link
+              to="/referrals"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-accent"
+            >
+              <Gift className="size-4 text-primary" /> {t("Referrals")}
             </Link>
           )}
 
