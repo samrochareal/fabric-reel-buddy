@@ -405,6 +405,15 @@ function EditorPage() {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
+  /** fires one download per finished video, slightly staggered so the browser keeps them all */
+  function downloadEach() {
+    if (doneClips.length === 0) return;
+    doneClips.forEach((clip, i) => {
+      setTimeout(() => downloadClip(clip), i * 300);
+    });
+    toast.success(`Baixando ${doneClips.length} vídeo(s) separadamente…`);
+  }
+
   async function downloadAll() {
     if (doneClips.length === 0) return;
     const { default: JSZip } = await import("jszip");
@@ -773,29 +782,32 @@ function EditorPage() {
                       )}
                     </span>
 
-                    {clip.status === "done" ? (
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          downloadClip(clip);
-                        }}
-                        className="rounded p-1 text-turbo hover:bg-turbo/10"
-                      >
-                        <Download className="size-4" />
-                      </span>
-                    ) : (
-                      !running && (
+                    <span className="flex shrink-0 items-center gap-0.5">
+                      {clip.status === "done" && (
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadClip(clip);
+                          }}
+                          className="rounded p-1 text-turbo hover:bg-turbo/10"
+                          title="Baixar este vídeo"
+                        >
+                          <Download className="size-4" />
+                        </span>
+                      )}
+                      {clip.status !== "processing" && (
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
                             removeClip(clip.id);
                           }}
                           className="rounded p-1 text-muted-foreground hover:text-destructive"
+                          title="Remover da fila"
                         >
                           <X className="size-4" />
                         </span>
-                      )
-                    )}
+                      )}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -864,9 +876,14 @@ function EditorPage() {
                 9:16 · 1080×1920
               </span>
               {doneClips.length > 0 && (
-                <Button variant="outline" size="sm" onClick={() => void downloadAll()}>
-                  <Archive className="mr-1.5 size-4" /> Baixar tudo (.zip)
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => void downloadAll()}>
+                    <Archive className="mr-1.5 size-4" /> Baixar tudo (.zip)
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadEach}>
+                    <Download className="mr-1.5 size-4" /> Baixar separados ({doneClips.length})
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -899,6 +916,29 @@ function EditorPage() {
               >
                 Só este vídeo
               </button>
+            </div>
+
+            <div className="mt-4">
+              <p className="text-xs text-muted-foreground">Enquadramento</p>
+              <div className="mt-2 grid grid-cols-2 gap-1 rounded-lg border border-border p-1">
+                {([
+                  { id: "contain", label: "Sem cortar" },
+                  { id: "cover", label: "Preencher" },
+                ] as const).map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => patch({ fit: f.id })}
+                    className={`rounded-md px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+                      (opts.fit ?? "contain") === f.id
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="mt-4 flex items-center justify-between">
