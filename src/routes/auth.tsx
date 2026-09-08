@@ -10,7 +10,7 @@ import { getRememberMe, setRememberMe } from "@/lib/session-pref";
 import { exitGuestMode } from "@/lib/guest-mode";
 import { useBranding } from "@/lib/branding";
 import { LanguageToggle, useT } from "@/lib/i18n";
-import { ThemeToggle } from "@/lib/theme";
+import { applyTheme } from "@/lib/theme";
 import { rememberInviteCode } from "@/lib/referral";
 
 
@@ -51,6 +51,8 @@ function AuthPage() {
     setRemember(getRememberMe());
     exitGuestMode();
     rememberInviteCode();
+    // the sign-in page always stays dark; the theme choice only applies after login
+    applyTheme("dark");
   }, []);
 
 
@@ -145,7 +147,7 @@ function AuthPage() {
         </div>
 
         <div className="mt-4 flex justify-center">
-          <div className="flex items-center gap-2"><ThemeToggle /><LanguageToggle /></div>
+          <div className="flex items-center gap-2"><LanguageToggle /></div>
         </div>
 
 

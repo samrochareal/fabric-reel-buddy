@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { LanguageToggle, useT } from "@/lib/i18n";
-import { ThemeToggle } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -291,7 +290,7 @@ function OverlayCreator() {
           {t("Customise and save up to {n} presets. Drag to move and scroll to resize.").replace("{n}", String(OVERLAY_SLOTS))}
         </p>
         </div>
-        <div className="flex items-center gap-2"><ThemeToggle /><LanguageToggle /></div>
+        <div className="flex items-center gap-2"><LanguageToggle /></div>
       </header>
 
       <div className="grid gap-4 p-4 lg:grid-cols-[300px_minmax(0,1fr)_320px]">
