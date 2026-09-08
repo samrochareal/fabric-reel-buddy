@@ -422,6 +422,85 @@ function EditorPage() {
   }
 
 
+  /** shared font / colour / size / position controls for a text block */
+  const textControls = (
+    block: TextBlock,
+    set: (next: Partial<TextBlock>) => void,
+    minSize: number,
+    maxSize: number,
+  ) => (
+    <div className="mt-3 space-y-3">
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <span className="text-muted-foreground">Fonte</span>
+        <select
+          value={block.font}
+          onChange={(e) => set({ font: e.target.value })}
+          className="h-8 flex-1 rounded-md border border-border bg-background px-2 text-xs"
+          style={{ fontFamily: fontStack(block.font) }}
+        >
+          {TEXT_FONTS.map((f) => (
+            <option key={f.id} value={f.id} style={{ fontFamily: f.stack }}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">Cor</span>
+        <Input
+          type="color"
+          value={block.color}
+          onChange={(e) => set({ color: e.target.value })}
+          className="h-8 w-16 p-1"
+        />
+      </div>
+      {[
+        {
+          label: "Tamanho",
+          value: block.size,
+          display: `${block.size}px`,
+          min: minSize,
+          max: maxSize,
+          step: 2,
+          apply: (v: number) => set({ size: v }),
+        },
+        {
+          label: "Posição horizontal",
+          value: block.x,
+          display: `${Math.round(block.x)}%`,
+          min: 0,
+          max: 100,
+          step: 1,
+          apply: (v: number) => set({ x: v }),
+        },
+        {
+          label: "Posição vertical",
+          value: block.y,
+          display: `${Math.round(block.y)}%`,
+          min: 0,
+          max: 100,
+          step: 1,
+          apply: (v: number) => set({ y: v }),
+        },
+      ].map((row) => (
+        <div key={row.label}>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">{row.label}</span>
+            <span className="font-bold">{row.display}</span>
+          </div>
+          <Slider
+            className="mt-2"
+            value={[row.value]}
+            min={row.min}
+            max={row.max}
+            step={row.step}
+            onValueChange={([v]) => row.apply(v ?? row.value)}
+          />
+        </div>
+      ))}
+    </div>
+  );
+
   const previewClip = selected;
   const { w: outW, h: outH } = ASPECTS[opts.aspect];
 
@@ -971,106 +1050,54 @@ function EditorPage() {
             }`}
             aria-disabled={running}
           >
-            {tab === "titulo" && (
-              <>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold">Título no vídeo</p>
-                  <Switch
-                    checked={opts.title.enabled}
-                    onCheckedChange={(v) => patch({ title: { ...opts.title, enabled: v } })}
+            {tab === "texto" && (
+              <div className="space-y-5">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold">Título no vídeo</p>
+                    <Switch
+                      checked={opts.title.enabled}
+                      onCheckedChange={(v) => patch({ title: { ...opts.title, enabled: v } })}
+                    />
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                    Uma lista de títulos — um por linha. Cada linha vai para o vídeo
+                    correspondente da fila.
+                  </p>
+                  <Textarea
+                    className="mt-3 min-h-[110px] text-xs"
+                    placeholder={"Título do vídeo 1\nTítulo do vídeo 2"}
+                    value={opts.title.text}
+                    onChange={(e) => patch({ title: { ...opts.title, text: e.target.value } })}
+                    disabled={!opts.title.enabled}
                   />
-                </div>
-                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                  Ative para escrever uma lista de títulos — um por linha. Cada linha vai para o
-                  vídeo correspondente da fila.
-                </p>
-                <Textarea
-                  className="mt-3 min-h-[120px] text-xs"
-                  placeholder={"Título do vídeo 1\nTítulo do vídeo 2\nTítulo do vídeo 3"}
-                  value={opts.title.text}
-                  onChange={(e) => patch({ title: { ...opts.title, text: e.target.value } })}
-                  disabled={!opts.title.enabled}
-                />
-                <div className="mt-3 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Cor</span>
-                    <Input
-                      type="color"
-                      value={opts.title.color}
-                      onChange={(e) => patch({ title: { ...opts.title, color: e.target.value } })}
-                      className="h-8 w-16 p-1"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Tamanho</span>
-                      <span className="font-bold">{opts.title.size}px</span>
-                    </div>
-                    <Slider
-                      className="mt-2"
-                      value={[opts.title.size]}
-                      min={28}
-                      max={120}
-                      step={2}
-                      onValueChange={([v]) =>
-                        patch({ title: { ...opts.title, size: v ?? opts.title.size } })
-                      }
-                    />
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
+                  {textControls(opts.title, (next) => patch({ title: { ...opts.title, ...next } }), 28, 120)}
+                  <p className="mt-2 text-[11px] text-muted-foreground">
                     {titleLines.filter(Boolean).length} título(s) para {clips.length} vídeo(s)
                   </p>
                 </div>
-              </>
-            )}
 
-            {tab === "inferior" && (
-              <>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold">Texto inferior</p>
-                  <Switch
-                    checked={opts.bottom.enabled}
-                    onCheckedChange={(v) => patch({ bottom: { ...opts.bottom, enabled: v } })}
+                <div className="border-t border-border/60 pt-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold">Texto inferior</p>
+                    <Switch
+                      checked={opts.bottom.enabled}
+                      onCheckedChange={(v) => patch({ bottom: { ...opts.bottom, enabled: v } })}
+                    />
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                    Mesma legenda em todos os vídeos — ideal para @ ou CTA.
+                  </p>
+                  <Input
+                    className="mt-3 text-xs"
+                    placeholder="@seuperfil · siga para mais"
+                    value={opts.bottom.text}
+                    onChange={(e) => patch({ bottom: { ...opts.bottom, text: e.target.value } })}
+                    disabled={!opts.bottom.enabled}
                   />
+                  {textControls(opts.bottom, (next) => patch({ bottom: { ...opts.bottom, ...next } }), 20, 90)}
                 </div>
-                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                  Mesma legenda no rodapé de todos os vídeos — ideal para @ ou CTA.
-                </p>
-                <Input
-                  className="mt-3 text-xs"
-                  placeholder="@seuperfil · siga para mais"
-                  value={opts.bottom.text}
-                  onChange={(e) => patch({ bottom: { ...opts.bottom, text: e.target.value } })}
-                  disabled={!opts.bottom.enabled}
-                />
-                <div className="mt-3 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Cor</span>
-                    <Input
-                      type="color"
-                      value={opts.bottom.color}
-                      onChange={(e) => patch({ bottom: { ...opts.bottom, color: e.target.value } })}
-                      className="h-8 w-16 p-1"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Tamanho</span>
-                      <span className="font-bold">{opts.bottom.size}px</span>
-                    </div>
-                    <Slider
-                      className="mt-2"
-                      value={[opts.bottom.size]}
-                      min={20}
-                      max={90}
-                      step={2}
-                      onValueChange={([v]) =>
-                        patch({ bottom: { ...opts.bottom, size: v ?? opts.bottom.size } })
-                      }
-                    />
-                  </div>
-                </div>
-              </>
+              </div>
             )}
 
             {tab === "overlay" && (
