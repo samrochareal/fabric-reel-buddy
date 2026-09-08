@@ -145,7 +145,7 @@ function AuthPage() {
         </div>
 
         <div className="mt-4 flex justify-center">
-          <div className="flex items-center gap-2"><ThemeToggle /><LanguageToggle /></div>
+          <div className="flex items-center gap-2"><LanguageToggle /></div>
         </div>
 
 

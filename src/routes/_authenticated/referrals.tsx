@@ -63,7 +63,7 @@ function ReferralsPage() {
             {branding.ready ? branding.system_name : ""} {t("Referrals")}
           </span>
           <div className="ml-auto">
-            <div className="flex items-center gap-2"><ThemeToggle /><LanguageToggle /></div>
+            <div className="flex items-center gap-2"><LanguageToggle /></div>
           </div>
         </div>
       </header>
