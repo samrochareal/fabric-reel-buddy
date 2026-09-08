@@ -8,13 +8,22 @@ export async function ensureProfile(): Promise<void> {
   const { data } = await supabase.auth.getUser();
   const user = data.user;
   if (!user) return;
+  const meta = (user.user_metadata ?? {}) as { full_name?: string; name?: string };
+  const fullName = meta.full_name ?? meta.name ?? null;
   const { data: existing } = await supabase
     .from("profiles")
-    .select("id")
+    .select("id, full_name")
     .eq("id", user.id)
     .maybeSingle();
-  if (existing) return;
-  await supabase.from("profiles").insert({ id: user.id, email: user.email ?? null });
+  if (existing) {
+    if (!existing.full_name && fullName) {
+      await supabase.from("profiles").update({ full_name: fullName }).eq("id", user.id);
+    }
+    return;
+  }
+  await supabase
+    .from("profiles")
+    .insert({ id: user.id, email: user.email ?? null, full_name: fullName });
 }
 
 export async function fetchIsAdmin(): Promise<boolean> {
@@ -49,10 +58,56 @@ export type PlatformStats = {
   daily: { day: string; videos: number }[];
 };
 
+export type PlatformUser = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  created_at: string;
+  credits: number;
+  credits_used: number;
+  credit_refill_amount: number;
+  credit_refill_hours: number;
+  last_refill_at: string;
+  premium: boolean;
+  access_expires_at: string | null;
+  blocked: boolean;
+  allowed_tools: Record<string, boolean>;
+  is_admin: boolean;
+  videos_processed: number;
+  minutes_processed: number;
+  last_activity_at: string | null;
+  overlay_count: number;
+};
+
 export async function fetchPlatformStats(): Promise<PlatformStats> {
   const { getPlatformStats } = await import("@/lib/admin.functions");
   const data = await getPlatformStats();
   return data as unknown as PlatformStats;
+}
+
+export async function fetchPlatformUsers(): Promise<PlatformUser[]> {
+  const { listUsers } = await import("@/lib/admin.functions");
+  const data = await listUsers();
+  const rows = (data ?? []) as unknown as PlatformUser[];
+  return rows.map((row) => ({
+    ...row,
+    allowed_tools:
+      row.allowed_tools && typeof row.allowed_tools === "object" ? row.allowed_tools : {},
+  }));
+}
+
+export async function savePlatformUser(input: {
+  userId: string;
+  credits?: number;
+  creditRefillAmount?: number;
+  creditRefillHours?: number;
+  premium?: boolean;
+  accessDays?: number | null;
+  blocked?: boolean;
+  allowedTools?: Record<string, boolean>;
+}): Promise<void> {
+  const { updateUser } = await import("@/lib/admin.functions");
+  await updateUser({ data: input });
 }
 
 /** Records processed videos so the master dashboard can report usage. */

@@ -74,6 +74,7 @@ export type Database = {
       platform_settings: {
         Row: {
           created_at: string
+          external_links: Json
           icon_url: string | null
           id: boolean
           logo_url: string | null
@@ -84,6 +85,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          external_links?: Json
           icon_url?: string | null
           id?: boolean
           logo_url?: string | null
@@ -94,6 +96,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          external_links?: Json
           icon_url?: string | null
           id?: boolean
           logo_url?: string | null
@@ -106,22 +109,49 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_expires_at: string | null
+          allowed_tools: Json
+          blocked: boolean
           created_at: string
+          credit_refill_amount: number
+          credit_refill_hours: number
           credits: number
+          credits_used: number
           email: string | null
+          full_name: string | null
           id: string
+          last_refill_at: string
+          premium: boolean
         }
         Insert: {
+          access_expires_at?: string | null
+          allowed_tools?: Json
+          blocked?: boolean
           created_at?: string
+          credit_refill_amount?: number
+          credit_refill_hours?: number
           credits?: number
+          credits_used?: number
           email?: string | null
+          full_name?: string | null
           id: string
+          last_refill_at?: string
+          premium?: boolean
         }
         Update: {
+          access_expires_at?: string | null
+          allowed_tools?: Json
+          blocked?: boolean
           created_at?: string
+          credit_refill_amount?: number
+          credit_refill_hours?: number
           credits?: number
+          credits_used?: number
           email?: string | null
+          full_name?: string | null
           id?: string
+          last_refill_at?: string
+          premium?: boolean
         }
         Relationships: []
       }
@@ -199,7 +229,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_consume_credits: {
+        Args: { _amount: number; _user_id: string }
+        Returns: Json
+      }
+      admin_list_users: { Args: never; Returns: Json }
       admin_platform_stats: { Args: never; Returns: Json }
+      admin_update_user: {
+        Args: {
+          _access_expires_at?: string
+          _allowed_tools?: Json
+          _blocked?: boolean
+          _clear_expiry?: boolean
+          _credit_refill_amount?: number
+          _credit_refill_hours?: number
+          _credits?: number
+          _premium?: boolean
+          _user_id: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
