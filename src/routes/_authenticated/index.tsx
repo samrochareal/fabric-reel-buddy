@@ -1342,7 +1342,7 @@ function EditorPage() {
 
                   )}
                   <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
-                    <a href="/criador-de-overlay" target="_blank" rel="noreferrer">
+                    <a href="/overlay-creator" target="_blank" rel="noreferrer">
                       {t("Open the Overlay creator")}
                     </a>
                   </Button>
