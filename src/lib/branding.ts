@@ -39,6 +39,14 @@ function normalizePalette(value: unknown): Palette {
   };
 }
 
+/** Makes sure a saved link always points outside the platform. */
+export function toExternalUrl(raw: string): string {
+  const url = String(raw ?? "").trim();
+  if (!url) return "";
+  if (/^(https?:|mailto:|tel:)/i.test(url)) return url;
+  return `https://${url.replace(/^\/+/, "")}`;
+}
+
 function normalizeLinks(value: unknown): ExternalLink[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -46,7 +54,7 @@ function normalizeLinks(value: unknown): ExternalLink[] {
       const l = (raw ?? {}) as Partial<ExternalLink>;
       return {
         title: String(l.title ?? "").trim(),
-        url: String(l.url ?? "").trim(),
+        url: toExternalUrl(String(l.url ?? "")),
         icon: String(l.icon ?? "link").trim() || "link",
       };
     })
