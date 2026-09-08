@@ -18,9 +18,39 @@ export type BackgroundImage = {
 };
 
 
+/** fonts offered for the on-video texts (all loaded in the document head) */
+export const TEXT_FONTS: { id: string; label: string; stack: string }[] = [
+  { id: "instrument", label: "Padrão", stack: '"Instrument Sans", Arial, sans-serif' },
+  { id: "anton", label: "Anton", stack: '"Anton", Impact, sans-serif' },
+  { id: "bebas", label: "Bebas Neue", stack: '"Bebas Neue", Impact, sans-serif' },
+  { id: "montserrat", label: "Montserrat", stack: '"Montserrat", Arial, sans-serif' },
+  { id: "oswald", label: "Oswald", stack: '"Oswald", Arial, sans-serif' },
+  { id: "poppins", label: "Poppins", stack: '"Poppins", Arial, sans-serif' },
+  { id: "playfair", label: "Playfair Display", stack: '"Playfair Display", Georgia, serif' },
+];
+
+export const fontStack = (id: string): string =>
+  TEXT_FONTS.find((f) => f.id === id)?.stack ?? TEXT_FONTS[0]!.stack;
+
+/** a text block painted over the frame */
+export type TextBlock = {
+  enabled: boolean;
+  text: string;
+  color: string;
+  size: number;
+  /** font id from TEXT_FONTS */
+  font: string;
+  /** horizontal centre, 0..100 (% of the frame width) */
+  x: number;
+  /** vertical centre, 0..100 (% of the frame height) */
+  y: number;
+};
+
 /** Every knob the batch editor exposes. */
 export type EditOptions = {
   aspect: AspectId;
+  /** "contain" keeps the whole original frame visible; "cover" fills and crops */
+  fit: "contain" | "cover";
   /** 1 = video fills the frame; below 1 it shrinks and the background shows */
   zoom: number;
   /** 0..5 placement anchor (2.5 = centered); 0 and 5 push the video off-frame */
