@@ -328,6 +328,40 @@ const PT: Record<string, string> = {
   "Overview": "Visão geral",
   "People": "Pessoas",
   "Side menu": "Menu lateral",
+
+  // referral programme
+  Referrals: "Indicações",
+  "Invite people and earn credits": "Convide pessoas e ganhe créditos",
+  "Every person who creates an account through your link gives you bonus credits.":
+    "Cada pessoa que criar uma conta pelo seu link te dá créditos de bônus.",
+  "The referral programme is switched off at the moment.":
+    "O programa de indicações está desativado no momento.",
+  "Your invite link": "Seu link de indicação",
+  "Copy link": "Copiar link",
+  Copied: "Copiado",
+  "Invite link copied.": "Link de indicação copiado.",
+  "We couldn't copy the link.": "Não foi possível copiar o link.",
+  "{n} credits per sign-up": "{n} créditos por inscrição",
+  "Sign-ups through your link": "Inscrições pelo seu link",
+  "Rewards earned": "Recompensas ganhas",
+  "Your referrals": "Suas indicações",
+  "Sign-up": "Inscrição",
+  "Sign-ups": "inscrições",
+  "Referral programme": "Programa de indicações",
+  "Turn the programme on and choose how many credits each invite is worth.":
+    "Ative o programa e escolha quantos créditos vale cada indicação.",
+  "Referral programme is active": "Programa de indicações ativo",
+  "Credits per referral": "Créditos por indicação",
+  "Referral settings updated.": "Configurações de indicação atualizadas.",
+  "Sign-ups by referral": "Inscrições por indicação",
+  "Referral credits given": "Créditos de indicação concedidos",
+  "People inviting": "Pessoas indicando",
+  "Top referrers": "Quem mais indica",
+  "Premium accounts": "Contas premium",
+  "{n} blocked accounts": "{n} contas bloqueadas",
+  "{n} credits used so far": "{n} créditos já utilizados",
+  "Programme on · {n} credits per sign-up": "Programa ativo · {n} créditos por inscrição",
+  "Programme off": "Programa desativado",
   "Links shown inside the hamburger menu. They open in a new tab.":
     "Links exibidos dentro do menu lateral. Eles abrem em uma nova aba.",
 };
