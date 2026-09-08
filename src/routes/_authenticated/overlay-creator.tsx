@@ -28,7 +28,7 @@ import {
   type TextAlign,
 } from "@/lib/overlays";
 
-export const Route = createFileRoute("/_authenticated/criador-de-overlay")({
+export const Route = createFileRoute("/_authenticated/overlay-creator")({
   head: () => ({
     meta: [
       { title: "Overlay creator — batch video editor" },

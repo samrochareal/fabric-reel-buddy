@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   BarChart3,
+  Gift,
   Image as ImageIcon,
   Link2,
   Loader2,
@@ -38,6 +39,7 @@ import {
   fetchBranding,
   saveBranding,
   saveExternalLinks,
+  saveReferralSettings,
   useBranding,
   useRefreshBranding,
   type ExternalLink,
@@ -274,7 +276,12 @@ function AdminPage() {
   const [savingLinks, setSavingLinks] = useState(false);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<PlatformUser | null>(null);
-  const [tab, setTab] = useState<"overview" | "people" | "menu" | "identity">("overview");
+  const [tab, setTab] = useState<"overview" | "people" | "referral" | "menu" | "identity">(
+    "overview",
+  );
+  const [referralOn, setReferralOn] = useState(false);
+  const [referralCredits, setReferralCredits] = useState(5);
+  const [savingReferral, setSavingReferral] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -291,8 +298,24 @@ function AdminPage() {
       setLogo(b.logo_url);
       setIcon(b.icon_url);
       setLinks(b.external_links);
+      setReferralOn(b.referral_enabled);
+      setReferralCredits(b.referral_reward_credits);
     });
   }, []);
+
+  const onSaveReferral = async () => {
+    setSavingReferral(true);
+    try {
+      await saveReferralSettings({ enabled: referralOn, credits: referralCredits });
+      refreshBranding();
+      void stats.refetch();
+      toast.success(t("Referral settings updated."));
+    } catch {
+      toast.error(t("We couldn't save your changes."));
+    } finally {
+      setSavingReferral(false);
+    }
+  };
 
   const stats = useQuery({
     queryKey: ["platform-stats"],
@@ -394,6 +417,7 @@ function AdminPage() {
             [
               ["overview", t("Overview"), <BarChart3 key="a" className="size-4" />],
               ["people", t("People"), <Users key="b" className="size-4" />],
+              ["referral", t("Referral programme"), <Gift key="e" className="size-4" />],
               ["menu", t("Side menu"), <Link2 key="c" className="size-4" />],
               ["identity", t("System identity"), <Palette key="d" className="size-4" />],
             ] as const
@@ -458,6 +482,65 @@ function AdminPage() {
                 />
               </div>
 
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Stat
+                  icon={<Users className="size-4" />}
+                  label={t("Premium accounts")}
+                  value={s?.premium_users ?? 0}
+                  hint={t("{n} blocked accounts", { n: s?.blocked_users ?? 0 })}
+                />
+                <Stat
+                  icon={<BarChart3 className="size-4" />}
+                  label={t("Credits available")}
+                  value={s?.credits_available ?? 0}
+                  hint={t("{n} credits used so far", { n: s?.credits_used ?? 0 })}
+                />
+                <Stat
+                  icon={<Gift className="size-4" />}
+                  label={t("Sign-ups by referral")}
+                  value={s?.total_referrals ?? 0}
+                  hint={t("{n} in the last 7 days", { n: s?.referrals_7d ?? 0 })}
+                />
+                <Stat
+                  icon={<Gift className="size-4" />}
+                  label={t("Referral credits given")}
+                  value={s?.referral_credits_awarded ?? 0}
+                  hint={
+                    s?.referral_enabled
+                      ? t("Programme on · {n} credits per sign-up", {
+                          n: s?.referral_reward_credits ?? 0,
+                        })
+                      : t("Programme off")
+                  }
+                />
+              </div>
+
+              {(s?.top_referrers?.length ?? 0) > 0 && (
+                <div className="mt-4 rounded-2xl border border-border bg-card p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t("Top referrers")}
+                  </p>
+                  <ul className="mt-3 divide-y divide-border text-sm">
+                    {(s?.top_referrers ?? []).map((r) => (
+                      <li
+                        key={`${r.email}-${r.invites}`}
+                        className="flex items-center justify-between py-2"
+                      >
+                        <span className="min-w-0 truncate">
+                          {r.full_name || r.email || t("no name")}
+                        </span>
+                        <span className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>
+                            {r.invites} {t("Sign-ups")}
+                          </span>
+                          <span className="font-semibold text-primary">+{r.credits}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div className="mt-4 rounded-2xl border border-border bg-card p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {t("Videos per day (last 2 weeks)")}
@@ -479,6 +562,64 @@ function AdminPage() {
               </div>
             </>
           )}
+        </section>
+        )}
+
+        {/* ---------- referral programme ---------- */}
+        {tab === "referral" && (
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-center gap-2">
+            <Gift className="size-4 text-primary" />
+            <h2 className="font-display text-lg font-bold tracking-tight">
+              {t("Referral programme")}
+            </h2>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("Turn the programme on and choose how many credits each invite is worth.")}
+          </p>
+
+          <div className="mt-4 flex items-center justify-between rounded-lg border border-border p-3">
+            <span className="text-xs font-semibold">{t("Referral programme is active")}</span>
+            <Switch checked={referralOn} onCheckedChange={setReferralOn} />
+          </div>
+
+          <div className="mt-3 max-w-xs">
+            <p className="text-xs font-semibold">{t("Credits per referral")}</p>
+            <Input
+              type="number"
+              min={0}
+              className="mt-1.5 h-10"
+              value={referralCredits}
+              onChange={(e) => setReferralCredits(Math.max(0, Number(e.target.value) || 0))}
+            />
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <Stat
+              icon={<Gift className="size-4" />}
+              label={t("Sign-ups by referral")}
+              value={s?.total_referrals ?? 0}
+            />
+            <Stat
+              icon={<Users className="size-4" />}
+              label={t("People inviting")}
+              value={s?.referring_users ?? 0}
+            />
+            <Stat
+              icon={<BarChart3 className="size-4" />}
+              label={t("Referral credits given")}
+              value={s?.referral_credits_awarded ?? 0}
+            />
+          </div>
+
+          <Button className="mt-4" onClick={() => void onSaveReferral()} disabled={savingReferral}>
+            {savingReferral ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 size-4" />
+            )}
+            {t("Save changes")}
+          </Button>
         </section>
         )}
 

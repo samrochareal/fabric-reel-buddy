@@ -55,6 +55,17 @@ export type PlatformStats = {
   total_minutes: number;
   active_users_30d: number;
   overlay_presets: number;
+  premium_users: number;
+  blocked_users: number;
+  credits_available: number;
+  credits_used: number;
+  referral_enabled: boolean;
+  referral_reward_credits: number;
+  total_referrals: number;
+  referrals_7d: number;
+  referral_credits_awarded: number;
+  referring_users: number;
+  top_referrers: { email: string | null; full_name: string | null; invites: number; credits: number }[];
   daily: { day: string; videos: number }[];
 };
 

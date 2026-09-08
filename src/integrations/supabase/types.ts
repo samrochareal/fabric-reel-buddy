@@ -79,6 +79,8 @@ export type Database = {
           id: boolean
           logo_url: string | null
           palette: Json
+          referral_enabled: boolean
+          referral_reward_credits: number
           system_name: string
           tagline: string | null
           updated_at: string
@@ -90,6 +92,8 @@ export type Database = {
           id?: boolean
           logo_url?: string | null
           palette?: Json
+          referral_enabled?: boolean
+          referral_reward_credits?: number
           system_name?: string
           tagline?: string | null
           updated_at?: string
@@ -101,6 +105,8 @@ export type Database = {
           id?: boolean
           logo_url?: string | null
           palette?: Json
+          referral_enabled?: boolean
+          referral_reward_credits?: number
           system_name?: string
           tagline?: string | null
           updated_at?: string
@@ -122,6 +128,8 @@ export type Database = {
           id: string
           last_refill_at: string
           premium: boolean
+          referral_code: string | null
+          referred_by: string | null
         }
         Insert: {
           access_expires_at?: string | null
@@ -137,6 +145,8 @@ export type Database = {
           id: string
           last_refill_at?: string
           premium?: boolean
+          referral_code?: string | null
+          referred_by?: string | null
         }
         Update: {
           access_expires_at?: string | null
@@ -152,6 +162,32 @@ export type Database = {
           id?: string
           last_refill_at?: string
           premium?: boolean
+          referral_code?: string | null
+          referred_by?: string | null
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referred_user_id: string
+          referrer_id: string
+          reward_credits: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referred_user_id: string
+          referrer_id: string
+          reward_credits?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referred_user_id?: string
+          referrer_id?: string
+          reward_credits?: number
         }
         Relationships: []
       }
@@ -229,6 +265,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_claim_referral: {
+        Args: { _code: string; _user_id: string }
+        Returns: Json
+      }
       admin_consume_credits: {
         Args: { _amount: number; _user_id: string }
         Returns: Json
