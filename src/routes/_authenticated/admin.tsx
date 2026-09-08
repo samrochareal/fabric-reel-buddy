@@ -482,6 +482,65 @@ function AdminPage() {
                 />
               </div>
 
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Stat
+                  icon={<Users className="size-4" />}
+                  label={t("Premium accounts")}
+                  value={s?.premium_users ?? 0}
+                  hint={t("{n} blocked accounts", { n: s?.blocked_users ?? 0 })}
+                />
+                <Stat
+                  icon={<BarChart3 className="size-4" />}
+                  label={t("Credits available")}
+                  value={s?.credits_available ?? 0}
+                  hint={t("{n} credits used so far", { n: s?.credits_used ?? 0 })}
+                />
+                <Stat
+                  icon={<Gift className="size-4" />}
+                  label={t("Sign-ups by referral")}
+                  value={s?.total_referrals ?? 0}
+                  hint={t("{n} in the last 7 days", { n: s?.referrals_7d ?? 0 })}
+                />
+                <Stat
+                  icon={<Gift className="size-4" />}
+                  label={t("Referral credits given")}
+                  value={s?.referral_credits_awarded ?? 0}
+                  hint={
+                    s?.referral_enabled
+                      ? t("Programme on · {n} credits per sign-up", {
+                          n: s?.referral_reward_credits ?? 0,
+                        })
+                      : t("Programme off")
+                  }
+                />
+              </div>
+
+              {(s?.top_referrers?.length ?? 0) > 0 && (
+                <div className="mt-4 rounded-2xl border border-border bg-card p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t("Top referrers")}
+                  </p>
+                  <ul className="mt-3 divide-y divide-border text-sm">
+                    {(s?.top_referrers ?? []).map((r) => (
+                      <li
+                        key={`${r.email}-${r.invites}`}
+                        className="flex items-center justify-between py-2"
+                      >
+                        <span className="min-w-0 truncate">
+                          {r.full_name || r.email || t("no name")}
+                        </span>
+                        <span className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>
+                            {r.invites} {t("Sign-ups")}
+                          </span>
+                          <span className="font-semibold text-primary">+{r.credits}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div className="mt-4 rounded-2xl border border-border bg-card p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {t("Videos per day (last 2 weeks)")}
