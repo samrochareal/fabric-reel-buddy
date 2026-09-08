@@ -273,6 +273,7 @@ function AdminPage() {
   const [savingLinks, setSavingLinks] = useState(false);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<PlatformUser | null>(null);
+  const [tab, setTab] = useState<"overview" | "people" | "menu" | "identity">("overview");
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -386,8 +387,32 @@ function AdminPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-4">
-        <section className="pt-6">
+      <div className="mx-auto grid max-w-6xl gap-6 px-4 pt-6 md:grid-cols-[220px_minmax(0,1fr)]">
+        <aside className="h-fit rounded-2xl border border-border bg-card p-2 md:sticky md:top-20">
+          {(
+            [
+              ["overview", t("Overview"), <BarChart3 key="a" className="size-4" />],
+              ["people", t("People"), <Users key="b" className="size-4" />],
+              ["menu", t("Side menu"), <Link2 key="c" className="size-4" />],
+              ["identity", t("System identity"), <Palette key="d" className="size-4" />],
+            ] as const
+          ).map(([key, label, icon]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
+                tab === key ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              {icon} {label}
+            </button>
+          ))}
+        </aside>
+
+        <div>
+        {tab === "overview" && (
+        <section>
           <h1 className="font-display text-xl font-bold tracking-tight">
             {t("How the platform is being used")}
           </h1>
@@ -454,9 +479,11 @@ function AdminPage() {
             </>
           )}
         </section>
+        )}
 
         {/* ---------- people ---------- */}
-        <section className="mt-8 rounded-2xl border border-border bg-card p-5">
+        {tab === "people" && (
+        <section className="rounded-2xl border border-border bg-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Users className="size-4 text-primary" />
@@ -557,20 +584,41 @@ function AdminPage() {
             </table>
           </div>
         </section>
+        )}
 
-        {/* ---------- top links ---------- */}
-        <section className="mt-8 rounded-2xl border border-border bg-card p-5">
+        {/* ---------- side menu links ---------- */}
+        {tab === "menu" && (
+        <section className="rounded-2xl border border-border bg-card p-5">
           <div className="flex items-center gap-2">
             <Link2 className="size-4 text-primary" />
-            <h2 className="font-display text-lg font-bold tracking-tight">{t("Top links")}</h2>
+            <h2 className="font-display text-lg font-bold tracking-tight">{t("Side menu")}</h2>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {t("Icons shown at the top of the editor. Leave empty to hide them.")}
+            {t("Links shown inside the hamburger menu. They open in a new tab.")}
           </p>
 
           <div className="mt-4 space-y-2">
             {links.map((link, i) => (
               <div key={i} className="flex flex-wrap items-center gap-2">
+                <select
+                  className="h-10 rounded-md border border-input bg-background px-2 text-xs font-semibold"
+                  value={link.icon ?? "link"}
+                  onChange={(e) =>
+                    setLinks((prev) =>
+                      prev.map((l, j) => (j === i ? { ...l, icon: e.target.value } : l)),
+                    )
+                  }
+                  aria-label={t("Icon")}
+                >
+                  {LINK_ICON_NAMES.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+                <span className="flex size-10 items-center justify-center rounded-md border border-border bg-background">
+                  <LinkGlyph name={link.icon} className="size-4 text-primary" />
+                </span>
                 <Input
                   className="h-10 w-full sm:w-48"
                   placeholder={t("Title")}
@@ -606,7 +654,7 @@ function AdminPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
               variant="outline"
-              onClick={() => setLinks((prev) => [...prev, { title: "", url: "" }])}
+              onClick={() => setLinks((prev) => [...prev, { title: "", url: "", icon: "link" }])}
             >
               <Plus className="mr-1.5 size-4" /> {t("Add link")}
             </Button>
@@ -620,9 +668,11 @@ function AdminPage() {
             </Button>
           </div>
         </section>
+        )}
 
         {/* ---------- identity ---------- */}
-        <section className="mt-8 rounded-2xl border border-border bg-card p-5">
+        {tab === "identity" && (
+        <section className="rounded-2xl border border-border bg-card p-5">
           <div className="flex items-center gap-2">
             <Palette className="size-4 text-primary" />
             <h2 className="font-display text-lg font-bold tracking-tight">
@@ -726,6 +776,8 @@ function AdminPage() {
             {t("Save identity")}
           </Button>
         </section>
+        )}
+        </div>
       </div>
 
       <UserDialog
