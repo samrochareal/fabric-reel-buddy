@@ -20,7 +20,7 @@ export type BackgroundImage = {
 
 /** fonts offered for the on-video texts (all loaded in the document head) */
 export const TEXT_FONTS: { id: string; label: string; stack: string }[] = [
-  { id: "instrument", label: "Padrão", stack: '"Instrument Sans", Arial, sans-serif' },
+  { id: "instrument", label: "Default", stack: '"Instrument Sans", Arial, sans-serif' },
   { id: "anton", label: "Anton", stack: '"Anton", Impact, sans-serif' },
   { id: "bebas", label: "Bebas Neue", stack: '"Bebas Neue", Impact, sans-serif' },
   { id: "montserrat", label: "Montserrat", stack: '"Montserrat", Arial, sans-serif' },
