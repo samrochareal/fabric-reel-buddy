@@ -271,12 +271,23 @@ export async function buildOverlayPng(
   }
 
 
-  const drawWrapped = (text: string, size: number, color: string, baselineY: number, fromTop: boolean) => {
-    ctx.font = `700 ${size}px Inter, "Helvetica Neue", Arial, sans-serif`;
+  // make sure the chosen web fonts are ready before measuring/painting text
+  try {
+    await Promise.all([
+      document.fonts.load(`700 ${opts.title.size}px ${fontStack(opts.title.font)}`),
+      document.fonts.load(`700 ${opts.bottom.size}px ${fontStack(opts.bottom.font)}`),
+      document.fonts.ready,
+    ]);
+  } catch {
+    /* ignore */
+  }
+
+  const drawBlock = (block: TextBlock, text: string) => {
+    ctx.font = `700 ${block.size}px ${fontStack(block.font)}`;
     ctx.textAlign = "center";
-    ctx.fillStyle = color;
-    ctx.shadowColor = "rgba(0,0,0,0.65)";
-    ctx.shadowBlur = size * 0.35;
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = block.color;
+    ctx.shadowBlur = 0;
     const maxWidth = w * 0.86;
     const words = text.split(/\s+/);
     const lines: string[] = [];
