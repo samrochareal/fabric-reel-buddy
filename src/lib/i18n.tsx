@@ -286,6 +286,16 @@ const PT: Record<string, string> = {
     "Informe o e-mail e uma senha com pelo menos 6 caracteres.",
   "Check your e-mail to confirm your account.": "Confira seu e-mail para confirmar a conta.",
   "Wrong e-mail or password.": "E-mail ou senha incorretos.",
+
+  // side menu & admin sections
+  "Menu": "Menu",
+  "Links": "Links",
+  "Icon": "Ícone",
+  "Overview": "Visão geral",
+  "People": "Pessoas",
+  "Side menu": "Menu lateral",
+  "Links shown inside the hamburger menu. They open in a new tab.":
+    "Links exibidos dentro do menu lateral. Eles abrem em uma nova aba.",
 };
 
 
