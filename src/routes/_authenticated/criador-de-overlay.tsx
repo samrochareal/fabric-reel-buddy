@@ -12,6 +12,7 @@ import {
   UploadCloud,
 } from "lucide-react";
 import { toast } from "sonner";
+import { LanguageToggle, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,16 +31,16 @@ import {
 export const Route = createFileRoute("/_authenticated/criador-de-overlay")({
   head: () => ({
     meta: [
-      { title: "Criador de Overlay — Fábrica de Reels" },
+      { title: "Overlay creator — batch video editor" },
       {
         name: "description",
         content:
-          "Monte a imagem de fundo dos seus Reels com foto, nome e @, arraste para posicionar e salve até 10 pré-definições no sistema.",
+          "Build the background image for your reels with a photo, name and @, drag to position and save up to 10 presets.",
       },
-      { property: "og:title", content: "Criador de Overlay — Fábrica de Reels" },
+      { property: "og:title", content: "Overlay creator — batch video editor" },
       {
         property: "og:description",
-        content: "Crie e salve overlays com foto, nome e @ para usar nos seus projetos.",
+        content: "Create and save overlays with photo, name and @ to use in your projects.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -52,6 +53,7 @@ const W = OVERLAY_W;
 const H = OVERLAY_H;
 
 function OverlayCreator() {
+  const t = useT();
   const [cfg, setCfg] = useState<OverlayConfig>(defaultOverlayConfig);
   const [presets, setPresets] = useState<OverlayPreset[]>([]);
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
@@ -232,12 +234,12 @@ function OverlayCreator() {
         await saveOverlay({ slot, name: label, dataUrl, config: cfg, updatedAt: Date.now() }),
       );
     } catch {
-      toast.error("Não foi possível salvar o perfil na sua conta.");
+      toast.error(t("We could not save the profile to your account."));
       return;
     }
     setEditingSlot(slot);
     setPresetName(label);
-    toast.success(`Salvo como “${label}”. Já dá para usar nos projetos.`);
+    toast.success(`${t("Saved as")} “${label}”.`);
   };
 
   const rename = async (preset: OverlayPreset, name: string) => {
@@ -245,7 +247,7 @@ function OverlayCreator() {
     try {
       await saveOverlay({ ...preset, name });
     } catch {
-      toast.error("Não foi possível renomear o perfil.");
+      toast.error(t("We could not rename the profile."));
     }
   };
 
@@ -253,7 +255,7 @@ function OverlayCreator() {
     setCfg({ ...defaultOverlayConfig(), ...preset.config });
     setEditingSlot(preset.slot);
     setPresetName(preset.name);
-    toast.success(`“${preset.name}” carregado.`);
+    toast.success(`“${preset.name}” ${t("loaded")}.`);
   };
 
 
@@ -279,13 +281,13 @@ function OverlayCreator() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border px-6 py-4">
+      <header className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
+        <div>
         <h1 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight">
-          <Sparkles className="size-5 text-primary" /> Criador de Overlay
+          <Sparkles className="size-5 text-primary" /> {t("Overlay creator")}
         </h1>
         <p className="mt-1 text-xs text-muted-foreground">
-          Personalize e salve até {OVERLAY_SLOTS} pré-definições. Arraste para mover e use o scroll
-          do mouse para redimensionar.
+          {t("Customise and save up to {n} presets. Drag to move and scroll to resize.").replace("{n}", String(OVERLAY_SLOTS))}
         </p>
       </header>
 
@@ -293,14 +295,14 @@ function OverlayCreator() {
         {/* Elementos */}
         <section className="space-y-4 rounded-xl border border-border bg-card p-4">
           <div>
-            <p className="text-sm font-bold">Elementos</p>
+            <p className="text-sm font-bold">{t("Elements")}</p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Envie foto e defina os textos.
+              {t("Upload a photo and set the texts.")}
             </p>
           </div>
 
           <div>
-            <p className="text-xs font-semibold">Foto de perfil</p>
+            <p className="text-xs font-semibold">{t("Profile photo")}</p>
             <div className="mt-2 flex items-center gap-3">
               <div className="size-14 overflow-hidden rounded-full border border-border bg-muted">
                 {cfg.photo && (
@@ -308,7 +310,7 @@ function OverlayCreator() {
                 )}
               </div>
               <Button variant="secondary" size="sm" onClick={() => fileRef.current?.click()}>
-                <UploadCloud className="mr-1.5 size-4" /> {cfg.photo ? "Trocar" : "Enviar"}
+                <UploadCloud className="mr-1.5 size-4" /> {cfg.photo ? t("Replace") : t("Upload")}
               </Button>
               {cfg.photo && (
                 <Button variant="ghost" size="sm" onClick={() => patch({ photo: null })}>
@@ -333,19 +335,19 @@ function OverlayCreator() {
           </div>
 
           <div>
-            <p className="text-xs font-semibold">Nome</p>
+            <p className="text-xs font-semibold">{t("Name")}</p>
             <Input
               className="mt-1.5"
-              placeholder="Ex: Filmes que amo"
+              placeholder={t("e.g. Movies I love")}
               value={cfg.name}
               onChange={(e) => patch({ name: e.target.value })}
             />
           </div>
           <div>
-            <p className="text-xs font-semibold">Usuário (@)</p>
+            <p className="text-xs font-semibold">{t("Username (@)")}</p>
             <Input
               className="mt-1.5"
-              placeholder="Ex: filmesqueamo._"
+              placeholder="e.g. moviesilove._"
               value={cfg.handle}
               onChange={(e) => patch({ handle: e.target.value })}
             />
@@ -353,9 +355,9 @@ function OverlayCreator() {
 
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Cor do nome", value: cfg.nameColor, set: (v: string) => patch({ nameColor: v }) },
-              { label: "Cor do @", value: cfg.handleColor, set: (v: string) => patch({ handleColor: v }) },
-              { label: "Cor do fundo", value: cfg.bgColor, set: (v: string) => patch({ bgColor: v }) },
+              { label: t("Name colour"), value: cfg.nameColor, set: (v: string) => patch({ nameColor: v }) },
+              { label: t("@ colour"), value: cfg.handleColor, set: (v: string) => patch({ handleColor: v }) },
+              { label: t("Background colour"), value: cfg.bgColor, set: (v: string) => patch({ bgColor: v }) },
             ].map((row) => (
               <div key={row.label}>
                 <p className="text-xs font-semibold">{row.label}</p>
@@ -377,7 +379,7 @@ function OverlayCreator() {
           </div>
 
           <div>
-            <p className="text-xs font-semibold">Alinhamento do texto</p>
+            <p className="text-xs font-semibold">{t("Text alignment")}</p>
             <div className="mt-1.5 grid grid-cols-3 gap-2">
               {alignButtons.map(({ id, icon: Icon }) => (
                 <button
@@ -389,7 +391,7 @@ function OverlayCreator() {
                       ? "border-primary bg-primary/15 text-foreground"
                       : "border-border text-muted-foreground hover:text-foreground"
                   }`}
-                  aria-label={`Alinhar ${id}`}
+                  aria-label={`${t("Align")} ${id}`}
                 >
                   <Icon className="size-4" />
                 </button>
@@ -404,13 +406,13 @@ function OverlayCreator() {
               onChange={(e) => patch({ verified: e.target.checked })}
               className="size-4 accent-primary"
             />
-            Mostrar selo azul ao lado do nome
+            {t("Show the blue badge next to the name")}
           </label>
 
           <div className="space-y-3 border-t border-border/60 pt-3">
             <div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Tamanho do texto</span>
+                <span className="text-muted-foreground">{t("Text size")}</span>
                 <span className="font-bold">{cfg.textSize}px</span>
               </div>
               <input
@@ -425,7 +427,7 @@ function OverlayCreator() {
             </div>
             <div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Tamanho da foto</span>
+                <span className="text-muted-foreground">{t("Photo size")}</span>
                 <span className="font-bold">{Math.round(cfg.photoSize * 100)}%</span>
               </div>
               <input
@@ -444,9 +446,9 @@ function OverlayCreator() {
         {/* Preview */}
         <section className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-bold">Preview</p>
+            <p className="text-sm font-bold">{t("Preview")}</p>
             <p className="text-[11px] text-muted-foreground">
-              Arraste para mover • Scroll para redimensionar
+              {t("Drag to move • Scroll to resize")}
             </p>
           </div>
           <div className="mt-4 flex justify-center">
@@ -463,17 +465,17 @@ function OverlayCreator() {
               <canvas ref={canvasRef} width={W} height={H} className="size-full select-none" />
               {hint && (
                 <div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-lg bg-foreground/70 px-3 py-2 text-center text-[11px] font-medium text-background">
-                  Arraste para mover • Scroll do mouse para redimensionar
+                  {t("Drag to move • Scroll to resize")}
                 </div>
               )}
             </div>
           </div>
           <div className="mt-4 flex justify-center gap-2">
             <Button variant="outline" size="sm" onClick={download}>
-              <Download className="mr-1.5 size-4" /> Baixar .png
+              <Download className="mr-1.5 size-4" /> {t("Download .png")}
             </Button>
             <Button size="sm" onClick={() => void persist(editingSlot ?? 1)}>
-              <Save className="mr-1.5 size-4" /> Salvar no sistema
+              <Save className="mr-1.5 size-4" /> {t("Save to my account")}
             </Button>
           </div>
         </section>
@@ -482,11 +484,11 @@ function OverlayCreator() {
         <section className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-bold">Pré-definições</p>
+              <p className="text-sm font-bold">{t("Presets")}</p>
               <p className="mt-1 text-[11px] text-muted-foreground">
                 {editingSlot
-                  ? `Editando ${presets.find((p) => p.slot === editingSlot)?.name || `Perfil ${editingSlot}`}`
-                  : "Nenhum perfil selecionado"}
+                  ? `${t("Editing")} ${presets.find((p) => p.slot === editingSlot)?.name || `${t("Profile")} ${editingSlot}`}`
+                  : t("No profile selected")}
               </p>
             </div>
             <Button
@@ -498,20 +500,20 @@ function OverlayCreator() {
                 setPresetName("");
               }}
             >
-              Novo
+              {t("New")}
             </Button>
           </div>
 
           <div className="mt-3">
-            <p className="text-xs font-semibold">Nome do perfil</p>
+            <p className="text-xs font-semibold">{t("Profile name")}</p>
             <Input
               className="mt-1.5"
-              placeholder="Ex: Perfil cinema"
+              placeholder={t("e.g. Cinema profile")}
               value={presetName}
               onChange={(e) => setPresetName(e.target.value)}
             />
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Esse nome aparece na lista de overlays salvos dentro do editor.
+              {t("This name shows up in the saved overlays list inside the editor.")}
             </p>
           </div>
 
@@ -532,7 +534,7 @@ function OverlayCreator() {
                         value={preset.name}
                         onChange={(e) => void rename(preset, e.target.value)}
                         className="h-7 text-xs font-bold"
-                        aria-label={`Renomear perfil ${slot}`}
+                        aria-label={`${t("Rename profile")} ${slot}`}
                       />
                     ) : (
                       <p className="truncate text-xs font-bold text-muted-foreground">
@@ -547,7 +549,7 @@ function OverlayCreator() {
                           if (editingSlot === slot) setEditingSlot(null);
                         }}
                         className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
-                        aria-label={`Excluir Perfil ${slot}`}
+                        aria-label={`${t("Delete profile")} ${slot}`}
                       >
                         <Trash2 className="size-3.5" />
                       </button>
