@@ -68,7 +68,9 @@ function normalizeLinks(value: unknown): ExternalLink[] {
 export async function fetchBranding(): Promise<Branding> {
   const { data, error } = await supabase
     .from("platform_settings")
-    .select("system_name, tagline, palette, logo_url, icon_url, external_links")
+    .select(
+      "system_name, tagline, palette, logo_url, icon_url, external_links, referral_enabled, referral_reward_credits",
+    )
     .limit(1)
     .maybeSingle();
   if (error || !data) return defaultBranding;
@@ -79,7 +81,21 @@ export async function fetchBranding(): Promise<Branding> {
     logo_url: data.logo_url ?? null,
     icon_url: data.icon_url ?? null,
     external_links: normalizeLinks(data.external_links),
+    referral_enabled: Boolean(data.referral_enabled),
+    referral_reward_credits: data.referral_reward_credits ?? defaultBranding.referral_reward_credits,
   };
+}
+
+/** Master-only switch for the referral programme and its bonus size. */
+export async function saveReferralSettings(input: { enabled: boolean; credits: number }) {
+  const { error } = await supabase
+    .from("platform_settings")
+    .update({
+      referral_enabled: input.enabled,
+      referral_reward_credits: Math.max(0, Math.round(input.credits)),
+    })
+    .eq("id", true);
+  if (error) throw error;
 }
 
 export async function saveBranding(input: {
