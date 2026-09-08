@@ -878,7 +878,7 @@ function EditorPage() {
         </section>
 
         {/* ---------- Column 2: preview ---------- */}
-        <section className="space-y-3">
+        <section className="space-y-3 self-start lg:sticky lg:top-20">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("Preview")} · {ASPECTS[opts.aspect].label}
           </p>
@@ -1349,37 +1349,6 @@ function EditorPage() {
                 </div>
 
 
-                <div className="mt-5 border-t border-border/60 pt-4">
-                  <p className="text-sm font-bold">{t("Colour overlay")}</p>
-                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                    {t("A colour layer over the video — handy to darken the background and make the title pop.")}
-                  </p>
-                  <div className="mt-4 space-y-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">{t("Colour")}</span>
-                      <Input
-                        type="color"
-                        value={opts.overlayColor}
-                        onChange={(e) => patch({ overlayColor: e.target.value })}
-                        className="h-8 w-16 p-1"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">{t("Intensity")}</span>
-                        <span className="font-bold">{Math.round(opts.overlayOpacity * 100)}%</span>
-                      </div>
-                      <Slider
-                        className="mt-2"
-                        value={[opts.overlayOpacity]}
-                        min={0}
-                        max={0.8}
-                        step={0.01}
-                        onValueChange={([v]) => patch({ overlayOpacity: v ?? 0 })}
-                      />
-                    </div>
-                  </div>
-                </div>
               </>
             )}
 
