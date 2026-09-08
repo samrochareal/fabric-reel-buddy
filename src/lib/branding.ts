@@ -8,12 +8,15 @@ export type Palette = {
   accent: string;
 };
 
+export type ExternalLink = { title: string; url: string };
+
 export type Branding = {
   system_name: string;
   tagline: string | null;
   palette: Palette;
   logo_url: string | null;
   icon_url: string | null;
+  external_links: ExternalLink[];
 };
 
 export const defaultBranding: Branding = {
@@ -22,6 +25,7 @@ export const defaultBranding: Branding = {
   palette: { primary: "#f97316", background: "#0b0b0d", accent: "#27272a" },
   logo_url: null,
   icon_url: null,
+  external_links: [],
 };
 
 export const brandingQueryKey = ["branding"] as const;
@@ -35,10 +39,20 @@ function normalizePalette(value: unknown): Palette {
   };
 }
 
+function normalizeLinks(value: unknown): ExternalLink[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((raw) => {
+      const l = (raw ?? {}) as Partial<ExternalLink>;
+      return { title: String(l.title ?? "").trim(), url: String(l.url ?? "").trim() };
+    })
+    .filter((l) => l.title && l.url);
+}
+
 export async function fetchBranding(): Promise<Branding> {
   const { data, error } = await supabase
     .from("platform_settings")
-    .select("system_name, tagline, palette, logo_url, icon_url")
+    .select("system_name, tagline, palette, logo_url, icon_url, external_links")
     .limit(1)
     .maybeSingle();
   if (error || !data) return defaultBranding;
@@ -48,6 +62,7 @@ export async function fetchBranding(): Promise<Branding> {
     palette: normalizePalette(data.palette),
     logo_url: data.logo_url ?? null,
     icon_url: data.icon_url ?? null,
+    external_links: normalizeLinks(data.external_links),
   };
 }
 
@@ -71,34 +86,55 @@ export async function saveBranding(input: {
   if (error) throw error;
 }
 
-/** Reads the platform identity and applies colors, title and icon to the page. */
-export function useBranding() {
+export async function saveExternalLinks(links: ExternalLink[]) {
+  const { error } = await supabase
+    .from("platform_settings")
+    .update({ external_links: links as never })
+    .eq("id", true);
+  if (error) throw error;
+}
+
+/** Applies colours, page title and icon to the document. */
+function applyBranding(branding: Branding) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  root.style.setProperty("--primary", branding.palette.primary);
+  root.style.setProperty("--ring", branding.palette.primary);
+  root.style.setProperty("--background", branding.palette.background);
+  root.style.setProperty("--accent", branding.palette.accent);
+  document.title = branding.tagline
+    ? `${branding.system_name} — ${branding.tagline}`
+    : branding.system_name;
+  if (branding.icon_url) {
+    let link = document.querySelector<HTMLLinkElement>("link#brand-icon");
+    if (!link) {
+      link = document.createElement("link");
+      link.id = "brand-icon";
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    link.href = branding.icon_url;
+  }
+}
+
+/**
+ * Reads the platform identity and applies it to the page.
+ * `ready` is false until the saved identity arrives, so the interface can hold
+ * back the logo and name instead of flashing the original ones.
+ */
+export function useBranding(): Branding & { ready: boolean } {
   const query = useQuery({
     queryKey: brandingQueryKey,
     queryFn: fetchBranding,
-    staleTime: 60_000,
+    staleTime: 30_000,
   });
   const branding = query.data ?? defaultBranding;
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty("--primary", branding.palette.primary);
-    root.style.setProperty("--ring", branding.palette.primary);
-    root.style.setProperty("--background", branding.palette.background);
-    root.style.setProperty("--accent", branding.palette.accent);
-    if (branding.icon_url) {
-      let link = document.querySelector<HTMLLinkElement>("link#brand-icon");
-      if (!link) {
-        link = document.createElement("link");
-        link.id = "brand-icon";
-        link.rel = "icon";
-        document.head.appendChild(link);
-      }
-      link.href = branding.icon_url;
-    }
-  }, [branding.palette.primary, branding.palette.background, branding.palette.accent, branding.icon_url]);
+    if (query.data) applyBranding(query.data);
+  }, [query.data]);
 
-  return branding;
+  return { ...branding, ready: Boolean(query.data) };
 }
 
 export function useRefreshBranding() {

@@ -9,21 +9,22 @@ import { lovable } from "@/integrations/lovable/index";
 import { getRememberMe, setRememberMe } from "@/lib/session-pref";
 import { enterGuestMode, exitGuestMode } from "@/lib/guest-mode";
 import { useBranding } from "@/lib/branding";
+import { LanguageToggle, useT } from "@/lib/i18n";
 
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Entrar — Fábrica de Reels" },
+      { title: "Sign in — batch video editor" },
       {
         name: "description",
         content:
-          "Acesse sua conta da Fábrica de Reels com Google ou e-mail e senha para abrir seus projetos e overlays salvos.",
+          "Sign in with Google or e-mail and password to open your saved editing settings and overlays.",
       },
-      { property: "og:title", content: "Entrar — Fábrica de Reels" },
+      { property: "og:title", content: "Sign in — batch video editor" },
       {
         property: "og:description",
-        content: "Entre para acessar seus projetos de edição de vídeos em massa.",
+        content: "Sign in to reach your batch video editing workspace.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -35,6 +36,8 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const branding = useBranding();
+  const t = useT();
+  const [fullName, setFullName] = useState("");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -76,7 +79,7 @@ function AuthPage() {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
-        toast.error("Não foi possível entrar com o Google. Tente novamente.");
+        toast.error(t("We couldn't sign you in with Google. Please try again."));
         return;
       }
       if (result.redirected) return;
@@ -88,7 +91,7 @@ function AuthPage() {
 
   const withEmail = async () => {
     if (!email.trim() || password.length < 6) {
-      toast.error("Informe o e-mail e uma senha com pelo menos 6 caracteres.");
+      toast.error(t("Enter your e-mail and a password with at least 6 characters."));
       return;
     }
     setBusy(true);
@@ -99,7 +102,10 @@ function AuthPage() {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: { full_name: fullName.trim() || null },
+          },
         });
         if (error) {
           toast.error(error.message);
@@ -107,7 +113,7 @@ function AuthPage() {
         }
         if (!data.session) {
           setSent(true);
-          toast.success("Confira seu e-mail para confirmar a conta.");
+          toast.success(t("Check your e-mail to confirm your account."));
           return;
         }
       } else {
@@ -116,7 +122,7 @@ function AuthPage() {
           password,
         });
         if (error) {
-          toast.error("E-mail ou senha incorretos.");
+          toast.error(t("Wrong e-mail or password."));
           return;
         }
       }
@@ -129,23 +135,28 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2">
-          {branding.logo_url ? (
-            <img src={branding.logo_url} alt={branding.system_name} className="h-7 w-auto" />
-          ) : (
-            <Scissors className="size-5 text-primary" />
-          )}
+          {branding.ready &&
+            (branding.logo_url ? (
+              <img src={branding.logo_url} alt={branding.system_name} className="h-7 w-auto" />
+            ) : (
+              <Scissors className="size-5 text-primary" />
+            ))}
           <span className="font-display text-lg font-bold tracking-tight">
-            {branding.system_name}
+            {branding.ready ? branding.system_name : ""}
           </span>
+        </div>
+
+        <div className="mt-4 flex justify-center">
+          <LanguageToggle />
         </div>
 
 
         <div className="mt-6 rounded-2xl border border-border bg-card p-6">
           <h1 className="font-display text-2xl font-bold tracking-tight">
-            {mode === "signin" ? "Entrar na sua conta" : "Criar nova conta"}
+            {mode === "signin" ? t("Sign in to your account") : t("Create a new account")}
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Seus projetos e perfis de overlay ficam salvos na sua conta.
+            {t("Your overlays and last editing settings stay saved in your account.")}
           </p>
 
           <label className="mt-5 flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-background/60 p-3">
@@ -156,9 +167,9 @@ function AuthPage() {
               onChange={(e) => setRemember(e.target.checked)}
             />
             <span className="text-xs">
-              <span className="font-semibold">Continuar conectado</span>
+              <span className="font-semibold">{t("Keep me signed in")}</span>
               <span className="block text-muted-foreground">
-                Mantenha o acesso salvo neste dispositivo e não precise entrar novamente.
+                {t("Stay signed in on this device so you don't have to sign in again.")}
               </span>
             </span>
           </label>
@@ -169,41 +180,53 @@ function AuthPage() {
             onClick={withGoogle}
             disabled={busy}
           >
-            <LogIn className="mr-2 size-4" /> Continuar com Google
+            <LogIn className="mr-2 size-4" /> {t("Continue with Google")}
           </Button>
 
           <div className="my-5 flex items-center gap-3">
             <span className="h-px flex-1 bg-border" />
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">ou</span>
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("or")}</span>
             <span className="h-px flex-1 bg-border" />
           </div>
 
           {sent ? (
             <div className="rounded-lg border border-border bg-background/60 p-4 text-sm">
               <Mail className="mb-2 size-5 text-primary" />
-              Enviamos um link de confirmação para <strong>{email}</strong>. Confirme e depois entre
-              com seu e-mail e senha.
+              {t("We sent a confirmation link to")} <strong>{email}</strong>.{" "}
+              {t("Confirm it and then sign in with your e-mail and password.")}
             </div>
           ) : (
             <div className="space-y-3">
+              {mode === "signup" && (
+                <div>
+                  <p className="text-xs font-semibold">{t("Your name")}</p>
+                  <Input
+                    className="mt-1.5 h-11"
+                    autoComplete="name"
+                    placeholder={t("Your name")}
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                </div>
+              )}
               <div>
-                <p className="text-xs font-semibold">E-mail</p>
+                <p className="text-xs font-semibold">{t("E-mail")}</p>
                 <Input
                   className="mt-1.5 h-11"
                   type="email"
                   autoComplete="email"
-                  placeholder="voce@email.com"
+                  placeholder="you@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div>
-                <p className="text-xs font-semibold">Senha</p>
+                <p className="text-xs font-semibold">{t("Password")}</p>
                 <Input
                   className="mt-1.5 h-11"
                   type="password"
                   autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                  placeholder="Mínimo de 6 caracteres"
+                  placeholder={t("At least 6 characters")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && void withEmail()}
@@ -211,7 +234,7 @@ function AuthPage() {
               </div>
               <Button className="h-11 w-full" onClick={withEmail} disabled={busy}>
                 {busy && <Loader2 className="mr-2 size-4 animate-spin" />}
-                {mode === "signin" ? "Entrar" : "Criar conta"}
+                {mode === "signin" ? t("Sign in") : t("Create account")}
               </Button>
             </div>
           )}
@@ -225,18 +248,17 @@ function AuthPage() {
             }}
           >
             {mode === "signin"
-              ? "Não tem conta? Criar uma agora"
-              : "Já tem conta? Entrar com e-mail e senha"}
+              ? t("No account yet? Create one now")
+              : t("Already have an account? Sign in")}
           </button>
         </div>
 
         <div className="mt-4 rounded-2xl border border-border bg-card p-5">
           <Button variant="outline" className="h-11 w-full" onClick={asGuest} disabled={busy}>
-            <UserRound className="mr-2 size-4" /> Entrar como visitante
+            <UserRound className="mr-2 size-4" /> {t("Continue as guest")}
           </Button>
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            Use o editor completo sem criar conta. Nada fica salvo no histórico: os projetos e
-            overlays desaparecem quando você fechar a página.
+            {t("Use the full editor without an account. Nothing is saved: everything disappears when you close the page.")}
           </p>
         </div>
       </div>

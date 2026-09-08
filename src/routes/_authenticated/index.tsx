@@ -21,7 +21,8 @@ import {
   Sparkles,
   Volume2,
   VolumeX,
-  HelpCircle,
+  Coins,
+  ExternalLink as ExternalLinkIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -40,22 +41,39 @@ import {
 } from "@/lib/video";
 import { logVideoJobs } from "@/lib/admin";
 import { useBranding } from "@/lib/branding";
+import { LanguageToggle, useT } from "@/lib/i18n";
+import {
+  accessExpired,
+  nextRefillAt,
+  spendOneCredit,
+  toolEnabled,
+  useMyAccount,
+  useRefreshAccount,
+  type ToolKey,
+} from "@/lib/account";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
-      { title: "Editor em lote — Fábrica de Reels" },
+      { title: "Batch video editor — frames, overlays and titles" },
       {
         name: "description",
         content:
-          "Edite e processe até 100 vídeos verticais de uma vez, com molduras, overlays e títulos.",
+          "Edit and process up to 100 vertical videos at once, with frames, overlays and titles.",
       },
-      { property: "og:title", content: "Editor em lote — Fábrica de Reels" },
+      { property: "og:title", content: "Batch video editor — frames, overlays and titles" },
       {
         property: "og:description",
-        content: "Processe lotes de vídeos 9:16 direto no navegador.",
+        content: "Process batches of 9:16 videos straight in your browser.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -86,24 +104,28 @@ const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 const MAX_DURATION_S = 180;
 
 type EditTab = "texto" | "overlay" | "extras";
-const TABS: { id: EditTab; label: string }[] = [
-  { id: "texto", label: "Texto" },
-  { id: "overlay", label: "Overlay" },
-  { id: "extras", label: "Extras" },
+const TABS: { id: EditTab; label: string; tool: ToolKey }[] = [
+  { id: "texto", label: "Text", tool: "text" },
+  { id: "overlay", label: "Overlay", tool: "overlay" },
+  { id: "extras", label: "Extras", tool: "extras" },
 ];
 
 type FineTune = { zoom: number; posX: number; posY: number };
 
-function statusLabel(status: ClipStatus, progress: number) {
-  if (status === "done") return "pronto";
-  if (status === "error") return "falhou";
+function statusLabel(status: ClipStatus, progress: number, t: (s: string) => string) {
+  if (status === "done") return t("done");
+  if (status === "error") return t("failed");
   if (status === "processing") return `${Math.round(progress * 100)}%`;
-  return "aguardando";
+  return t("queued");
 }
 
 function EditorPage() {
 
+  const t = useT();
   const branding = useBranding();
+  const { account } = useMyAccount();
+  const refreshAccount = useRefreshAccount();
+  const [downloadOpen, setDownloadOpen] = useState(false);
   const [clips, setClips] = useState<Clip[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [opts, setOpts] = useState<EditOptions>(defaultEditOptions);
@@ -186,14 +208,14 @@ function EditorPage() {
   const addFiles = useCallback(async (files: FileList | File[]) => {
     const videos = Array.from(files).filter((f) => f.type.startsWith("video/"));
     if (videos.length === 0) {
-      toast.error("Selecione arquivos de vídeo.");
+      toast.error(t("Select video files."));
       return;
     }
 
     const tooBig = videos.filter((f) => f.size > MAX_FILE_BYTES);
     const sized = videos.filter((f) => f.size <= MAX_FILE_BYTES);
     if (tooBig.length > 0) {
-      toast.error(`${tooBig.length} vídeo(s) acima de ${MAX_FILE_MB} MB foram ignorados.`);
+      toast.error(t("{n} video(s) over {mb} MB were skipped.", { n: tooBig.length, mb: MAX_FILE_MB }));
     }
 
     const readDuration = (file: File) =>
@@ -217,13 +239,13 @@ function EditorPage() {
     const incoming = sized.filter((_, i) => (durations[i] ?? 0) <= MAX_DURATION_S);
     const tooLong = sized.length - incoming.length;
     if (tooLong > 0) {
-      toast.error(`${tooLong} vídeo(s) acima de ${MAX_DURATION_S}s foram ignorados.`);
+      toast.error(t("{n} video(s) longer than {s}s were skipped.", { n: tooLong, s: MAX_DURATION_S }));
     }
     if (incoming.length === 0) return;
 
     setClips((prev) => {
       const room = MAX_CLIPS - prev.length;
-      if (incoming.length > room) toast.error(`Máximo de ${MAX_CLIPS} vídeos por lote.`);
+      if (incoming.length > room) toast.error(t("Maximum of {max} videos per batch.", { max: MAX_CLIPS }));
       const next = incoming.slice(0, room).map((file) => ({
         id: crypto.randomUUID(),
         file,
@@ -305,7 +327,17 @@ function EditorPage() {
 
   async function handleProcess() {
     if (queuedClips.length === 0) {
-      toast.error("Adicione vídeos para processar.");
+      toast.error(t("Add videos to process."));
+      return;
+    }
+
+    if (account && !account.premium && account.credits <= 0) {
+      const when = nextRefillAt(account);
+      toast.error(
+        `${t("You are out of credits.")} ${
+          when ? t("New credits arrive {when}.", { when: when.toLocaleString() }) : ""
+        }`,
+      );
       return;
     }
 
@@ -320,15 +352,22 @@ function EditorPage() {
     try {
       const videoLib = await import("@/lib/video");
       if (!engineReady) {
-        toast.info("Preparando o motor de vídeo (só na primeira vez)…");
+        toast.info(t("Preparing the video engine (first time only)…"));
         await videoLib.getFFmpeg();
         setEngineReady(true);
       }
 
-      toast.success(`Processando ${queuedClips.length} vídeo(s)…`);
+      toast.success(t("Processing {n} video(s)…", { n: queuedClips.length }));
 
       for (const clip of queuedClips) {
         if (cancelledRef.current) break;
+        // 1 credit = 1 processed video
+        const spent = await spendOneCredit();
+        refreshAccount();
+        if (!spent.ok) {
+          toast.error(t("Out of credits — processing stopped."));
+          break;
+        }
         const index = clips.findIndex((c) => c.id === clip.id);
         const settings = optsFor(clip.id);
         setClips((prev) =>
@@ -367,7 +406,7 @@ function EditorPage() {
                 ? {
                     ...c,
                     status: "error",
-                    error: err instanceof Error ? err.message : "Falha ao processar",
+                    error: err instanceof Error ? err.message : t("Failed to process"),
                   }
                 : c,
             ),
@@ -381,15 +420,15 @@ function EditorPage() {
 
       if (cancelledRef.current) {
         setPaused(true);
-        toast.info("Processamento pausado. Clique em “Retomar processamento” para continuar.");
+        toast.info(t("Processing paused. Click “Resume processing” to continue."));
       } else {
-        toast.success("Lote concluído! Use “Baixar todos” para salvar tudo.");
+        toast.success(t("Batch finished! Use “Download all” to save everything."));
       }
 
 
 
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao processar.");
+      toast.error(err instanceof Error ? err.message : t("Error while processing."));
     } finally {
       setRunning(false);
     }
@@ -411,7 +450,7 @@ function EditorPage() {
     doneClips.forEach((clip, i) => {
       setTimeout(() => downloadClip(clip), i * 300);
     });
-    toast.success(`Baixando ${doneClips.length} vídeo(s) separadamente…`);
+    toast.success(t("Downloading {n} video(s) separately…", { n: doneClips.length }));
   }
 
   async function downloadAll() {
@@ -440,7 +479,7 @@ function EditorPage() {
   ) => (
     <div className="mt-3 space-y-3">
       <div className="flex items-center justify-between gap-2 text-xs">
-        <span className="text-muted-foreground">Fonte</span>
+        <span className="text-muted-foreground">{t("Font")}</span>
         <select
           value={block.font}
           onChange={(e) => set({ font: e.target.value })}
@@ -455,7 +494,7 @@ function EditorPage() {
         </select>
       </div>
       <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">Cor</span>
+        <span className="text-muted-foreground">{t("Colour")}</span>
         <Input
           type="color"
           value={block.color}
@@ -465,7 +504,7 @@ function EditorPage() {
       </div>
       {[
         {
-          label: "Tamanho",
+          label: t("Size"),
           value: block.size,
           display: `${block.size}px`,
           min: minSize,
@@ -474,7 +513,7 @@ function EditorPage() {
           apply: (v: number) => set({ size: v }),
         },
         {
-          label: "Posição horizontal",
+          label: t("Horizontal position"),
           value: block.x,
           display: `${Math.round(block.x)}%`,
           min: 0,
@@ -483,7 +522,7 @@ function EditorPage() {
           apply: (v: number) => set({ x: v }),
         },
         {
-          label: "Posição vertical",
+          label: t("Vertical position"),
           value: block.y,
           display: `${Math.round(block.y)}%`,
           min: 0,
@@ -582,7 +621,7 @@ function EditorPage() {
         </div>
       ) : (
         <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
-          sem vídeo
+          {t("no video")}
         </div>
       )}
 
@@ -628,7 +667,7 @@ function EditorPage() {
             fontSize: `${((o.title.size / outW) * 100).toFixed(2)}cqw`,
           }}
         >
-          {titleFor(clips.findIndex((c) => c.id === clip?.id)) || "Título do vídeo"}
+          {titleFor(clips.findIndex((c) => c.id === clip?.id)) || t("Video title")}
         </p>
       )}
       {o.bottom.enabled && o.bottom.text && (
@@ -649,40 +688,86 @@ function EditorPage() {
     );
   };
 
+  const blockedMessage = account?.blocked
+    ? t("Your account is blocked. Please contact the administrator.")
+    : accessExpired(account)
+      ? t("Your access has expired. Please contact the administrator.")
+      : null;
+
+  if (blockedMessage) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4 text-center">
+        <p className="max-w-sm text-sm font-semibold">{blockedMessage}</p>
+        <div className="flex w-full max-w-sm justify-center">
+          <AccountBadge />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
         <div className="flex h-14 items-center gap-3 px-4">
-          <span className="flex items-center gap-2">
-            {branding.logo_url ? (
-              <img src={branding.logo_url} alt={branding.system_name} className="h-6 w-auto" />
-            ) : (
-              <Scissors className="size-4 text-primary" />
-            )}
-            <span className="font-display text-base font-bold tracking-tight">
-              {branding.system_name}
+          <span className="flex min-w-0 items-center gap-2">
+            {branding.ready &&
+              (branding.logo_url ? (
+                <img src={branding.logo_url} alt={branding.system_name} className="h-6 w-auto" />
+              ) : (
+                <Scissors className="size-4 text-primary" />
+              ))}
+            <span className="truncate font-display text-base font-bold tracking-tight">
+              {branding.ready ? branding.system_name : ""}
             </span>
-
           </span>
+
+          {branding.external_links.length > 0 && (
+            <span className="hidden items-center gap-1 sm:flex">
+              {branding.external_links.map((link) => (
+                <a
+                  key={link.url}
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={link.title}
+                  className="flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
+                >
+                  <ExternalLinkIcon className="size-3.5" />
+                  <span className="hidden lg:inline">{link.title}</span>
+                </a>
+              ))}
+            </span>
+          )}
+
           <AccountBadge />
 
-
           <div className="flex items-center gap-2">
+            {account && (
+              <span
+                className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold"
+                title={t("1 credit = 1 processed video")}
+              >
+                <Coins className="size-3.5 text-primary" />
+                {account.premium ? t("Unlimited") : `${account.credits} ${t("credits left")}`}
+              </span>
+            )}
             <span className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground sm:inline">
-              {clips.length}/{MAX_CLIPS} na fila
+              {clips.length}/{MAX_CLIPS} {t("in queue")}
             </span>
-            <span className="hidden text-muted-foreground lg:inline">
-              <HelpCircle className="size-4" />
-            </span>
+            <LanguageToggle />
           </div>
         </div>
       </header>
 
       <div className="flex items-end justify-between gap-4 px-4 pt-5">
-        <h1 className="font-display text-xl font-bold tracking-tight">Editor em lote</h1>
+        <h1 className="font-display text-xl font-bold tracking-tight">{t("Batch editor")}</h1>
         <p className="text-xs text-muted-foreground">
-          Até {MAX_CLIPS} vídeos por lote · máximo {MAX_FILE_MB}MB · {MAX_DURATION_S}s cada
+          {t("Up to {max} videos per batch · {mb}MB max · {s}s each", {
+            max: MAX_CLIPS,
+            mb: MAX_FILE_MB,
+            s: MAX_DURATION_S,
+          })}
         </p>
       </div>
 
@@ -706,9 +791,12 @@ function EditorPage() {
             onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
           >
             <UploadCloud className="size-6 text-primary" />
-            <p className="mt-2 text-sm font-semibold">Arraste vídeos ou clique</p>
+            <p className="mt-2 text-sm font-semibold">{t("Drag videos here or click")}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              MP4, MOV, WebM · máximo {MAX_FILE_MB}MB · {MAX_DURATION_S}s cada
+              {t("MP4, MOV, WebM · {mb}MB max · {s}s each", {
+                mb: MAX_FILE_MB,
+                s: MAX_DURATION_S,
+              })}
             </p>
             <input
               ref={inputRef}
@@ -727,14 +815,15 @@ function EditorPage() {
           <div className="rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
               <p className="text-xs font-semibold">
-                {clips.length} vídeo{clips.length === 1 ? "" : "s"} · {doneClips.length} prontos
+                {clips.length} {clips.length === 1 ? t("video") : t("videos")} ·{" "}
+                {doneClips.length} {t("ready")}
               </p>
               <button
                 type="button"
                 onClick={clearAll}
                 disabled={running || clips.length === 0}
                 className="text-muted-foreground transition-colors hover:text-destructive disabled:opacity-40"
-                aria-label="Limpar fila"
+                aria-label={t("Clear queue")}
               >
                 <Trash2 className="size-4" />
               </button>
@@ -742,8 +831,8 @@ function EditorPage() {
 
             {doneClips.length > 0 && !running && (
               <div className="border-b border-border/60 px-3 py-3">
-                <Button className="w-full" size="sm" onClick={() => void downloadAll()}>
-                  <Archive className="mr-1.5 size-4" /> Baixar todos ({doneClips.length})
+                <Button className="w-full" size="sm" onClick={() => setDownloadOpen(true)}>
+                  <Download className="mr-1.5 size-4" /> {t("Download all")} ({doneClips.length})
                 </Button>
               </div>
             )}
@@ -753,7 +842,7 @@ function EditorPage() {
             <ul className="max-h-[540px] divide-y divide-border/60 overflow-y-auto">
               {clips.length === 0 && (
                 <li className="px-3 py-6 text-center text-xs text-muted-foreground">
-                  Sua fila está vazia.
+                  {t("Your queue is empty.")}
                 </li>
               )}
               {clips.map((clip) => (
@@ -775,7 +864,7 @@ function EditorPage() {
                       <span className="block truncate text-xs font-semibold">{clip.file.name}</span>
                       <span className="block text-[11px] text-muted-foreground">
                         {(clip.file.size / 1024 / 1024).toFixed(1)} MB ·{" "}
-                        {statusLabel(clip.status, clip.progress)}
+                        {statusLabel(clip.status, clip.progress, t)}
                       </span>
                       {clip.status === "processing" && (
                         <Progress value={clip.progress * 100} className="mt-1.5 h-1" />
@@ -790,7 +879,7 @@ function EditorPage() {
                             downloadClip(clip);
                           }}
                           className="rounded p-1 text-turbo hover:bg-turbo/10"
-                          title="Baixar este vídeo"
+                          title={t("Download this video")}
                         >
                           <Download className="size-4" />
                         </span>
@@ -802,7 +891,7 @@ function EditorPage() {
                             removeClip(clip.id);
                           }}
                           className="rounded p-1 text-muted-foreground hover:text-destructive"
-                          title="Remover da fila"
+                          title={t("Remove from queue")}
                         >
                           <X className="size-4" />
                         </span>
@@ -818,7 +907,7 @@ function EditorPage() {
         {/* ---------- Column 2: preview ---------- */}
         <section className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Prévia · {ASPECTS[opts.aspect].label}
+            {t("Preview")} · {ASPECTS[opts.aspect].label}
           </p>
 
           <div className="rounded-xl border border-border bg-card p-4">
@@ -833,7 +922,7 @@ function EditorPage() {
                 onClick={togglePlay}
                 disabled={!selected}
                 className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-40"
-                aria-label={playing ? "Pausar" : "Reproduzir"}
+                aria-label={playing ? t("Pause") : t("Play")}
               >
                 {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
               </button>
@@ -852,7 +941,7 @@ function EditorPage() {
                 type="button"
                 onClick={() => setMuted((m) => !m)}
                 className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
-                aria-label={muted ? "Ativar som" : "Silenciar"}
+                aria-label={muted ? t("Unmute") : t("Mute")}
               >
                 {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
               </button>
@@ -876,14 +965,9 @@ function EditorPage() {
                 9:16 · 1080×1920
               </span>
               {doneClips.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => void downloadAll()}>
-                    <Archive className="mr-1.5 size-4" /> Baixar tudo (.zip)
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={downloadEach}>
-                    <Download className="mr-1.5 size-4" /> Baixar separados ({doneClips.length})
-                  </Button>
-                </div>
+                <Button variant="outline" size="sm" onClick={() => setDownloadOpen(true)}>
+                  <Download className="mr-1.5 size-4" /> {t("Download all")} ({doneClips.length})
+                </Button>
               )}
             </div>
 
@@ -895,6 +979,7 @@ function EditorPage() {
           className={`space-y-3 ${running ? "pointer-events-none opacity-50" : ""}`}
           aria-disabled={running}
         >
+          {toolEnabled(account, "finetune") && (
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1">
               <button
@@ -904,7 +989,7 @@ function EditorPage() {
                   scope === "batch" ? "bg-card text-foreground shadow" : "text-muted-foreground"
                 }`}
               >
-                Config. em lote ({clips.length} vídeo{clips.length === 1 ? "" : "s"})
+                {t("Batch settings")} ({clips.length})
               </button>
               <button
                 type="button"
@@ -914,16 +999,16 @@ function EditorPage() {
                   scope === "single" ? "bg-card text-foreground shadow" : "text-muted-foreground"
                 }`}
               >
-                Só este vídeo
+                {t("This video only")}
               </button>
             </div>
 
             <div className="mt-4">
-              <p className="text-xs text-muted-foreground">Enquadramento</p>
+              <p className="text-xs text-muted-foreground">{t("Framing")}</p>
               <div className="mt-2 grid grid-cols-2 gap-1 rounded-lg border border-border p-1">
                 {([
-                  { id: "contain", label: "Sem cortar" },
-                  { id: "cover", label: "Preencher" },
+                  { id: "contain", label: t("No crop") },
+                  { id: "cover", label: t("Fill") },
                 ] as const).map((f) => (
                   <button
                     key={f.id}
@@ -942,20 +1027,20 @@ function EditorPage() {
             </div>
 
             <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm font-bold">Ajuste fino do vídeo</p>
+              <p className="text-sm font-bold">{t("Fine tuning")}</p>
               <button
                 type="button"
                 onClick={resetFine}
                 className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
-                <RotateCcw className="size-3.5" /> Padrão
+                <RotateCcw className="size-3.5" /> {t("Default")}
               </button>
             </div>
 
             <div className="mt-3 space-y-4">
               {[
                 {
-                  label: "Zoom",
+                  label: t("Zoom"),
                   value: fine.zoom,
                   display: `${Math.round(fine.zoom * 100)}%`,
                   min: 0.5,
@@ -964,7 +1049,7 @@ function EditorPage() {
                   set: (v: number) => patchFine({ zoom: v }),
                 },
                 {
-                  label: "Posição vertical",
+                  label: t("Vertical position"),
                   value: fine.posY,
                   display: `${Math.round(fine.posY * 100)}%`,
                   min: 0,
@@ -973,7 +1058,7 @@ function EditorPage() {
                   set: (v: number) => patchFine({ posY: v }),
                 },
                 {
-                  label: "Posição horizontal",
+                  label: t("Horizontal position"),
                   value: fine.posX,
                   display: `${Math.round(fine.posX * 100)}%`,
                   min: 0,
@@ -998,7 +1083,7 @@ function EditorPage() {
                 </div>
               ))}
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Cor de fundo</span>
+                <span className="text-muted-foreground">{t("Background colour")}</span>
                 <Input
                   type="color"
                   value={opts.bgColor}
@@ -1008,18 +1093,20 @@ function EditorPage() {
               </div>
             </div>
           </div>
+          )}
 
+          {toolEnabled(account, "borders") && (
           <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-sm font-bold">Bordas do vídeo</p>
+            <p className="text-sm font-bold">{t("Video borders")}</p>
             <div className="mt-4 space-y-4">
               {[
                 {
-                  label: "Cortar no topo",
+                  label: t("Crop top"),
                   value: opts.border.top,
                   set: (v: number) => patch({ border: { ...opts.border, top: v } }),
                 },
                 {
-                  label: "Cortar no rodapé",
+                  label: t("Crop bottom"),
                   value: opts.border.bottom,
                   set: (v: number) => patch({ border: { ...opts.border, bottom: v } }),
                 },
@@ -1042,12 +1129,13 @@ function EditorPage() {
             </div>
 
             <div className="mt-4 rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-xs">
-              Conteúdo central:{" "}
+              {t("Centre content:")}{" "}
               <span className="font-bold">
                 {Math.max(0, 100 - (opts.border.top + opts.border.bottom) * 100).toFixed(0)}%
               </span>
             </div>
           </div>
+          )}
         </section>
 
         {/* ---------- Column 4: edit tabs + process ---------- */}
@@ -1058,7 +1146,7 @@ function EditorPage() {
             onClick={() => setOpts(defaultEditOptions())}
             disabled={running}
           >
-            <RotateCcw className="mr-1.5 size-4" /> Resetar todas as edições
+            <RotateCcw className="mr-1.5 size-4" /> {t("Reset all edits")}
           </Button>
 
           <div
@@ -1067,18 +1155,18 @@ function EditorPage() {
             }`}
           >
             <div className="flex flex-wrap gap-1">
-              {TABS.map((t) => (
+              {TABS.filter((item) => toolEnabled(account, item.tool)).map((item) => (
                 <button
-                  key={t.id}
+                  key={item.id}
                   type="button"
-                  onClick={() => setTab(t.id)}
+                  onClick={() => setTab(item.id)}
                   className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    tab === t.id
+                    tab === item.id
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {t.label}
+                  {t(item.label)}
                 </button>
               ))}
             </div>
@@ -1090,47 +1178,49 @@ function EditorPage() {
             }`}
             aria-disabled={running}
           >
-            {tab === "texto" && (
+            {tab === "texto" && toolEnabled(account, "text") && (
               <div className="space-y-5">
                 <div>
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold">Título no vídeo</p>
+                    <p className="text-sm font-bold">{t("Video title")}</p>
                     <Switch
                       checked={opts.title.enabled}
                       onCheckedChange={(v) => patch({ title: { ...opts.title, enabled: v } })}
                     />
                   </div>
                   <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                    Uma lista de títulos — um por linha. Cada linha vai para o vídeo
-                    correspondente da fila.
+                    {t("One title per line. Each line goes to the matching video in the queue.")}
                   </p>
                   <Textarea
                     className="mt-3 min-h-[110px] text-xs"
-                    placeholder={"Título do vídeo 1\nTítulo do vídeo 2"}
+                    placeholder={t("Video title 1\nVideo title 2")}
                     value={opts.title.text}
                     onChange={(e) => patch({ title: { ...opts.title, text: e.target.value } })}
                     disabled={!opts.title.enabled}
                   />
                   {textControls(opts.title, (next) => patch({ title: { ...opts.title, ...next } }), 28, 120)}
                   <p className="mt-2 text-[11px] text-muted-foreground">
-                    {titleLines.filter(Boolean).length} título(s) para {clips.length} vídeo(s)
+                    {t("{n} title(s) for {v} video(s)", {
+                      n: titleLines.filter(Boolean).length,
+                      v: clips.length,
+                    })}
                   </p>
                 </div>
 
                 <div className="border-t border-border/60 pt-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold">Texto inferior</p>
+                    <p className="text-sm font-bold">{t("Bottom text")}</p>
                     <Switch
                       checked={opts.bottom.enabled}
                       onCheckedChange={(v) => patch({ bottom: { ...opts.bottom, enabled: v } })}
                     />
                   </div>
                   <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                    Mesma legenda em todos os vídeos — ideal para @ ou CTA.
+                    {t("The same caption on every video — great for a handle or CTA.")}
                   </p>
                   <Input
                     className="mt-3 text-xs"
-                    placeholder="@seuperfil · siga para mais"
+                    placeholder={t("@yourhandle · follow for more")}
                     value={opts.bottom.text}
                     onChange={(e) => patch({ bottom: { ...opts.bottom, text: e.target.value } })}
                     disabled={!opts.bottom.enabled}
@@ -1140,10 +1230,10 @@ function EditorPage() {
               </div>
             )}
 
-            {tab === "overlay" && (
+            {tab === "overlay" && toolEnabled(account, "overlay") && (
               <>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold">Overlay de fundo</p>
+                  <p className="text-sm font-bold">{t("Background overlay")}</p>
                   <Switch
                     checked={opts.bgImage.enabled}
                     onCheckedChange={(v) => patch({ bgImage: { ...opts.bgImage, enabled: v } })}
@@ -1151,8 +1241,8 @@ function EditorPage() {
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg border border-border p-1">
                   {([
-                    { id: "back", label: "Atrás do vídeo" },
-                    { id: "front", label: "Na frente" },
+                    { id: "back", label: t("Behind the video") },
+                    { id: "front", label: t("In front") },
                   ] as const).map((l) => (
                     <button
                       key={l.id}
@@ -1183,7 +1273,7 @@ function EditorPage() {
                       patch({
                         bgImage: { ...opts.bgImage, enabled: true, src: String(reader.result) },
                       });
-                      toast.success("Imagem de fundo carregada.");
+                      toast.success(t("Background image loaded."));
                     };
                     reader.readAsDataURL(file);
                   }}
@@ -1193,7 +1283,7 @@ function EditorPage() {
                   className="mt-4 w-full"
                   onClick={() => logoInputRef.current?.click()}
                 >
-                  <Plus className="mr-1.5 size-4" /> Enviar imagem de fundo
+                  <Plus className="mr-1.5 size-4" /> {t("Upload background image")}
                 </Button>
 
                 {opts.bgImage.src && (
@@ -1201,11 +1291,11 @@ function EditorPage() {
                     <div className="flex items-center gap-3">
                       <img
                         src={opts.bgImage.src}
-                        alt="Fundo atual"
+                        alt={t("Background image in use")}
                         className="h-14 w-8 rounded border border-border object-cover"
                       />
                       <p className="flex-1 text-[11px] font-semibold text-muted-foreground">
-                        Imagem de fundo em uso
+                        {t("Background image in use")}
                       </p>
                       <button
                         type="button"
@@ -1213,14 +1303,14 @@ function EditorPage() {
                           patch({ bgImage: { ...opts.bgImage, src: null, enabled: false } })
                         }
                         className="text-muted-foreground transition-colors hover:text-destructive"
-                        aria-label="Remover imagem de fundo"
+                        aria-label={t("Remove background image")}
                       >
                         <Trash2 className="size-4" />
                       </button>
                     </div>
                     <div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Transparência</span>
+                        <span className="text-muted-foreground">{t("Transparency")}</span>
                         <span className="font-bold">
                           {Math.round(opts.bgImage.opacity * 100)}%
                         </span>
@@ -1242,15 +1332,15 @@ function EditorPage() {
                 <div className="mt-4 rounded-lg border border-border bg-background/60 p-3">
                   <div className="flex items-center justify-between">
                     <p className="flex items-center gap-2 text-xs font-bold">
-                      <Sparkles className="size-4 text-primary" /> Overlays salvos
+                      <Sparkles className="size-4 text-primary" /> {t("Saved overlays")}
                     </p>
                     <Button variant="ghost" size="sm" onClick={() => void listOverlays().then(setSavedOverlays)}>
-                      Atualizar
+                      {t("Refresh")}
                     </Button>
                   </div>
                   {savedOverlays.length === 0 ? (
                     <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                      Você ainda não salvou nenhum perfil no Criador de Overlay.
+                      {t("You haven't saved any profile in the Overlay creator yet.")}
                     </p>
                   ) : (
                     <div className="mt-3 grid grid-cols-3 gap-2">
@@ -1262,7 +1352,7 @@ function EditorPage() {
                             patch({
                               bgImage: { ...opts.bgImage, enabled: true, src: preset.dataUrl },
                             });
-                            toast.success(`Overlay “${preset.name}” aplicada.`);
+                            toast.success(t("Overlay “{name}” applied.", { name: preset.name }));
                           }}
                           className={`overflow-hidden rounded border p-1 text-left transition-colors ${
                             opts.bgImage.src === preset.dataUrl
@@ -1280,21 +1370,20 @@ function EditorPage() {
                   )}
                   <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
                     <a href="/criador-de-overlay" target="_blank" rel="noreferrer">
-                      Abrir Criador de Overlay
+                      {t("Open the Overlay creator")}
                     </a>
                   </Button>
                 </div>
 
 
                 <div className="mt-5 border-t border-border/60 pt-4">
-                  <p className="text-sm font-bold">Overlay de cor</p>
+                  <p className="text-sm font-bold">{t("Colour overlay")}</p>
                   <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                    Uma camada de cor sobre o vídeo — útil para escurecer o fundo e destacar o
-                    título.
+                    {t("A colour layer over the video — handy to darken the background and make the title pop.")}
                   </p>
                   <div className="mt-4 space-y-3">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Cor</span>
+                      <span className="text-muted-foreground">{t("Colour")}</span>
                       <Input
                         type="color"
                         value={opts.overlayColor}
@@ -1304,7 +1393,7 @@ function EditorPage() {
                     </div>
                     <div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Intensidade</span>
+                        <span className="text-muted-foreground">{t("Intensity")}</span>
                         <span className="font-bold">{Math.round(opts.overlayOpacity * 100)}%</span>
                       </div>
                       <Slider
@@ -1322,20 +1411,19 @@ function EditorPage() {
             )}
 
 
-            {tab === "extras" && (
+            {tab === "extras" && toolEnabled(account, "extras") && (
               <div className="space-y-3 text-xs">
-                <p className="text-sm font-bold">Extras</p>
+                <p className="text-sm font-bold">{t("Extras")}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Espelhar vídeos</span>
+                  <span className="text-muted-foreground">{t("Mirror videos")}</span>
                   <Switch checked={opts.mirror} onCheckedChange={(v) => patch({ mirror: v })} />
                 </div>
                 <div className="mt-2 space-y-3 border-t border-border/60 pt-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-xs font-bold">Modo anti duplicidade</p>
+                      <p className="text-xs font-bold">{t("Anti-duplicate mode")}</p>
                       <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                        Aplica pequenas variações em todos os vídeos para reduzir detecção de
-                        duplicidade.
+                        {t("Applies small variations to every video to reduce duplicate detection.")}
                       </p>
                     </div>
                     <Switch
@@ -1349,7 +1437,7 @@ function EditorPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">
-                      Velocidade {opts.speed.toFixed(2)}x
+                      {t("Speed")} {opts.speed.toFixed(2)}x
                     </span>
                     <div className="w-28">
                       <Slider
@@ -1363,8 +1451,7 @@ function EditorPage() {
                   </div>
                 </div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  Todo o processamento roda no seu navegador: os arquivos nunca são enviados para
-                  nenhum servidor.
+                  {t("Everything runs in your browser: your files are never uploaded to any server.")}
                 </p>
 
               </div>
@@ -1381,16 +1468,16 @@ function EditorPage() {
             >
               {running ? (
                 <>
-                  <Loader2 className="mr-2 size-5 animate-spin" /> Processando…
+                  <Loader2 className="mr-2 size-5 animate-spin" /> {t("Processing…")}
                 </>
               ) : paused && queuedClips.length > 0 ? (
                 <>
-                  <Play className="mr-2 size-5" /> Retomar processamento ({queuedClips.length})
+                  <Play className="mr-2 size-5" /> {t("Resume processing")} ({queuedClips.length})
                 </>
               ) : (
                 <>
-                  <Play className="mr-2 size-5" /> Processar {queuedClips.length} vídeo
-                  {queuedClips.length === 1 ? "" : "s"}
+                  <Play className="mr-2 size-5" />{" "}
+                  {t("Process {n} video(s)", { n: queuedClips.length })}
                 </>
               )}
 
@@ -1401,10 +1488,10 @@ function EditorPage() {
                 className="w-full"
                 onClick={() => {
                   cancelledRef.current = true;
-                  toast.info("O processamento será pausado após o vídeo atual.");
+                  toast.info(t("Processing will pause after the current video."));
                 }}
               >
-                <Pause className="mr-2 size-4" /> Pausar processamento
+                <Pause className="mr-2 size-4" /> {t("Pause processing")}
               </Button>
             )}
             <p className="text-center text-[11px] text-muted-foreground">
@@ -1413,6 +1500,51 @@ function EditorPage() {
           </div>
         </section>
       </main>
+
+      <Dialog open={downloadOpen} onOpenChange={setDownloadOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("How do you want to download?")}</DialogTitle>
+            <DialogDescription>
+              {t("Choose between a single zip file or separate downloads for each video.")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => {
+                setDownloadOpen(false);
+                void downloadAll();
+              }}
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/60"
+            >
+              <Archive className="size-5 text-primary" />
+              <span>
+                <span className="block text-sm font-bold">{t("Single .zip file")}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {t("All {n} videos in one compressed file.", { n: doneClips.length })}
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDownloadOpen(false);
+                downloadEach();
+              }}
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/60"
+            >
+              <Download className="size-5 text-primary" />
+              <span>
+                <span className="block text-sm font-bold">{t("Separate video files")}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {t("Starts {n} downloads at once.", { n: doneClips.length })}
+                </span>
+              </span>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
