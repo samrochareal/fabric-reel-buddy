@@ -565,6 +565,64 @@ function AdminPage() {
         </section>
         )}
 
+        {/* ---------- referral programme ---------- */}
+        {tab === "referral" && (
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-center gap-2">
+            <Gift className="size-4 text-primary" />
+            <h2 className="font-display text-lg font-bold tracking-tight">
+              {t("Referral programme")}
+            </h2>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("Turn the programme on and choose how many credits each invite is worth.")}
+          </p>
+
+          <div className="mt-4 flex items-center justify-between rounded-lg border border-border p-3">
+            <span className="text-xs font-semibold">{t("Referral programme is active")}</span>
+            <Switch checked={referralOn} onCheckedChange={setReferralOn} />
+          </div>
+
+          <div className="mt-3 max-w-xs">
+            <p className="text-xs font-semibold">{t("Credits per referral")}</p>
+            <Input
+              type="number"
+              min={0}
+              className="mt-1.5 h-10"
+              value={referralCredits}
+              onChange={(e) => setReferralCredits(Math.max(0, Number(e.target.value) || 0))}
+            />
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <Stat
+              icon={<Gift className="size-4" />}
+              label={t("Sign-ups by referral")}
+              value={s?.total_referrals ?? 0}
+            />
+            <Stat
+              icon={<Users className="size-4" />}
+              label={t("People inviting")}
+              value={s?.referring_users ?? 0}
+            />
+            <Stat
+              icon={<BarChart3 className="size-4" />}
+              label={t("Referral credits given")}
+              value={s?.referral_credits_awarded ?? 0}
+            />
+          </div>
+
+          <Button className="mt-4" onClick={() => void onSaveReferral()} disabled={savingReferral}>
+            {savingReferral ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 size-4" />
+            )}
+            {t("Save changes")}
+          </Button>
+        </section>
+        )}
+
         {/* ---------- people ---------- */}
         {tab === "people" && (
         <section className="rounded-2xl border border-border bg-card p-5">
