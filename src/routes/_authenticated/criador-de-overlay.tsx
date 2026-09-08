@@ -289,6 +289,8 @@ function OverlayCreator() {
         <p className="mt-1 text-xs text-muted-foreground">
           {t("Customise and save up to {n} presets. Drag to move and scroll to resize.").replace("{n}", String(OVERLAY_SLOTS))}
         </p>
+        </div>
+        <LanguageToggle />
       </header>
 
       <div className="grid gap-4 p-4 lg:grid-cols-[300px_minmax(0,1fr)_320px]">
