@@ -63,8 +63,8 @@ export type EditOptions = {
   mirror: boolean;
   /** solid bars painted over the top/bottom of the frame to hide watermarks */
   border: { color: string; mode: "manual" | "auto"; top: number; bottom: number };
-  title: { enabled: boolean; text: string; color: string; size: number };
-  bottom: { enabled: boolean; text: string; color: string; size: number };
+  title: TextBlock;
+  bottom: TextBlock;
   overlayOpacity: number;
   overlayColor: string;
   bgImage: BackgroundImage;
@@ -72,6 +72,7 @@ export type EditOptions = {
 
 export const defaultEditOptions = (): EditOptions => ({
   aspect: "9:16",
+  fit: "contain",
   zoom: 1,
   posX: 2.5,
   posY: 2.5,
