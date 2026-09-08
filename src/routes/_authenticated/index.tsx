@@ -41,7 +41,7 @@ import {
 } from "@/lib/video";
 import { logVideoJobs } from "@/lib/admin";
 import { useBranding } from "@/lib/branding";
-import { LanguageToggle, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 import {
   accessExpired,
   nextRefillAt,
