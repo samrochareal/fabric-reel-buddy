@@ -33,7 +33,13 @@ export type LinkIconName = keyof typeof LINK_ICONS;
 
 export const LINK_ICON_NAMES = Object.keys(LINK_ICONS) as LinkIconName[];
 
-export function LinkGlyph({ name, className }: { name?: string; className?: string }) {
+export function LinkGlyph({
+  name,
+  className,
+}: {
+  name?: string | undefined;
+  className?: string | undefined;
+}) {
   const Icon = LINK_ICONS[(name ?? "link") as LinkIconName] ?? LinkIcon;
   return <Icon className={className} />;
 }

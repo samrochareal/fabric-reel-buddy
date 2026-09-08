@@ -296,8 +296,6 @@ const PT: Record<string, string> = {
   "Side menu": "Menu lateral",
   "Links shown inside the hamburger menu. They open in a new tab.":
     "Links exibidos dentro do menu lateral. Eles abrem em uma nova aba.",
-  "Used": "Usados",
-  "no name": "sem nome",
 };
 
 
