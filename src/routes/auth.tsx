@@ -10,6 +10,7 @@ import { getRememberMe, setRememberMe } from "@/lib/session-pref";
 import { exitGuestMode } from "@/lib/guest-mode";
 import { useBranding } from "@/lib/branding";
 import { LanguageToggle, useT } from "@/lib/i18n";
+import { ThemeToggle } from "@/lib/theme";
 import { rememberInviteCode } from "@/lib/referral";
 
 
@@ -144,7 +145,7 @@ function AuthPage() {
         </div>
 
         <div className="mt-4 flex justify-center">
-          <LanguageToggle />
+          <div className="flex items-center gap-2"><ThemeToggle /><LanguageToggle /></div>
         </div>
 
 
