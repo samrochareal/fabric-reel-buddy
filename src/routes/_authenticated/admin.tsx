@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   BarChart3,
+  Gift,
   Image as ImageIcon,
   Link2,
   Loader2,
@@ -38,6 +39,7 @@ import {
   fetchBranding,
   saveBranding,
   saveExternalLinks,
+  saveReferralSettings,
   useBranding,
   useRefreshBranding,
   type ExternalLink,
@@ -274,7 +276,12 @@ function AdminPage() {
   const [savingLinks, setSavingLinks] = useState(false);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<PlatformUser | null>(null);
-  const [tab, setTab] = useState<"overview" | "people" | "menu" | "identity">("overview");
+  const [tab, setTab] = useState<"overview" | "people" | "referral" | "menu" | "identity">(
+    "overview",
+  );
+  const [referralOn, setReferralOn] = useState(false);
+  const [referralCredits, setReferralCredits] = useState(5);
+  const [savingReferral, setSavingReferral] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -291,8 +298,24 @@ function AdminPage() {
       setLogo(b.logo_url);
       setIcon(b.icon_url);
       setLinks(b.external_links);
+      setReferralOn(b.referral_enabled);
+      setReferralCredits(b.referral_reward_credits);
     });
   }, []);
+
+  const onSaveReferral = async () => {
+    setSavingReferral(true);
+    try {
+      await saveReferralSettings({ enabled: referralOn, credits: referralCredits });
+      refreshBranding();
+      void stats.refetch();
+      toast.success(t("Referral settings updated."));
+    } catch {
+      toast.error(t("We couldn't save your changes."));
+    } finally {
+      setSavingReferral(false);
+    }
+  };
 
   const stats = useQuery({
     queryKey: ["platform-stats"],
@@ -394,6 +417,7 @@ function AdminPage() {
             [
               ["overview", t("Overview"), <BarChart3 key="a" className="size-4" />],
               ["people", t("People"), <Users key="b" className="size-4" />],
+              ["referral", t("Referral programme"), <Gift key="e" className="size-4" />],
               ["menu", t("Side menu"), <Link2 key="c" className="size-4" />],
               ["identity", t("System identity"), <Palette key="d" className="size-4" />],
             ] as const
