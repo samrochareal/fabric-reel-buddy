@@ -1380,45 +1380,8 @@ function EditorPage() {
 
 
 
-          <div className="sticky bottom-4 space-y-2">
-            <Button
-              className="h-12 w-full text-base disabled:opacity-100"
-              onClick={() => void handleProcess()}
-              disabled={running || queuedClips.length === 0}
-            >
-              {running ? (
-                <>
-                  <Loader2 className="mr-2 size-5 animate-spin" /> {t("Processing…")}
-                </>
-              ) : paused && queuedClips.length > 0 ? (
-                <>
-                  <Play className="mr-2 size-5" /> {t("Resume processing")} ({queuedClips.length})
-                </>
-              ) : (
-                <>
-                  <Play className="mr-2 size-5" />{" "}
-                  {t("Process {n} video(s)", { n: queuedClips.length })}
-                </>
-              )}
-
-            </Button>
-            {running && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  cancelledRef.current = true;
-                  toast.info(t("Processing will pause after the current video."));
-                }}
-              >
-                <Pause className="mr-2 size-4" /> {t("Pause processing")}
-              </Button>
-            )}
-            <p className="text-center text-[11px] text-muted-foreground">
-              {"\n"}
-            </p>
-          </div>
         </section>
+
       </main>
 
       <Dialog open={downloadOpen} onOpenChange={setDownloadOpen}>
