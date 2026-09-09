@@ -185,20 +185,7 @@ function AuthPage() {
             </span>
           </label>
 
-          <Button
-            variant="secondary"
-            className="mt-5 h-11 w-full"
-            onClick={withGoogle}
-            disabled={busy}
-          >
-            <LogIn className="mr-2 size-4" /> {t("Continue with Google")}
-          </Button>
-
-          <div className="my-5 flex items-center gap-3">
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("or")}</span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
+          <div className="mt-5" />
 
           {sent ? (
             <div className="rounded-lg border border-border bg-background/60 p-4 text-sm">
