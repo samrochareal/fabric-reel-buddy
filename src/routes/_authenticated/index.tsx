@@ -104,11 +104,11 @@ const MAX_FILE_MB = 100;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 const MAX_DURATION_S = 180;
 
-type EditTab = "bordas" | "overlay" | "texto" | "extras";
+type EditTab = "bordas" | "overlay" | "title" | "extras";
 const TABS: { id: EditTab; label: string; tool: ToolKey }[] = [
   { id: "bordas", label: "Borders", tool: "borders" },
   { id: "overlay", label: "Overlay", tool: "overlay" },
-  { id: "texto", label: "Text", tool: "text" },
+  { id: "title", label: "Title", tool: "text" },
   { id: "extras", label: "Extras", tool: "extras" },
 ];
 
@@ -346,6 +346,15 @@ function EditorPage() {
     setRunning(true);
     setPaused(false);
     cancelledRef.current = false;
+
+    const firstQueued = queuedClips[0];
+    if (firstQueued) {
+      setClips((prev) =>
+        prev.map((clip) =>
+          clip.id === firstQueued.id ? { ...clip, status: "processing", progress: 0.01 } : clip,
+        ),
+      );
+    }
 
     let rendered = 0;
     let renderedBytes = 0;
@@ -670,20 +679,6 @@ function EditorPage() {
           }}
         >
           {titleFor(clips.findIndex((c) => c.id === clip?.id)) || t("Video title")}
-        </p>
-      )}
-      {o.bottom.enabled && o.bottom.text && (
-        <p
-          className="pointer-events-none absolute w-[86%] -translate-x-1/2 -translate-y-1/2 text-center font-bold leading-tight"
-          style={{
-            left: `${o.bottom.x}%`,
-            top: `${o.bottom.y}%`,
-            color: o.bottom.color,
-            fontFamily: fontStack(o.bottom.font),
-            fontSize: `${((o.bottom.size / outW) * 100).toFixed(2)}cqw`,
-          }}
-        >
-          {o.bottom.text}
         </p>
       )}
     </div>
@@ -1069,12 +1064,6 @@ function EditorPage() {
               </div>
             </div>
           </div>
-          )}
-
-        </section>
-
-        {/* ---------- Column 4: edit tabs + process ---------- */}
-        <section className="space-y-3">
           <Button
             variant="outline"
             className="w-full"
@@ -1083,7 +1072,12 @@ function EditorPage() {
           >
             <RotateCcw className="mr-1.5 size-4" /> {t("Reset all edits")}
           </Button>
+          )}
 
+        </section>
+
+        {/* ---------- Column 4: edit tabs + process ---------- */}
+        <section className="space-y-3">
           <div
             className={`rounded-xl border border-border bg-card p-2 ${
               running ? "pointer-events-none opacity-50" : ""
@@ -1154,8 +1148,8 @@ function EditorPage() {
               </div>
             )}
 
-            {tab === "texto" && toolEnabled(account, "text") && (
-              <div className="max-h-[60vh] space-y-5 overflow-y-auto overscroll-contain pr-1">
+            {tab === "title" && toolEnabled(account, "text") && (
+              <div className="scrollbar-hidden max-h-[60vh] space-y-5 overflow-y-auto overscroll-contain">
                 <div>
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-bold">{t("Video title")}</p>
@@ -1186,29 +1180,6 @@ function EditorPage() {
                   )}
                 </div>
 
-                <div className="border-t border-border/60 pt-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold">{t("Bottom text")}</p>
-                    <Switch
-                      checked={opts.bottom.enabled}
-                      onCheckedChange={(v) => patch({ bottom: { ...opts.bottom, enabled: v } })}
-                    />
-                  </div>
-                  {opts.bottom.enabled && (
-                    <>
-                      <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                        {t("The same caption on every video — great for a handle or CTA.")}
-                      </p>
-                      <Input
-                        className="mt-3 text-xs"
-                        placeholder={t("@yourhandle · follow for more")}
-                        value={opts.bottom.text}
-                        onChange={(e) => patch({ bottom: { ...opts.bottom, text: e.target.value } })}
-                      />
-                      {textControls(opts.bottom, (next) => patch({ bottom: { ...opts.bottom, ...next } }), 20, 90)}
-                    </>
-                  )}
-                </div>
               </div>
             )}
 
