@@ -43,9 +43,18 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [remember, setRemember] = useState(true);
+  const [captcha, setCaptcha] = useState({ a: 0, b: 0 });
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
+
+  const newCaptcha = useCallback(() => {
+    setCaptcha({ a: 2 + Math.floor(Math.random() * 8), b: 1 + Math.floor(Math.random() * 9) });
+    setCaptchaAnswer("");
+  }, []);
+
 
   useEffect(() => {
     setRemember(getRememberMe());
