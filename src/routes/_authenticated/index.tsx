@@ -1194,17 +1194,20 @@ function EditorPage() {
                       onCheckedChange={(v) => patch({ bottom: { ...opts.bottom, enabled: v } })}
                     />
                   </div>
-                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                    {t("The same caption on every video — great for a handle or CTA.")}
-                  </p>
-                  <Input
-                    className="mt-3 text-xs"
-                    placeholder={t("@yourhandle · follow for more")}
-                    value={opts.bottom.text}
-                    onChange={(e) => patch({ bottom: { ...opts.bottom, text: e.target.value } })}
-                    disabled={!opts.bottom.enabled}
-                  />
-                  {textControls(opts.bottom, (next) => patch({ bottom: { ...opts.bottom, ...next } }), 20, 90)}
+                  {opts.bottom.enabled && (
+                    <>
+                      <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                        {t("The same caption on every video — great for a handle or CTA.")}
+                      </p>
+                      <Input
+                        className="mt-3 text-xs"
+                        placeholder={t("@yourhandle · follow for more")}
+                        value={opts.bottom.text}
+                        onChange={(e) => patch({ bottom: { ...opts.bottom, text: e.target.value } })}
+                      />
+                      {textControls(opts.bottom, (next) => patch({ bottom: { ...opts.bottom, ...next } }), 20, 90)}
+                    </>
+                  )}
                 </div>
               </div>
             )}
