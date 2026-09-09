@@ -36,7 +36,7 @@ import {
   ASPECTS,
   defaultEditOptions,
   fontStack,
-  TEXT_FONTS,
+  
   type EditOptions,
   type TextBlock,
 } from "@/lib/video";
@@ -480,7 +480,7 @@ function EditorPage() {
   }
 
 
-  /** shared font / colour / size / position controls for a text block */
+  /** shared colour / size / position controls for a text block */
   const textControls = (
     block: TextBlock,
     set: (next: Partial<TextBlock>) => void,
@@ -488,21 +488,7 @@ function EditorPage() {
     maxSize: number,
   ) => (
     <div className="mt-3 space-y-3">
-      <div className="flex items-center justify-between gap-2 text-xs">
-        <span className="text-muted-foreground">{t("Font")}</span>
-        <select
-          value={block.font}
-          onChange={(e) => set({ font: e.target.value })}
-          className="h-8 flex-1 rounded-md border border-border bg-background px-2 text-xs"
-          style={{ fontFamily: fontStack(block.font) }}
-        >
-          {TEXT_FONTS.map((f) => (
-            <option key={f.id} value={f.id} style={{ fontFamily: f.stack }}>
-              {f.label}
-            </option>
-          ))}
-        </select>
-      </div>
+
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{t("Colour")}</span>
         <Input
@@ -876,14 +862,11 @@ function EditorPage() {
 
         {/* ---------- Column 2: preview ---------- */}
         <section className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {t("Preview")} · {ASPECTS[opts.aspect].label}
-          </p>
-
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mx-auto max-w-[150px]">
+            <div className="mx-auto max-w-[300px]">
               {previewClip ? framePreview(previewClip, false) : framePreview(undefined, false)}
             </div>
+
 
             {/* our own player controls — always in the same spot */}
             <div className="mt-4 flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2">

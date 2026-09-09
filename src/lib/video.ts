@@ -345,10 +345,13 @@ function buildFilterChain(
       `format=rgba,pad=${sw}:${sh}:(ow-iw)/2:(oh-ih)/2:color=0x00000000`
     : `scale=${sw}:${sh}:force_original_aspect_ratio=increase:flags=fast_bilinear,crop=${sw}:${sh}`;
   parts.push(
-    `[0:v]${opts.mirror ? "hflip," : ""}${fitChain}` +
+    // capping the frame rate first means every later filter (and the encoder)
+    // handles far fewer frames on 50/60fps sources without visible loss.
+    `[0:v]fps=30,${opts.mirror ? "hflip," : ""}${fitChain}` +
       (cutTop > 0 || cutBottom > 0 ? `,crop=${sw}:${vh}:0:${cutTop}` : "") +
       `,setsar=1[vid]`,
   );
+
   parts.push(`color=c=${opts.bgColor}:s=${w}x${h}:r=30[bgc]`);
   let bgLabel = "bgc";
   if (inputs.bgIndex !== null) {
@@ -449,6 +452,9 @@ export async function processVideo(
       // retaining materially better compression than ultrafast.
       "-preset",
       "superfast",
+      // trimmed x264 search settings: big speed win, visually near-identical
+      "-x264-params",
+      "ref=1:bframes=0:me=dia:subme=1:trellis=0:mixed-refs=0:weightp=0:rc-lookahead=10:8x8dct=0:aq-mode=0:scenecut=0",
       "-crf",
       "27",
       "-maxrate",
@@ -459,6 +465,8 @@ export async function processVideo(
       "high",
       "-level",
       "4.0",
+      "-r",
+      "30",
       "-g",
       "60",
       "-threads",
@@ -468,6 +476,7 @@ export async function processVideo(
     );
     const mp4Audio = /mp4|quicktime|m4v/i.test(file.type);
     if (opts.speed !== 1 || !mp4Audio) {
+
       args.push("-c:a", "aac", "-b:a", "96k", "-ac", "2", "-ar", "44100");
     } else {
       args.push("-c:a", "copy");
