@@ -145,3 +145,10 @@ export async function logVideoJobs(input: {
     output_bytes: input.outputBytes ?? null,
   });
 }
+
+/** Master-only: sets a random temporary password and returns it once. */
+export async function resetPlatformUserPassword(userId: string): Promise<string> {
+  const { resetUserPassword } = await import("@/lib/admin.functions");
+  const result = await resetUserPassword({ data: { userId } });
+  return (result as { temporaryPassword: string }).temporaryPassword;
+}
