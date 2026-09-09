@@ -1059,7 +1059,7 @@ function EditorPage() {
         </section>
 
         {/* ---------- Column 4: edit tabs + process ---------- */}
-        <section className="space-y-3">
+        <section className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4">
           <div
             className={`rounded-xl border border-border bg-card p-2 ${
               running ? "pointer-events-none opacity-50" : ""
