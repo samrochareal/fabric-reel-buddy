@@ -47,6 +47,13 @@ import {
 } from "@/lib/branding";
 import { LanguageToggle, useT } from "@/lib/i18n";
 import { LINK_ICON_NAMES, LinkGlyph } from "@/components/link-icons";
+import {
+  adminDeleteNotification,
+  adminListNotifications,
+  adminSendNotification,
+} from "@/lib/notifications";
+import { Textarea } from "@/components/ui/textarea";
+import { Bell } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -335,6 +342,50 @@ function AdminPage() {
     queryFn: fetchPlatformUsers,
     enabled: isAdmin,
   });
+
+  const notifications = useQuery({
+    queryKey: ["admin-notifications"],
+    queryFn: adminListNotifications,
+    enabled: isAdmin,
+  });
+
+  const onSendNotification = async () => {
+    if (!notifTitle.trim()) {
+      toast.error(t("Give the notification a title."));
+      return;
+    }
+    setSending(true);
+    try {
+      await adminSendNotification({
+        title: notifTitle,
+        body: notifBody,
+        linkUrl: notifLinkUrl,
+        linkLabel: notifLinkLabel,
+        targetUserId: notifTarget === "all" ? null : notifTarget,
+      });
+      setNotifTitle("");
+      setNotifBody("");
+      setNotifLinkUrl("");
+      setNotifLinkLabel("");
+      setNotifTarget("all");
+      void notifications.refetch();
+      toast.success(t("Notification sent."));
+    } catch {
+      toast.error(t("We couldn't send the notification."));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const onDeleteNotification = async (id: string) => {
+    try {
+      await adminDeleteNotification(id);
+      void notifications.refetch();
+      toast.success(t("Notification removed."));
+    } catch {
+      toast.error(t("We couldn't remove the notification."));
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
