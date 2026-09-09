@@ -103,10 +103,11 @@ const MAX_FILE_MB = 100;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 const MAX_DURATION_S = 180;
 
-type EditTab = "texto" | "overlay" | "extras";
+type EditTab = "bordas" | "overlay" | "texto" | "extras";
 const TABS: { id: EditTab; label: string; tool: ToolKey }[] = [
-  { id: "texto", label: "Text", tool: "text" },
+  { id: "bordas", label: "Borders", tool: "borders" },
   { id: "overlay", label: "Overlay", tool: "overlay" },
+  { id: "texto", label: "Text", tool: "text" },
   { id: "extras", label: "Extras", tool: "extras" },
 ];
 
