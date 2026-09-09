@@ -134,6 +134,23 @@ function UserDialog({
   const [tools, setTools] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+
+  const resetPassword = async () => {
+    if (!user) return;
+    if (!window.confirm(t("Reset this password? A temporary one will be generated."))) return;
+    setResetting(true);
+    try {
+      const temp = await resetPlatformUserPassword(user.id);
+      setTempPassword(temp);
+      toast.success(t("Temporary password created."));
+    } catch {
+      toast.error(t("We couldn't reset this password."));
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const remove = async () => {
     if (!user) return;
