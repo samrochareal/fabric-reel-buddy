@@ -181,7 +181,7 @@ function EditorPage() {
   const [playing, setPlaying] = useState(false);
   const [pos, setPos] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
 
   const togglePlay = () => {
     const el = playerRef.current;
@@ -1155,7 +1155,7 @@ function EditorPage() {
             )}
 
             {tab === "texto" && toolEnabled(account, "text") && (
-              <div className="space-y-5">
+              <div className="max-h-[60vh] space-y-5 overflow-y-auto overscroll-contain pr-1">
                 <div>
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-bold">{t("Video title")}</p>
@@ -1164,23 +1164,26 @@ function EditorPage() {
                       onCheckedChange={(v) => patch({ title: { ...opts.title, enabled: v } })}
                     />
                   </div>
-                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                    {t("One title per line. Each line goes to the matching video in the queue.")}
-                  </p>
-                  <Textarea
-                    className="mt-3 min-h-[110px] text-xs"
-                    placeholder={t("Video title 1\nVideo title 2")}
-                    value={opts.title.text}
-                    onChange={(e) => patch({ title: { ...opts.title, text: e.target.value } })}
-                    disabled={!opts.title.enabled}
-                  />
-                  {textControls(opts.title, (next) => patch({ title: { ...opts.title, ...next } }), 28, 120)}
-                  <p className="mt-2 text-[11px] text-muted-foreground">
-                    {t("{n} title(s) for {v} video(s)", {
-                      n: titleLines.filter(Boolean).length,
-                      v: clips.length,
-                    })}
-                  </p>
+                  {opts.title.enabled && (
+                    <>
+                      <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                        {t("One title per line. Each line goes to the matching video in the queue.")}
+                      </p>
+                      <Textarea
+                        className="mt-3 min-h-[110px] text-xs"
+                        placeholder={t("Video title 1\nVideo title 2")}
+                        value={opts.title.text}
+                        onChange={(e) => patch({ title: { ...opts.title, text: e.target.value } })}
+                      />
+                      {textControls(opts.title, (next) => patch({ title: { ...opts.title, ...next } }), 28, 120)}
+                      <p className="mt-2 text-[11px] text-muted-foreground">
+                        {t("{n} title(s) for {v} video(s)", {
+                          n: titleLines.filter(Boolean).length,
+                          v: clips.length,
+                        })}
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 <div className="border-t border-border/60 pt-4">
@@ -1191,17 +1194,20 @@ function EditorPage() {
                       onCheckedChange={(v) => patch({ bottom: { ...opts.bottom, enabled: v } })}
                     />
                   </div>
-                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                    {t("The same caption on every video — great for a handle or CTA.")}
-                  </p>
-                  <Input
-                    className="mt-3 text-xs"
-                    placeholder={t("@yourhandle · follow for more")}
-                    value={opts.bottom.text}
-                    onChange={(e) => patch({ bottom: { ...opts.bottom, text: e.target.value } })}
-                    disabled={!opts.bottom.enabled}
-                  />
-                  {textControls(opts.bottom, (next) => patch({ bottom: { ...opts.bottom, ...next } }), 20, 90)}
+                  {opts.bottom.enabled && (
+                    <>
+                      <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                        {t("The same caption on every video — great for a handle or CTA.")}
+                      </p>
+                      <Input
+                        className="mt-3 text-xs"
+                        placeholder={t("@yourhandle · follow for more")}
+                        value={opts.bottom.text}
+                        onChange={(e) => patch({ bottom: { ...opts.bottom, text: e.target.value } })}
+                      />
+                      {textControls(opts.bottom, (next) => patch({ bottom: { ...opts.bottom, ...next } }), 20, 90)}
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -1359,23 +1365,7 @@ function EditorPage() {
             {tab === "extras" && toolEnabled(account, "extras") && (
               <div className="space-y-3 text-xs">
                 <p className="text-sm font-bold">{t("Extras")}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{t("Mirror videos")}</span>
-                  <Switch checked={opts.mirror} onCheckedChange={(v) => patch({ mirror: v })} />
-                </div>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-bold">{t("Remove metadata")}</p>
-                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                      {t("The processed video carries none of the original file's metadata.")}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={opts.stripMetadata}
-                    onCheckedChange={(v) => patch({ stripMetadata: v })}
-                  />
-                </div>
-                <div className="mt-2 space-y-3 border-t border-border/60 pt-3">
+                <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-xs font-bold">{t("Anti-duplicate mode")}</p>
@@ -1387,10 +1377,9 @@ function EditorPage() {
                       checked={antiDup}
                       onCheckedChange={(v) => {
                         setAntiDup(v);
-                        patch({ speed: v ? 1.02 : 1 });
+                        patch({ speed: v ? 1.02 : 1, ...(v ? { stripMetadata: true } : {}) });
                       }}
                     />
-
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">
@@ -1406,6 +1395,22 @@ function EditorPage() {
                       />
                     </div>
                   </div>
+                </div>
+                <div className="flex items-center justify-between border-t border-border/60 pt-3">
+                  <span className="text-muted-foreground">{t("Mirror videos")}</span>
+                  <Switch checked={opts.mirror} onCheckedChange={(v) => patch({ mirror: v })} />
+                </div>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-bold">{t("Remove metadata")}</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                      {t("The processed video carries none of the original file's metadata.")}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={opts.stripMetadata}
+                    onCheckedChange={(v) => patch({ stripMetadata: v })}
+                  />
                 </div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
                   {t("Everything runs in your browser: your files are never uploaded to any server.")}

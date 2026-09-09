@@ -33,11 +33,18 @@ export async function fetchMyNotifications(): Promise<AppNotification[]> {
       .or(`target_user_id.is.null,target_user_id.eq.${userId}`)
       .order("created_at", { ascending: false })
       .limit(50),
-    supabase.from("notification_reads").select("notification_id"),
+    supabase.from("notification_reads").select("notification_id, read_at"),
   ]);
 
-  const readIds = new Set((reads ?? []).map((r) => r.notification_id));
-  return (rows ?? []).map((row) => ({ ...row, read: readIds.has(row.id) }));
+  const readAt = new Map((reads ?? []).map((r) => [r.notification_id, r.read_at]));
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  return (rows ?? [])
+    .filter((row) => {
+      const at = readAt.get(row.id);
+      // an opened notification disappears one week after it was read
+      return !at || new Date(at).getTime() > weekAgo;
+    })
+    .map((row) => ({ ...row, read: readAt.has(row.id) }));
 }
 
 export async function markNotificationRead(id: string): Promise<void> {

@@ -115,6 +115,7 @@ export let ffmpegThreads = 1;
 
 const CORE_MT = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.10/dist/esm";
 const CORE_ST = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
+const CORE_ST_ALT = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm";
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -171,7 +172,9 @@ async function tryLoad(
     config["workerURL"] = await toBlobURL(`${base}/ffmpeg-core.worker.js`, "text/javascript");
   }
   if (worker) config["classWorkerURL"] = worker;
-  await withTimeout(instance.load(config), 45_000, multi ? "core-mt" : "core");
+  // the multi-thread core is a bonus: give up on it quickly and fall back to
+  // the single-thread core, which works everywhere (desktop included).
+  await withTimeout(instance.load(config), multi ? 15_000 : 40_000, multi ? "core-mt" : "core");
 }
 
 async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
@@ -183,19 +186,21 @@ async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
     (window as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated === true &&
     cores > 1;
 
-  const attempts: Array<{ base: string; multi: boolean }> = canThread
-    ? [
-        { base: CORE_MT, multi: true },
-        { base: CORE_ST, multi: false },
-      ]
-    : [{ base: CORE_ST, multi: false }];
+  const attempts: Array<{ base: string; multi: boolean }> = [
+    ...(canThread ? [{ base: CORE_MT, multi: true }] : []),
+    { base: CORE_ST, multi: false },
+    { base: CORE_ST_ALT, multi: false },
+    // last resort: no custom class worker (some desktop setups block blob workers)
+    { base: CORE_ST, multi: false, plain: true } as { base: string; multi: boolean },
+  ];
 
   let lastError: unknown = null;
   for (const attempt of attempts) {
     const instance = new FFmpeg();
     if (onLog) instance.on("log", ({ message }) => onLog(message));
     try {
-      await tryLoad(instance, attempt.base, attempt.multi, worker);
+      const plain = (attempt as { plain?: boolean }).plain === true;
+      await tryLoad(instance, attempt.base, attempt.multi, plain ? undefined : worker);
       ffmpegThreads = attempt.multi ? Math.min(8, cores) : 1;
       return instance;
     } catch (err) {
