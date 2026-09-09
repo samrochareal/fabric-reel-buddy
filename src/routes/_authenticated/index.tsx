@@ -1361,6 +1361,18 @@ function EditorPage() {
                   <span className="text-muted-foreground">{t("Mirror videos")}</span>
                   <Switch checked={opts.mirror} onCheckedChange={(v) => patch({ mirror: v })} />
                 </div>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-bold">{t("Remove metadata")}</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                      {t("The processed video carries none of the original file's metadata.")}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={opts.stripMetadata}
+                    onCheckedChange={(v) => patch({ stripMetadata: v })}
+                  />
+                </div>
                 <div className="mt-2 space-y-3 border-t border-border/60 pt-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
