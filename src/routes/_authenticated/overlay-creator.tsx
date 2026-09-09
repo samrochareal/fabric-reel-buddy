@@ -63,8 +63,10 @@ function OverlayCreator() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const bgFileRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const dragRef = useRef<"photo" | "text" | null>(null);
+  const bgImgRef = useRef<HTMLImageElement | null>(null);
+  const dragRef = useRef<"photo" | "text" | "image" | null>(null);
 
   const patch = (next: Partial<OverlayConfig>) => setCfg((prev) => ({ ...prev, ...next }));
 
@@ -92,6 +94,25 @@ function OverlayCreator() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cfg.photo]);
 
+  useEffect(() => {
+    if (!cfg.image) {
+      bgImgRef.current = null;
+      draw();
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      bgImgRef.current = img;
+      draw();
+    };
+    img.onerror = () => {
+      bgImgRef.current = null;
+      draw();
+    };
+    img.src = cfg.image;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg.image]);
+
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -101,6 +122,26 @@ function OverlayCreator() {
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = cfg.bgColor;
     ctx.fillRect(0, 0, W, H);
+
+    const bg = bgImgRef.current;
+    const drawUploadedImage = () => {
+      if (!bg || bg.width <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, Math.max(0.05, cfg.imageOpacity));
+      if (cfg.imageMode === "background") {
+        const ratio = Math.max(W / bg.width, H / bg.height);
+        const iw = bg.width * ratio;
+        const ih = bg.height * ratio;
+        ctx.drawImage(bg, W * cfg.imageX - iw / 2, H * cfg.imageY - ih / 2, iw, ih);
+      } else {
+        const iw = W * Math.min(1, Math.max(0.05, cfg.imageSize));
+        const ih = (bg.height / bg.width) * iw;
+        ctx.drawImage(bg, W * cfg.imageX - iw / 2, H * cfg.imageY - ih / 2, iw, ih);
+      }
+      ctx.restore();
+    };
+
+    if (cfg.imageMode === "background") drawUploadedImage();
 
     const img = imgRef.current;
     if (img && img.width > 0) {
@@ -157,7 +198,10 @@ function OverlayCreator() {
     ctx.font = `600 ${size * 0.68}px Inter, "Helvetica Neue", Arial, sans-serif`;
     ctx.fillStyle = cfg.handleColor;
     ctx.fillText(handleText, tx, ty + size * 0.95);
+
+    if (cfg.imageMode === "watermark") drawUploadedImage();
   }, [cfg]);
+
 
   useEffect(() => {
     draw();
@@ -172,7 +216,13 @@ function OverlayCreator() {
     };
   };
 
-  const pickTarget = (x: number, y: number): "photo" | "text" => {
+  const pickTarget = (x: number, y: number): "photo" | "text" | "image" => {
+    if (bgImgRef.current && cfg.imageMode === "watermark") {
+      const bg = bgImgRef.current;
+      const halfW = Math.min(1, Math.max(0.05, cfg.imageSize)) / 2;
+      const halfH = (halfW * W * (bg.height / bg.width)) / H;
+      if (Math.abs(x - cfg.imageX) <= halfW && Math.abs(y - cfg.imageY) <= halfH) return "image";
+    }
     if (imgRef.current) {
       const r = cfg.photoSize / 2;
       const dx = x - cfg.photoX;
@@ -193,6 +243,7 @@ function OverlayCreator() {
 
   const movePoint = (x: number, y: number) => {
     if (dragRef.current === "photo") patch({ photoX: x, photoY: y });
+    else if (dragRef.current === "image") patch({ imageX: x, imageY: y });
     else if (dragRef.current === "text") patch({ textX: x, textY: y });
   };
 
@@ -211,9 +262,12 @@ function OverlayCreator() {
     const target = pickTarget(p.x, p.y);
     if (target === "photo") {
       patch({ photoSize: Math.min(1, Math.max(0.05, cfg.photoSize + dir * 0.02)) });
+    } else if (target === "image") {
+      patch({ imageSize: Math.min(1, Math.max(0.05, cfg.imageSize + dir * 0.02)) });
     } else {
       patch({ textSize: Math.min(200, Math.max(20, cfg.textSize + dir * 4)) });
     }
+
   };
 
   const renderDataUrl = () => {
@@ -335,6 +389,127 @@ function OverlayCreator() {
               }}
             />
           </div>
+
+          <div className="space-y-3 border-t border-border/60 pt-3">
+            <p className="text-xs font-semibold">{t("Image (background or watermark)")}</p>
+            <div className="flex items-center gap-3">
+              <div className="size-14 overflow-hidden rounded-md border border-border bg-muted">
+                {cfg.image && <img src={cfg.image} alt="" className="size-full object-cover" />}
+              </div>
+              <Button variant="secondary" size="sm" onClick={() => bgFileRef.current?.click()}>
+                <UploadCloud className="mr-1.5 size-4" /> {cfg.image ? t("Replace") : t("Upload")}
+              </Button>
+              {cfg.image && (
+                <Button variant="ghost" size="sm" onClick={() => patch({ image: null })}>
+                  <Trash2 className="size-4" />
+                </Button>
+              )}
+            </div>
+            <input
+              ref={bgFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => patch({ image: String(reader.result) });
+                reader.readAsDataURL(file);
+              }}
+            />
+
+            {cfg.image && (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["background", "watermark"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => patch({ imageMode: mode })}
+                      className={`rounded-md border py-2 text-[11px] font-semibold transition-colors ${
+                        cfg.imageMode === mode
+                          ? "border-primary bg-primary/15 text-foreground"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {mode === "background" ? t("Background") : t("Watermark")}
+                    </button>
+                  ))}
+                </div>
+
+                {cfg.imageMode === "watermark" && (
+                  <div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{t("Image size")}</span>
+                      <span className="font-bold">{Math.round(cfg.imageSize * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={5}
+                      max={100}
+                      step={1}
+                      value={Math.round(cfg.imageSize * 100)}
+                      onChange={(e) => patch({ imageSize: Number(e.target.value) / 100 })}
+                      className="mt-2 w-full accent-primary"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{t("Opacity")}</span>
+                    <span className="font-bold">{Math.round(cfg.imageOpacity * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={5}
+                    max={100}
+                    step={1}
+                    value={Math.round(cfg.imageOpacity * 100)}
+                    onChange={(e) => patch({ imageOpacity: Number(e.target.value) / 100 })}
+                    className="mt-2 w-full accent-primary"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{t("Horizontal")}</span>
+                      <span className="font-bold">{Math.round(cfg.imageX * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={Math.round(cfg.imageX * 100)}
+                      onChange={(e) => patch({ imageX: Number(e.target.value) / 100 })}
+                      className="mt-2 w-full accent-primary"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{t("Vertical")}</span>
+                      <span className="font-bold">{Math.round(cfg.imageY * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={Math.round(cfg.imageY * 100)}
+                      onChange={(e) => patch({ imageY: Number(e.target.value) / 100 })}
+                      className="mt-2 w-full accent-primary"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+
 
           <div>
             <p className="text-xs font-semibold">{t("Name")}</p>
