@@ -64,7 +64,6 @@ export type EditOptions = {
   /** solid bars painted over the top/bottom of the frame to hide watermarks */
   border: { color: string; mode: "manual" | "auto"; top: number; bottom: number };
   title: TextBlock;
-  bottom: TextBlock;
   overlayOpacity: number;
   overlayColor: string;
   bgImage: BackgroundImage;
@@ -91,15 +90,6 @@ export const defaultEditOptions = (): EditOptions => ({
     x: 50,
     y: 12,
   },
-  bottom: {
-    enabled: false,
-    text: "",
-    color: "#000000",
-    size: 44,
-    font: "instrument",
-    x: 50,
-    y: 90,
-  },
   overlayOpacity: 0,
   overlayColor: "#000000",
   bgImage: { enabled: false, src: null, opacity: 1, layer: "back" },
@@ -113,7 +103,6 @@ let loading: Promise<FFmpeg> | null = null;
 /** number of threads the loaded core can use */
 export let ffmpegThreads = 1;
 
-const CORE_MT = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.10/dist/esm";
 const CORE_ST = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
 const CORE_ST_ALT = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm";
 
@@ -179,19 +168,14 @@ async function tryLoad(
 
 async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
   const worker = await classWorkerURL();
-  const cores = typeof navigator !== "undefined" ? (navigator.hardwareConcurrency ?? 4) : 4;
-  const canThread =
-    typeof window !== "undefined" &&
-    typeof SharedArrayBuffer !== "undefined" &&
-    (window as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated === true &&
-    cores > 1;
-
-  const attempts: Array<{ base: string; multi: boolean }> = [
-    ...(canThread ? [{ base: CORE_MT, multi: true }] : []),
+  const attempts: Array<{ base: string; multi: boolean; plain?: boolean }> = [
+    // The multi-thread core can deadlock while booting on desktop Chromium.
+    // Start with the reliable single-thread core instead of making desktop
+    // users wait for a large failed download before processing can begin.
     { base: CORE_ST, multi: false },
     { base: CORE_ST_ALT, multi: false },
     // last resort: no custom class worker (some desktop setups block blob workers)
-    { base: CORE_ST, multi: false, plain: true } as { base: string; multi: boolean },
+    { base: CORE_ST, multi: false, plain: true },
   ];
 
   let lastError: unknown = null;
@@ -199,9 +183,9 @@ async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
     const instance = new FFmpeg();
     if (onLog) instance.on("log", ({ message }) => onLog(message));
     try {
-      const plain = (attempt as { plain?: boolean }).plain === true;
+      const plain = attempt.plain === true;
       await tryLoad(instance, attempt.base, attempt.multi, plain ? undefined : worker);
-      ffmpegThreads = attempt.multi ? Math.min(8, cores) : 1;
+      ffmpegThreads = 1;
       return instance;
     } catch (err) {
       lastError = err;
@@ -260,9 +244,8 @@ export async function buildOverlayPng(
 ): Promise<Blob | null> {
   const { w, h } = ASPECTS[opts.aspect];
   const hasTitle = opts.title.enabled && titleText.trim().length > 0;
-  const hasBottom = opts.bottom.enabled && opts.bottom.text.trim().length > 0;
   const hasTint = opts.overlayOpacity > 0;
-  if (!hasTitle && !hasBottom && !hasTint) return null;
+  if (!hasTitle && !hasTint) return null;
 
   const canvas = document.createElement("canvas");
   canvas.width = w;
@@ -283,7 +266,6 @@ export async function buildOverlayPng(
   try {
     await Promise.all([
       document.fonts.load(`700 ${opts.title.size}px ${fontStack(opts.title.font)}`),
-      document.fonts.load(`700 ${opts.bottom.size}px ${fontStack(opts.bottom.font)}`),
       document.fonts.ready,
     ]);
   } catch {
@@ -320,7 +302,6 @@ export async function buildOverlayPng(
   };
 
   if (hasTitle) drawBlock(opts.title, titleText.trim());
-  if (hasBottom) drawBlock(opts.bottom, opts.bottom.text.trim());
 
   return await new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
 }
