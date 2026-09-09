@@ -62,7 +62,8 @@ function AuthPage() {
     rememberInviteCode();
     // the sign-in page always stays dark; the theme choice only applies after login
     applyTheme("dark");
-  }, []);
+    newCaptcha();
+  }, [newCaptcha]);
 
 
   useEffect(() => {
