@@ -104,7 +104,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      // the tab icon comes from the master's visual identity (see src/lib/branding.ts)
+      { rel: "icon", href: "data:," },
     ],
   }),
   shellComponent: RootShell,

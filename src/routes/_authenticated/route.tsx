@@ -4,6 +4,7 @@ import { shouldDiscardSession } from "@/lib/session-pref";
 import { isGuest } from "@/lib/guest-mode";
 import { ensureProfile } from "@/lib/admin";
 import { claimPendingReferral } from "@/lib/referral";
+import { useBranding } from "@/lib/branding";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -21,7 +22,13 @@ export const Route = createFileRoute("/_authenticated")({
     await claimPendingReferral();
     return { user: data.user };
   },
-  component: () => <Outlet />,
+  component: AuthenticatedLayout,
 });
+
+/** Applies the master's visual identity (name, colours, favicon) on every page. */
+function AuthenticatedLayout() {
+  useBranding();
+  return <Outlet />;
+}
 
 
