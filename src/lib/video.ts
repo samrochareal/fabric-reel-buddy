@@ -172,7 +172,9 @@ async function tryLoad(
     config["workerURL"] = await toBlobURL(`${base}/ffmpeg-core.worker.js`, "text/javascript");
   }
   if (worker) config["classWorkerURL"] = worker;
-  await withTimeout(instance.load(config), 45_000, multi ? "core-mt" : "core");
+  // the multi-thread core is a bonus: give up on it quickly and fall back to
+  // the single-thread core, which works everywhere (desktop included).
+  await withTimeout(instance.load(config), multi ? 15_000 : 40_000, multi ? "core-mt" : "core");
 }
 
 async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
