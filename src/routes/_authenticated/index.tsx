@@ -914,16 +914,14 @@ function EditorPage() {
               </div>
             )}
 
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
-              <span className="rounded-md border border-border bg-background px-3 py-1 text-xs font-bold">
-                9:16 · 1080×1920
-              </span>
-              {doneClips.length > 0 && (
+            {doneClips.length > 0 && (
+              <div className="mt-4 flex justify-end border-t border-border/60 pt-3">
                 <Button variant="outline" size="sm" onClick={() => setDownloadOpen(true)}>
                   <Download className="mr-1.5 size-4" /> {t("Download all")} ({doneClips.length})
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
+
 
           </div>
         </section>
