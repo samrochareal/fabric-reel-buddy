@@ -475,7 +475,18 @@ function EditorPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "fabrica-de-reels.zip";
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const slug =
+      (branding.system_name || "reels")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "reels";
+    a.download = `${slug}_${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
+      now.getDate(),
+    )}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}.zip`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
@@ -689,7 +700,7 @@ function EditorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
         <div className="grid h-14 grid-cols-[auto_1fr_auto] items-center gap-3 px-4">
@@ -728,9 +739,9 @@ function EditorPage() {
         </p>
       </div>
 
-      <main className="grid gap-4 px-4 pb-24 pt-4 xl:grid-cols-[260px_minmax(0,1fr)_280px_300px]">
+      <main className="scrollbar-hidden grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain px-4 pb-24 pt-4 xl:overflow-hidden xl:pb-4 xl:grid-cols-[260px_minmax(0,1fr)_280px_300px]">
         {/* ---------- Column 1: upload + queue ---------- */}
-        <section className="space-y-3">
+        <section className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4">
           <div
             className={`flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/40 px-4 py-8 text-center transition-colors ${
               running
@@ -862,7 +873,7 @@ function EditorPage() {
         </section>
 
         {/* ---------- Column 2: preview ---------- */}
-        <section className="space-y-3">
+        <section className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4">
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="mx-auto max-w-[250px]">
               {previewClip ? framePreview(previewClip, false) : framePreview(undefined, false)}
@@ -901,18 +912,6 @@ function EditorPage() {
               </button>
             </div>
 
-            {activeClip && (
-              <div className="mt-4">
-                <div className="flex items-center gap-2 text-xs">
-                  <Loader2 className="size-3.5 animate-spin text-primary" />
-                  <span className="flex-1 truncate">{activeClip.file.name}</span>
-                  <span className="text-muted-foreground">
-                    {Math.round(activeClip.progress * 100)}%
-                  </span>
-                </div>
-                <Progress value={activeClip.progress * 100} className="mt-2 h-1.5" />
-              </div>
-            )}
 
             {doneClips.length > 0 && (
               <div className="mt-4 flex justify-end border-t border-border/60 pt-3">
@@ -928,7 +927,7 @@ function EditorPage() {
 
         {/* ---------- Column 3: batch fine-tune ---------- */}
         <section
-          className={`space-y-3 ${running ? "pointer-events-none opacity-50" : ""}`}
+          className={`scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4 ${running ? "pointer-events-none opacity-50" : ""}`}
           aria-disabled={running}
         >
           {toolEnabled(account, "finetune") && (
@@ -1060,7 +1059,7 @@ function EditorPage() {
         </section>
 
         {/* ---------- Column 4: edit tabs + process ---------- */}
-        <section className="space-y-3">
+        <section className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4">
           <div
             className={`rounded-xl border border-border bg-card p-2 ${
               running ? "pointer-events-none opacity-50" : ""
