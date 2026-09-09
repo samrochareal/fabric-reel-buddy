@@ -474,6 +474,7 @@ function AdminPage() {
             [
               ["overview", t("Overview"), <BarChart3 key="a" className="size-4" />],
               ["people", t("People"), <Users key="b" className="size-4" />],
+              ["notifications", t("Notifications"), <Bell key="f" className="size-4" />],
               ["referral", t("Referral programme"), <Gift key="e" className="size-4" />],
               ["menu", t("Side menu"), <Link2 key="c" className="size-4" />],
               ["identity", t("System identity"), <Palette key="d" className="size-4" />],
