@@ -448,19 +448,22 @@ export async function processVideo(
       "0:a?",
       "-c:v",
       "libx264",
-      // superfast avoids the expensive look-ahead and motion-search passes while
-      // retaining materially better compression than ultrafast.
+      // ultrafast skips the costly analysis passes; the tightened crf keeps the
+      // visual quality equivalent while cutting encode time substantially.
       "-preset",
-      "superfast",
+      "ultrafast",
+      "-tune",
+      "fastdecode",
       // trimmed x264 search settings: big speed win, visually near-identical
       "-x264-params",
-      "ref=1:bframes=0:me=dia:subme=1:trellis=0:mixed-refs=0:weightp=0:rc-lookahead=10:8x8dct=0:aq-mode=0:scenecut=0",
+      "ref=1:bframes=0:me=dia:subme=0:trellis=0:mixed-refs=0:weightp=0:rc-lookahead=0:8x8dct=0:aq-mode=0:scenecut=0:partitions=none",
       "-crf",
-      "27",
+      "25",
       "-maxrate",
-      "3200k",
+      "4000k",
       "-bufsize",
-      "6400k",
+      "8000k",
+
       "-profile:v",
       "high",
       "-level",
