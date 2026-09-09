@@ -1226,14 +1226,11 @@ function EditorPage() {
                 {opts.bgImage.src && (
                   <div className="mt-3 space-y-3 rounded-lg border border-border bg-background/60 p-3">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={opts.bgImage.src}
-                        alt={t("Background image in use")}
-                        className="h-14 w-8 rounded border border-border object-cover"
-                      />
-                      <p className="flex-1 text-[11px] font-semibold text-muted-foreground">
-                        {t("Background image in use")}
+                      <p className="flex-1 truncate text-[11px] font-semibold text-muted-foreground">
+                        {savedOverlays.find((p) => p.dataUrl === opts.bgImage.src)?.name ??
+                          t("Background image in use")}
                       </p>
+
                       <button
                         type="button"
                         onClick={() =>
