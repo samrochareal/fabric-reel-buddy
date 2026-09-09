@@ -378,7 +378,6 @@ const PT: Record<string, string> = {
     "Envie uma mensagem para todos ou para uma conta. Ela aparece no ícone de sino.",
   "Who receives it": "Quem recebe",
   "Everyone": "Todos",
-  "Title": "Título",
   "New feature available": "Nova funcionalidade disponível",
   "Message": "Mensagem",
   "Write the notification content here.": "Escreva o conteúdo da notificação aqui.",
@@ -394,7 +393,6 @@ const PT: Record<string, string> = {
   "Give the notification a title.": "Dê um título à notificação.",
   "We couldn't send the notification.": "Não foi possível enviar a notificação.",
   "We couldn't remove the notification.": "Não foi possível remover a notificação.",
-  "Remove": "Remover",
 };
 
 
