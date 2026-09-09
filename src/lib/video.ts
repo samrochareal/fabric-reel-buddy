@@ -345,10 +345,13 @@ function buildFilterChain(
       `format=rgba,pad=${sw}:${sh}:(ow-iw)/2:(oh-ih)/2:color=0x00000000`
     : `scale=${sw}:${sh}:force_original_aspect_ratio=increase:flags=fast_bilinear,crop=${sw}:${sh}`;
   parts.push(
-    `[0:v]${opts.mirror ? "hflip," : ""}${fitChain}` +
+    // capping the frame rate first means every later filter (and the encoder)
+    // handles far fewer frames on 50/60fps sources without visible loss.
+    `[0:v]fps=30,${opts.mirror ? "hflip," : ""}${fitChain}` +
       (cutTop > 0 || cutBottom > 0 ? `,crop=${sw}:${vh}:0:${cutTop}` : "") +
       `,setsar=1[vid]`,
   );
+
   parts.push(`color=c=${opts.bgColor}:s=${w}x${h}:r=30[bgc]`);
   let bgLabel = "bgc";
   if (inputs.bgIndex !== null) {
