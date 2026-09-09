@@ -186,12 +186,13 @@ async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
     (window as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated === true &&
     cores > 1;
 
-  const attempts: Array<{ base: string; multi: boolean }> = canThread
-    ? [
-        { base: CORE_MT, multi: true },
-        { base: CORE_ST, multi: false },
-      ]
-    : [{ base: CORE_ST, multi: false }];
+  const attempts: Array<{ base: string; multi: boolean }> = [
+    ...(canThread ? [{ base: CORE_MT, multi: true }] : []),
+    { base: CORE_ST, multi: false },
+    { base: CORE_ST_ALT, multi: false },
+    // last resort: no custom class worker (some desktop setups block blob workers)
+    { base: CORE_ST, multi: false, plain: true } as { base: string; multi: boolean },
+  ];
 
   let lastError: unknown = null;
   for (const attempt of attempts) {
