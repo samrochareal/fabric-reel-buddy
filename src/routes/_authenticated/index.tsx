@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccountBadge } from "@/components/account-badge";
 import { SideMenu } from "@/components/side-menu";
 import { CreditMeter } from "@/components/credit-meter";
+import { NotificationBell } from "@/components/notification-bell";
 import { loadEditSettings, saveEditSettings } from "@/lib/settings";
 import { listOverlays, type OverlayPreset } from "@/lib/overlays";
 
@@ -729,6 +730,7 @@ function EditorPage() {
             <span className="hidden rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground sm:inline">
               {clips.length}/{MAX_CLIPS} {t("in queue")}
             </span>
+            <NotificationBell />
             <CreditMeter account={account} />
           </div>
         </div>
