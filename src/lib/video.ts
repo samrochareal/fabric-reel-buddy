@@ -115,6 +115,7 @@ export let ffmpegThreads = 1;
 
 const CORE_MT = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.10/dist/esm";
 const CORE_ST = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
+const CORE_ST_ALT = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm";
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
