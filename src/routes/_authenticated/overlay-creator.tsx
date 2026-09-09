@@ -216,7 +216,13 @@ function OverlayCreator() {
     };
   };
 
-  const pickTarget = (x: number, y: number): "photo" | "text" => {
+  const pickTarget = (x: number, y: number): "photo" | "text" | "image" => {
+    if (bgImgRef.current && cfg.imageMode === "watermark") {
+      const bg = bgImgRef.current;
+      const halfW = Math.min(1, Math.max(0.05, cfg.imageSize)) / 2;
+      const halfH = (halfW * W * (bg.height / bg.width)) / H;
+      if (Math.abs(x - cfg.imageX) <= halfW && Math.abs(y - cfg.imageY) <= halfH) return "image";
+    }
     if (imgRef.current) {
       const r = cfg.photoSize / 2;
       const dx = x - cfg.photoX;
@@ -237,6 +243,7 @@ function OverlayCreator() {
 
   const movePoint = (x: number, y: number) => {
     if (dragRef.current === "photo") patch({ photoX: x, photoY: y });
+    else if (dragRef.current === "image") patch({ imageX: x, imageY: y });
     else if (dragRef.current === "text") patch({ textX: x, textY: y });
   };
 
@@ -255,9 +262,12 @@ function OverlayCreator() {
     const target = pickTarget(p.x, p.y);
     if (target === "photo") {
       patch({ photoSize: Math.min(1, Math.max(0.05, cfg.photoSize + dir * 0.02)) });
+    } else if (target === "image") {
+      patch({ imageSize: Math.min(1, Math.max(0.05, cfg.imageSize + dir * 0.02)) });
     } else {
       patch({ textSize: Math.min(200, Math.max(20, cfg.textSize + dir * 4)) });
     }
+
   };
 
   const renderDataUrl = () => {
