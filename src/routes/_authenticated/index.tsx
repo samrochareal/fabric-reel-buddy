@@ -1365,23 +1365,7 @@ function EditorPage() {
             {tab === "extras" && toolEnabled(account, "extras") && (
               <div className="space-y-3 text-xs">
                 <p className="text-sm font-bold">{t("Extras")}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{t("Mirror videos")}</span>
-                  <Switch checked={opts.mirror} onCheckedChange={(v) => patch({ mirror: v })} />
-                </div>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-bold">{t("Remove metadata")}</p>
-                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                      {t("The processed video carries none of the original file's metadata.")}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={opts.stripMetadata}
-                    onCheckedChange={(v) => patch({ stripMetadata: v })}
-                  />
-                </div>
-                <div className="mt-2 space-y-3 border-t border-border/60 pt-3">
+                <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-xs font-bold">{t("Anti-duplicate mode")}</p>
@@ -1393,10 +1377,9 @@ function EditorPage() {
                       checked={antiDup}
                       onCheckedChange={(v) => {
                         setAntiDup(v);
-                        patch({ speed: v ? 1.02 : 1 });
+                        patch({ speed: v ? 1.02 : 1, ...(v ? { stripMetadata: true } : {}) });
                       }}
                     />
-
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">
@@ -1412,6 +1395,22 @@ function EditorPage() {
                       />
                     </div>
                   </div>
+                </div>
+                <div className="flex items-center justify-between border-t border-border/60 pt-3">
+                  <span className="text-muted-foreground">{t("Mirror videos")}</span>
+                  <Switch checked={opts.mirror} onCheckedChange={(v) => patch({ mirror: v })} />
+                </div>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-bold">{t("Remove metadata")}</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                      {t("The processed video carries none of the original file's metadata.")}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={opts.stripMetadata}
+                    onCheckedChange={(v) => patch({ stripMetadata: v })}
+                  />
                 </div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
                   {t("Everything runs in your browser: your files are never uploaded to any server.")}
