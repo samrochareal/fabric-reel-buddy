@@ -700,7 +700,7 @@ function EditorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
         <div className="grid h-14 grid-cols-[auto_1fr_auto] items-center gap-3 px-4">
