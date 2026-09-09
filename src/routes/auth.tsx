@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Loader2, LogIn, Mail, Scissors } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Loader2, Mail, RefreshCw, Scissors } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+import { isDisposableEmail, isValidEmail } from "@/lib/email-guard";
 import { getRememberMe, setRememberMe } from "@/lib/session-pref";
 import { exitGuestMode } from "@/lib/guest-mode";
 import { useBranding } from "@/lib/branding";
