@@ -1164,23 +1164,26 @@ function EditorPage() {
                       onCheckedChange={(v) => patch({ title: { ...opts.title, enabled: v } })}
                     />
                   </div>
-                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                    {t("One title per line. Each line goes to the matching video in the queue.")}
-                  </p>
-                  <Textarea
-                    className="mt-3 min-h-[110px] text-xs"
-                    placeholder={t("Video title 1\nVideo title 2")}
-                    value={opts.title.text}
-                    onChange={(e) => patch({ title: { ...opts.title, text: e.target.value } })}
-                    disabled={!opts.title.enabled}
-                  />
-                  {textControls(opts.title, (next) => patch({ title: { ...opts.title, ...next } }), 28, 120)}
-                  <p className="mt-2 text-[11px] text-muted-foreground">
-                    {t("{n} title(s) for {v} video(s)", {
-                      n: titleLines.filter(Boolean).length,
-                      v: clips.length,
-                    })}
-                  </p>
+                  {opts.title.enabled && (
+                    <>
+                      <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                        {t("One title per line. Each line goes to the matching video in the queue.")}
+                      </p>
+                      <Textarea
+                        className="mt-3 min-h-[110px] text-xs"
+                        placeholder={t("Video title 1\nVideo title 2")}
+                        value={opts.title.text}
+                        onChange={(e) => patch({ title: { ...opts.title, text: e.target.value } })}
+                      />
+                      {textControls(opts.title, (next) => patch({ title: { ...opts.title, ...next } }), 28, 120)}
+                      <p className="mt-2 text-[11px] text-muted-foreground">
+                        {t("{n} title(s) for {v} video(s)", {
+                          n: titleLines.filter(Boolean).length,
+                          v: clips.length,
+                        })}
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 <div className="border-t border-border/60 pt-4">
