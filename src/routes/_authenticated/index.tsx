@@ -132,7 +132,7 @@ function EditorPage() {
   const [opts, setOpts] = useState<EditOptions>(defaultEditOptions);
 
   
-  const [tab, setTab] = useState<EditTab>("texto");
+  const [tab, setTab] = useState<EditTab>("bordas");
   const [antiDup, setAntiDup] = useState(false);
   const [scope, setScope] = useState<"batch" | "single">("batch");
   const [overrides, setOverrides] = useState<Record<string, FineTune>>({});
@@ -1069,47 +1069,6 @@ function EditorPage() {
           </div>
           )}
 
-          {toolEnabled(account, "borders") && (
-          <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-sm font-bold">{t("Video borders")}</p>
-            <div className="mt-4 space-y-4">
-              {[
-                {
-                  label: t("Crop top"),
-                  value: opts.border.top,
-                  set: (v: number) => patch({ border: { ...opts.border, top: v } }),
-                },
-                {
-                  label: t("Crop bottom"),
-                  value: opts.border.bottom,
-                  set: (v: number) => patch({ border: { ...opts.border, bottom: v } }),
-                },
-              ].map((row) => (
-                <div key={row.label}>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{row.label}</span>
-                    <span className="font-bold">{(row.value * 100).toFixed(1)}%</span>
-                  </div>
-                  <Slider
-                    className="mt-2"
-                    value={[row.value]}
-                    min={0}
-                    max={0.4}
-                    step={0.005}
-                    onValueChange={([v]) => row.set(v ?? row.value)}
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-xs">
-              {t("Centre content:")}{" "}
-              <span className="font-bold">
-                {Math.max(0, 100 - (opts.border.top + opts.border.bottom) * 100).toFixed(0)}%
-              </span>
-            </div>
-          </div>
-          )}
         </section>
 
         {/* ---------- Column 4: edit tabs + process ---------- */}
