@@ -1155,7 +1155,7 @@ function EditorPage() {
             )}
 
             {tab === "texto" && toolEnabled(account, "text") && (
-              <div className="space-y-5">
+              <div className="max-h-[60vh] space-y-5 overflow-y-auto overscroll-contain pr-1">
                 <div>
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-bold">{t("Video title")}</p>
