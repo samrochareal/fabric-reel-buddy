@@ -63,8 +63,10 @@ function OverlayCreator() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const bgFileRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const dragRef = useRef<"photo" | "text" | null>(null);
+  const bgImgRef = useRef<HTMLImageElement | null>(null);
+  const dragRef = useRef<"photo" | "text" | "image" | null>(null);
 
   const patch = (next: Partial<OverlayConfig>) => setCfg((prev) => ({ ...prev, ...next }));
 
@@ -92,6 +94,25 @@ function OverlayCreator() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cfg.photo]);
 
+  useEffect(() => {
+    if (!cfg.image) {
+      bgImgRef.current = null;
+      draw();
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      bgImgRef.current = img;
+      draw();
+    };
+    img.onerror = () => {
+      bgImgRef.current = null;
+      draw();
+    };
+    img.src = cfg.image;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg.image]);
+
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -101,6 +122,26 @@ function OverlayCreator() {
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = cfg.bgColor;
     ctx.fillRect(0, 0, W, H);
+
+    const bg = bgImgRef.current;
+    const drawUploadedImage = () => {
+      if (!bg || bg.width <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, Math.max(0.05, cfg.imageOpacity));
+      if (cfg.imageMode === "background") {
+        const ratio = Math.max(W / bg.width, H / bg.height);
+        const iw = bg.width * ratio;
+        const ih = bg.height * ratio;
+        ctx.drawImage(bg, W * cfg.imageX - iw / 2, H * cfg.imageY - ih / 2, iw, ih);
+      } else {
+        const iw = W * Math.min(1, Math.max(0.05, cfg.imageSize));
+        const ih = (bg.height / bg.width) * iw;
+        ctx.drawImage(bg, W * cfg.imageX - iw / 2, H * cfg.imageY - ih / 2, iw, ih);
+      }
+      ctx.restore();
+    };
+
+    if (cfg.imageMode === "background") drawUploadedImage();
 
     const img = imgRef.current;
     if (img && img.width > 0) {
@@ -157,7 +198,10 @@ function OverlayCreator() {
     ctx.font = `600 ${size * 0.68}px Inter, "Helvetica Neue", Arial, sans-serif`;
     ctx.fillStyle = cfg.handleColor;
     ctx.fillText(handleText, tx, ty + size * 0.95);
+
+    if (cfg.imageMode === "watermark") drawUploadedImage();
   }, [cfg]);
+
 
   useEffect(() => {
     draw();
