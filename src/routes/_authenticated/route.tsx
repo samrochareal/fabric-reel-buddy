@@ -8,7 +8,7 @@ import { useBranding } from "@/lib/branding";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     // guest mode: full access, nothing saved
     if (isGuest()) return { user: null };
     // user opted out of "continuar conectado" and the browser was closed
@@ -18,6 +18,11 @@ export const Route = createFileRoute("/_authenticated")({
     }
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
+    // password was reset by the master: force a new one before anything else
+    const meta = (data.user.user_metadata ?? {}) as { must_change_password?: boolean };
+    if (meta.must_change_password === true && location.pathname !== "/new-password") {
+      throw redirect({ to: "/new-password" });
+    }
     await ensureProfile();
     await claimPendingReferral();
     return { user: data.user };

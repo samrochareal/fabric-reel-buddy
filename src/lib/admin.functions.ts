@@ -108,3 +108,31 @@ export const deleteUser = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+
+/**
+ * Master-only: replaces one account's password with a random temporary one and
+ * flags the account so the person must pick a new password on next sign-in.
+ */
+export const resetUserPassword = createServerFn({ method: "POST" })
+  .inputValidator((input: { userId: string }) => input)
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+    const bytes = new Uint8Array(14);
+    crypto.getRandomValues(bytes);
+    const temporaryPassword =
+      Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("") + "!7";
+
+    const { data: existing } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    const meta = (existing?.user?.user_metadata ?? {}) as Record<string, unknown>;
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password: temporaryPassword,
+      user_metadata: { ...meta, must_change_password: true },
+    });
+    if (error) throw error;
+    return { temporaryPassword };
+  });

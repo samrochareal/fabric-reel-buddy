@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedNewPasswordRouteImport } from './routes/_authenticated/new-password'
 import { Route as AuthenticatedOverlayCreatorRouteImport } from './routes/_authenticated/overlay-creator'
 import { Route as AuthenticatedReferralsRouteImport } from './routes/_authenticated/referrals'
 
@@ -41,6 +42,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNewPasswordRoute =
+  AuthenticatedNewPasswordRouteImport.update({
+    id: '/new-password',
+    path: '/new-password',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOverlayCreatorRoute =
   AuthenticatedOverlayCreatorRouteImport.update({
     id: '/overlay-creator',
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/new-password': typeof AuthenticatedNewPasswordRoute
   '/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
   '/referrals': typeof AuthenticatedReferralsRoute
 }
@@ -65,6 +73,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/new-password': typeof AuthenticatedNewPasswordRoute
   '/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
   '/referrals': typeof AuthenticatedReferralsRoute
   '/': typeof AuthenticatedIndexRoute
@@ -75,6 +84,7 @@ export interface FileRoutesById {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/new-password': typeof AuthenticatedNewPasswordRoute
   '/_authenticated/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
   '/_authenticated/referrals': typeof AuthenticatedReferralsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -82,15 +92,29 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/app' | '/auth' | '/admin' | '/overlay-creator' | '/referrals'
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/admin'
+    | '/new-password'
+    | '/overlay-creator'
+    | '/referrals'
   fileRoutesByTo: FileRoutesByTo
-  to: '/app' | '/auth' | '/admin' | '/overlay-creator' | '/referrals' | '/'
+  to:
+    | '/app'
+    | '/auth'
+    | '/admin'
+    | '/new-password'
+    | '/overlay-creator'
+    | '/referrals'
+    | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/app'
     | '/auth'
     | '/_authenticated/admin'
+    | '/_authenticated/new-password'
     | '/_authenticated/overlay-creator'
     | '/_authenticated/referrals'
     | '/_authenticated/'
@@ -139,6 +163,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/new-password': {
+      id: '/_authenticated/new-password'
+      path: '/new-password'
+      fullPath: '/new-password'
+      preLoaderRoute: typeof AuthenticatedNewPasswordRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/overlay-creator': {
       id: '/_authenticated/overlay-creator'
       path: '/overlay-creator'
@@ -158,6 +189,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedNewPasswordRoute: typeof AuthenticatedNewPasswordRoute
   AuthenticatedOverlayCreatorRoute: typeof AuthenticatedOverlayCreatorRoute
   AuthenticatedReferralsRoute: typeof AuthenticatedReferralsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -165,6 +197,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedNewPasswordRoute: AuthenticatedNewPasswordRoute,
   AuthenticatedOverlayCreatorRoute: AuthenticatedOverlayCreatorRoute,
   AuthenticatedReferralsRoute: AuthenticatedReferralsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

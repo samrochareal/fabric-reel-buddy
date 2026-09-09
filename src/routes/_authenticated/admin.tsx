@@ -13,6 +13,7 @@ import {
   Save,
   Trash2,
   Users,
+  KeyRound,
   Video,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ import {
   fetchPlatformStats,
 
   fetchPlatformUsers,
+  resetPlatformUserPassword,
   savePlatformUser,
   useIsAdmin,
   type PlatformUser,
@@ -134,6 +136,23 @@ function UserDialog({
   const [tools, setTools] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+
+  const resetPassword = async () => {
+    if (!user) return;
+    if (!window.confirm(t("Reset this password? A temporary one will be generated."))) return;
+    setResetting(true);
+    try {
+      const temp = await resetPlatformUserPassword(user.id);
+      setTempPassword(temp);
+      toast.success(t("Temporary password created."));
+    } catch {
+      toast.error(t("We couldn't reset this password."));
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const remove = async () => {
     if (!user) return;
@@ -153,6 +172,7 @@ function UserDialog({
 
 
   useEffect(() => {
+    setTempPassword(null);
     if (!user) return;
     setCredits(user.credits);
     setRefillAmount(user.credit_refill_amount);
@@ -269,6 +289,45 @@ function UserDialog({
                 </label>
               ))}
             </div>
+          </div>
+
+          <div className="rounded-lg border border-border p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold">{t("Password")}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {t("Generates a temporary password. The person must set a new one at next sign-in.")}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" disabled={resetting} onClick={() => void resetPassword()}>
+                {resetting ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <KeyRound className="mr-2 size-4" />
+                )}
+                {t("Reset password")}
+              </Button>
+            </div>
+            {tempPassword && (
+              <div className="mt-3 rounded-md bg-muted p-3">
+                <p className="text-[11px] text-muted-foreground">
+                  {t("Share this once — it won't be shown again.")}
+                </p>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <code className="flex-1 break-all text-sm font-semibold">{tempPassword}</code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(tempPassword);
+                      toast.success(t("Copied."));
+                    }}
+                  >
+                    {t("Copy")}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
