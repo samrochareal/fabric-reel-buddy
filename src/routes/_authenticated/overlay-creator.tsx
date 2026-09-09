@@ -390,6 +390,127 @@ function OverlayCreator() {
             />
           </div>
 
+          <div className="space-y-3 border-t border-border/60 pt-3">
+            <p className="text-xs font-semibold">{t("Image (background or watermark)")}</p>
+            <div className="flex items-center gap-3">
+              <div className="size-14 overflow-hidden rounded-md border border-border bg-muted">
+                {cfg.image && <img src={cfg.image} alt="" className="size-full object-cover" />}
+              </div>
+              <Button variant="secondary" size="sm" onClick={() => bgFileRef.current?.click()}>
+                <UploadCloud className="mr-1.5 size-4" /> {cfg.image ? t("Replace") : t("Upload")}
+              </Button>
+              {cfg.image && (
+                <Button variant="ghost" size="sm" onClick={() => patch({ image: null })}>
+                  <Trash2 className="size-4" />
+                </Button>
+              )}
+            </div>
+            <input
+              ref={bgFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => patch({ image: String(reader.result) });
+                reader.readAsDataURL(file);
+              }}
+            />
+
+            {cfg.image && (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["background", "watermark"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => patch({ imageMode: mode })}
+                      className={`rounded-md border py-2 text-[11px] font-semibold transition-colors ${
+                        cfg.imageMode === mode
+                          ? "border-primary bg-primary/15 text-foreground"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {mode === "background" ? t("Background") : t("Watermark")}
+                    </button>
+                  ))}
+                </div>
+
+                {cfg.imageMode === "watermark" && (
+                  <div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{t("Image size")}</span>
+                      <span className="font-bold">{Math.round(cfg.imageSize * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={5}
+                      max={100}
+                      step={1}
+                      value={Math.round(cfg.imageSize * 100)}
+                      onChange={(e) => patch({ imageSize: Number(e.target.value) / 100 })}
+                      className="mt-2 w-full accent-primary"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{t("Opacity")}</span>
+                    <span className="font-bold">{Math.round(cfg.imageOpacity * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={5}
+                    max={100}
+                    step={1}
+                    value={Math.round(cfg.imageOpacity * 100)}
+                    onChange={(e) => patch({ imageOpacity: Number(e.target.value) / 100 })}
+                    className="mt-2 w-full accent-primary"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{t("Horizontal")}</span>
+                      <span className="font-bold">{Math.round(cfg.imageX * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={Math.round(cfg.imageX * 100)}
+                      onChange={(e) => patch({ imageX: Number(e.target.value) / 100 })}
+                      className="mt-2 w-full accent-primary"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{t("Vertical")}</span>
+                      <span className="font-bold">{Math.round(cfg.imageY * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={Math.round(cfg.imageY * 100)}
+                      onChange={(e) => patch({ imageY: Number(e.target.value) / 100 })}
+                      className="mt-2 w-full accent-primary"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+
+
           <div>
             <p className="text-xs font-semibold">{t("Name")}</p>
             <Input
