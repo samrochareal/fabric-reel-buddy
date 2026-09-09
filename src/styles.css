@@ -139,6 +139,15 @@
   animation: marquee 28s linear infinite;
 }
 
+@utility scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @keyframes marquee {
   from {
     transform: translateX(0);
