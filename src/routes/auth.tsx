@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Loader2, LogIn, Mail, Scissors } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Loader2, Mail, RefreshCw, Scissors } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+import { isDisposableEmail, isValidEmail } from "@/lib/email-guard";
 import { getRememberMe, setRememberMe } from "@/lib/session-pref";
 import { exitGuestMode } from "@/lib/guest-mode";
 import { useBranding } from "@/lib/branding";
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/auth")({
       {
         name: "description",
         content:
-          "Sign in with Google or e-mail and password to open your saved editing settings and overlays.",
+          "Sign in with your e-mail and password to open your saved editing settings and overlays.",
       },
       { property: "og:title", content: "Sign in — batch video editor" },
       {
@@ -43,9 +43,18 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [remember, setRemember] = useState(true);
+  const [captcha, setCaptcha] = useState({ a: 0, b: 0 });
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
+
+  const newCaptcha = useCallback(() => {
+    setCaptcha({ a: 2 + Math.floor(Math.random() * 8), b: 1 + Math.floor(Math.random() * 9) });
+    setCaptchaAnswer("");
+  }, []);
+
 
   useEffect(() => {
     setRemember(getRememberMe());
@@ -53,7 +62,8 @@ function AuthPage() {
     rememberInviteCode();
     // the sign-in page always stays dark; the theme choice only applies after login
     applyTheme("dark");
-  }, []);
+    newCaptcha();
+  }, [newCaptcha]);
 
 
   useEffect(() => {
@@ -70,45 +80,46 @@ function AuthPage() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const withGoogle = async () => {
-    setBusy(true);
-    setRememberMe(remember);
-    try {
-
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) {
-        toast.error(t("We couldn't sign you in with Google. Please try again."));
-        return;
-      }
-      if (result.redirected) return;
-      void navigate({ to: "/", replace: true });
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const withEmail = async () => {
-    if (!email.trim() || password.length < 6) {
+    const address = email.trim();
+    if (!isValidEmail(address) || password.length < 6) {
       toast.error(t("Enter your e-mail and a password with at least 6 characters."));
       return;
     }
+    if (mode === "signup") {
+      if (!fullName.trim()) {
+        toast.error(t("Enter your name."));
+        return;
+      }
+      if (isDisposableEmail(address)) {
+        toast.error(t("Temporary e-mail addresses are not accepted. Use a permanent e-mail."));
+        return;
+      }
+      if (password !== confirmPassword) {
+        toast.error(t("The two passwords don't match."));
+        return;
+      }
+      if (Number(captchaAnswer.trim()) !== captcha.a + captcha.b) {
+        toast.error(t("The security answer is wrong. Please try again."));
+        newCaptcha();
+        return;
+      }
+    }
     setBusy(true);
     setRememberMe(remember);
     try {
-
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
+          email: address,
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { full_name: fullName.trim() || null },
+            data: { full_name: fullName.trim() },
           },
         });
         if (error) {
           toast.error(error.message);
+          newCaptcha();
           return;
         }
         if (!data.session) {
@@ -118,7 +129,7 @@ function AuthPage() {
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
+          email: address,
           password,
         });
         if (error) {
@@ -174,20 +185,7 @@ function AuthPage() {
             </span>
           </label>
 
-          <Button
-            variant="secondary"
-            className="mt-5 h-11 w-full"
-            onClick={withGoogle}
-            disabled={busy}
-          >
-            <LogIn className="mr-2 size-4" /> {t("Continue with Google")}
-          </Button>
-
-          <div className="my-5 flex items-center gap-3">
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("or")}</span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
+          <div className="mt-5" />
 
           {sent ? (
             <div className="rounded-lg border border-border bg-background/60 p-4 text-sm">
@@ -232,6 +230,47 @@ function AuthPage() {
                   onKeyDown={(e) => e.key === "Enter" && void withEmail()}
                 />
               </div>
+              {mode === "signup" && (
+                <>
+                  <div>
+                    <p className="text-xs font-semibold">{t("Confirm password")}</p>
+                    <Input
+                      className="mt-1.5 h-11"
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder={t("Repeat your password")}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && void withEmail()}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold">{t("Security check")}</p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <span className="flex h-11 select-none items-center rounded-md border border-border bg-background/60 px-3 font-display text-sm font-bold tracking-wider">
+                        {captcha.a} + {captcha.b} = ?
+                      </span>
+                      <Input
+                        className="h-11 flex-1"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        placeholder={t("Your answer")}
+                        value={captchaAnswer}
+                        onChange={(e) => setCaptchaAnswer(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && void withEmail()}
+                      />
+                      <button
+                        type="button"
+                        onClick={newCaptcha}
+                        aria-label={t("New challenge")}
+                        className="flex size-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        <RefreshCw className="size-4" />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
               <Button className="h-11 w-full" onClick={withEmail} disabled={busy}>
                 {busy && <Loader2 className="mr-2 size-4 animate-spin" />}
                 {mode === "signin" ? t("Sign in") : t("Create account")}

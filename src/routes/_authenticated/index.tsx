@@ -996,12 +996,14 @@ function EditorPage() {
               {[
                 {
                   label: t("Zoom"),
-                  value: fine.zoom,
+                  // 100% sits exactly in the middle of the bar: 50%–100% on the
+                  // left half, 100%–500% on the right half.
+                  value: fine.zoom <= 1 ? fine.zoom - 0.5 : 0.5 + (fine.zoom - 1) / 8,
                   display: `${Math.round(fine.zoom * 100)}%`,
-                  min: 0.5,
-                  max: 5,
-                  step: 0.01,
-                  set: (v: number) => patchFine({ zoom: v }),
+                  min: 0,
+                  max: 1,
+                  step: 0.005,
+                  set: (v: number) => patchFine({ zoom: v <= 0.5 ? 0.5 + v : 1 + (v - 0.5) * 8 }),
                 },
                 {
                   label: t("Vertical position"),
