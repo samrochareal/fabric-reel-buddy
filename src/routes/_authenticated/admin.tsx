@@ -131,6 +131,24 @@ function UserDialog({
   const [days, setDays] = useState("");
   const [tools, setTools] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const remove = async () => {
+    if (!user) return;
+    if (!window.confirm(t("Delete this account for good? This cannot be undone."))) return;
+    setDeleting(true);
+    try {
+      await deletePlatformUser(user.id);
+      toast.success(t("Account deleted."));
+      onSaved();
+      onClose();
+    } catch {
+      toast.error(t("We couldn't delete this account."));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
 
   useEffect(() => {
     if (!user) return;
