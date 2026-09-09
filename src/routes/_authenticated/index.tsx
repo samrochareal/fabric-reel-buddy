@@ -741,7 +741,7 @@ function EditorPage() {
 
       <main className="scrollbar-hidden grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain px-4 pb-24 pt-4 xl:overflow-hidden xl:pb-4 xl:grid-cols-[260px_minmax(0,1fr)_280px_300px]">
         {/* ---------- Column 1: upload + queue ---------- */}
-        <section className="space-y-3">
+        <section className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4">
           <div
             className={`flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/40 px-4 py-8 text-center transition-colors ${
               running
