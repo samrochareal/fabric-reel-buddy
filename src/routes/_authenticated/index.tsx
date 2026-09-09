@@ -24,6 +24,7 @@ import {
   Sparkles,
   Volume2,
   VolumeX,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -863,7 +864,7 @@ function EditorPage() {
         {/* ---------- Column 2: preview ---------- */}
         <section className="space-y-3">
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mx-auto max-w-[300px]">
+            <div className="mx-auto max-w-[250px]">
               {previewClip ? framePreview(previewClip, false) : framePreview(undefined, false)}
             </div>
 
@@ -1280,7 +1281,7 @@ function EditorPage() {
                       {t("You haven't saved any profile in the Overlay creator yet.")}
                     </p>
                   ) : (
-                    <div className="mt-3 grid grid-cols-3 gap-2">
+                    <div className="mt-3 space-y-1.5">
                       {savedOverlays.map((preset) => (
                         <button
                           key={preset.slot}
@@ -1291,18 +1292,21 @@ function EditorPage() {
                             });
                             toast.success(t("Overlay “{name}” applied.", { name: preset.name }));
                           }}
-                          className={`overflow-hidden rounded border p-1 text-left transition-colors ${
+                          className={`flex w-full items-center gap-2 rounded border px-2.5 py-2 text-left transition-colors ${
                             opts.bgImage.src === preset.dataUrl
                               ? "border-primary bg-primary/10"
                               : "border-border hover:border-primary/60"
                           }`}
                           title={preset.name}
                         >
-                          <img src={preset.dataUrl} alt={preset.name} className="aspect-[9/16] w-full rounded-sm object-cover" />
-                          <p className="mt-1 truncate text-[10px] font-semibold">{preset.name}</p>
+                          {opts.bgImage.src === preset.dataUrl && (
+                            <Check className="size-3.5 shrink-0 text-primary" />
+                          )}
+                          <span className="truncate text-xs font-semibold">{preset.name}</span>
                         </button>
                       ))}
                     </div>
+
 
                   )}
                   <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
