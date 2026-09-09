@@ -927,7 +927,7 @@ function EditorPage() {
 
         {/* ---------- Column 3: batch fine-tune ---------- */}
         <section
-          className={`space-y-3 ${running ? "pointer-events-none opacity-50" : ""}`}
+          className={`scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4 ${running ? "pointer-events-none opacity-50" : ""}`}
           aria-disabled={running}
         >
           {toolEnabled(account, "finetune") && (
