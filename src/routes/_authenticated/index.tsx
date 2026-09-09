@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccountBadge } from "@/components/account-badge";
 import { SideMenu } from "@/components/side-menu";
 import { CreditMeter } from "@/components/credit-meter";
+import { NotificationBell } from "@/components/notification-bell";
 import { loadEditSettings, saveEditSettings } from "@/lib/settings";
 import { listOverlays, type OverlayPreset } from "@/lib/overlays";
 
@@ -103,10 +104,11 @@ const MAX_FILE_MB = 100;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 const MAX_DURATION_S = 180;
 
-type EditTab = "texto" | "overlay" | "extras";
+type EditTab = "bordas" | "overlay" | "texto" | "extras";
 const TABS: { id: EditTab; label: string; tool: ToolKey }[] = [
-  { id: "texto", label: "Text", tool: "text" },
+  { id: "bordas", label: "Borders", tool: "borders" },
   { id: "overlay", label: "Overlay", tool: "overlay" },
+  { id: "texto", label: "Text", tool: "text" },
   { id: "extras", label: "Extras", tool: "extras" },
 ];
 
@@ -131,7 +133,7 @@ function EditorPage() {
   const [opts, setOpts] = useState<EditOptions>(defaultEditOptions);
 
   
-  const [tab, setTab] = useState<EditTab>("texto");
+  const [tab, setTab] = useState<EditTab>("bordas");
   const [antiDup, setAntiDup] = useState(false);
   const [scope, setScope] = useState<"batch" | "single">("batch");
   const [overrides, setOverrides] = useState<Record<string, FineTune>>({});
@@ -594,7 +596,7 @@ function EditorPage() {
           <video
             key={clip.id}
             ref={isMain ? playerRef : undefined}
-            src={clip.resultUrl ?? clip.previewUrl}
+            src={clip.previewUrl}
             className={`size-full ${o.fit === "cover" ? "object-cover" : "object-contain"}`}
             style={{ transform: o.mirror ? "scaleX(-1)" : undefined }}
             muted={isMain ? muted : true}
@@ -728,6 +730,7 @@ function EditorPage() {
             <span className="hidden rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground sm:inline">
               {clips.length}/{MAX_CLIPS} {t("in queue")}
             </span>
+            <NotificationBell />
             <CreditMeter account={account} />
           </div>
         </div>
@@ -746,7 +749,7 @@ function EditorPage() {
 
       <main className="grid gap-4 px-4 pb-24 pt-4 xl:grid-cols-[260px_minmax(0,1fr)_280px_300px]">
         {/* ---------- Column 1: upload + queue ---------- */}
-        <section className="space-y-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1">
+        <section className="space-y-3">
           <div
             className={`flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/40 px-4 py-8 text-center transition-colors ${
               running
@@ -812,7 +815,7 @@ function EditorPage() {
 
 
 
-            <ul className="max-h-[540px] divide-y divide-border/60 overflow-y-auto">
+            <ul className="divide-y divide-border/60">
               {clips.length === 0 && (
                 <li className="px-3 py-6 text-center text-xs text-muted-foreground">
                   {t("Your queue is empty.")}
@@ -878,13 +881,13 @@ function EditorPage() {
         </section>
 
         {/* ---------- Column 2: preview ---------- */}
-        <section className="space-y-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1">
+        <section className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("Preview")} · {ASPECTS[opts.aspect].label}
           </p>
 
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mx-auto max-w-[300px]">
+            <div className="mx-auto max-w-[150px]">
               {previewClip ? framePreview(previewClip, false) : framePreview(undefined, false)}
             </div>
 
@@ -949,7 +952,7 @@ function EditorPage() {
 
         {/* ---------- Column 3: batch fine-tune ---------- */}
         <section
-          className={`space-y-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1 ${running ? "pointer-events-none opacity-50" : ""}`}
+          className={`space-y-3 ${running ? "pointer-events-none opacity-50" : ""}`}
           aria-disabled={running}
         >
           {toolEnabled(account, "finetune") && (
@@ -1068,51 +1071,10 @@ function EditorPage() {
           </div>
           )}
 
-          {toolEnabled(account, "borders") && (
-          <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-sm font-bold">{t("Video borders")}</p>
-            <div className="mt-4 space-y-4">
-              {[
-                {
-                  label: t("Crop top"),
-                  value: opts.border.top,
-                  set: (v: number) => patch({ border: { ...opts.border, top: v } }),
-                },
-                {
-                  label: t("Crop bottom"),
-                  value: opts.border.bottom,
-                  set: (v: number) => patch({ border: { ...opts.border, bottom: v } }),
-                },
-              ].map((row) => (
-                <div key={row.label}>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{row.label}</span>
-                    <span className="font-bold">{(row.value * 100).toFixed(1)}%</span>
-                  </div>
-                  <Slider
-                    className="mt-2"
-                    value={[row.value]}
-                    min={0}
-                    max={0.4}
-                    step={0.005}
-                    onValueChange={([v]) => row.set(v ?? row.value)}
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-xs">
-              {t("Centre content:")}{" "}
-              <span className="font-bold">
-                {Math.max(0, 100 - (opts.border.top + opts.border.bottom) * 100).toFixed(0)}%
-              </span>
-            </div>
-          </div>
-          )}
         </section>
 
         {/* ---------- Column 4: edit tabs + process ---------- */}
-        <section className="space-y-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1">
+        <section className="space-y-3">
           <Button
             variant="outline"
             className="w-full"
@@ -1151,6 +1113,47 @@ function EditorPage() {
             }`}
             aria-disabled={running}
           >
+            {tab === "bordas" && toolEnabled(account, "borders") && (
+              <div>
+                <p className="text-sm font-bold">{t("Video borders")}</p>
+                <div className="mt-4 space-y-4">
+                  {[
+                    {
+                      label: t("Crop top"),
+                      value: opts.border.top,
+                      set: (v: number) => patch({ border: { ...opts.border, top: v } }),
+                    },
+                    {
+                      label: t("Crop bottom"),
+                      value: opts.border.bottom,
+                      set: (v: number) => patch({ border: { ...opts.border, bottom: v } }),
+                    },
+                  ].map((row) => (
+                    <div key={row.label}>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{row.label}</span>
+                        <span className="font-bold">{(row.value * 100).toFixed(1)}%</span>
+                      </div>
+                      <Slider
+                        className="mt-2"
+                        value={[row.value]}
+                        min={0}
+                        max={0.4}
+                        step={0.005}
+                        onValueChange={([v]) => row.set(v ?? row.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-xs">
+                  {t("Centre content:")}{" "}
+                  <span className="font-bold">
+                    {Math.max(0, 100 - (opts.border.top + opts.border.bottom) * 100).toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+            )}
+
             {tab === "texto" && toolEnabled(account, "text") && (
               <div className="space-y-5">
                 <div>
@@ -1359,6 +1362,18 @@ function EditorPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">{t("Mirror videos")}</span>
                   <Switch checked={opts.mirror} onCheckedChange={(v) => patch({ mirror: v })} />
+                </div>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-bold">{t("Remove metadata")}</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                      {t("The processed video carries none of the original file's metadata.")}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={opts.stripMetadata}
+                    onCheckedChange={(v) => patch({ stripMetadata: v })}
+                  />
                 </div>
                 <div className="mt-2 space-y-3 border-t border-border/60 pt-3">
                   <div className="flex items-start justify-between gap-2">

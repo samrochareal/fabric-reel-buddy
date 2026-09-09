@@ -47,6 +47,13 @@ import {
 } from "@/lib/branding";
 import { LanguageToggle, useT } from "@/lib/i18n";
 import { LINK_ICON_NAMES, LinkGlyph } from "@/components/link-icons";
+import {
+  adminDeleteNotification,
+  adminListNotifications,
+  adminSendNotification,
+} from "@/lib/notifications";
+import { Textarea } from "@/components/ui/textarea";
+import { Bell } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -276,9 +283,15 @@ function AdminPage() {
   const [savingLinks, setSavingLinks] = useState(false);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<PlatformUser | null>(null);
-  const [tab, setTab] = useState<"overview" | "people" | "referral" | "menu" | "identity">(
-    "overview",
-  );
+  const [tab, setTab] = useState<
+    "overview" | "people" | "notifications" | "referral" | "menu" | "identity"
+  >("overview");
+  const [notifTitle, setNotifTitle] = useState("");
+  const [notifBody, setNotifBody] = useState("");
+  const [notifLinkUrl, setNotifLinkUrl] = useState("");
+  const [notifLinkLabel, setNotifLinkLabel] = useState("");
+  const [notifTarget, setNotifTarget] = useState("all");
+  const [sending, setSending] = useState(false);
   const [referralOn, setReferralOn] = useState(false);
   const [referralCredits, setReferralCredits] = useState(5);
   const [savingReferral, setSavingReferral] = useState(false);
@@ -329,6 +342,50 @@ function AdminPage() {
     queryFn: fetchPlatformUsers,
     enabled: isAdmin,
   });
+
+  const notifications = useQuery({
+    queryKey: ["admin-notifications"],
+    queryFn: adminListNotifications,
+    enabled: isAdmin,
+  });
+
+  const onSendNotification = async () => {
+    if (!notifTitle.trim()) {
+      toast.error(t("Give the notification a title."));
+      return;
+    }
+    setSending(true);
+    try {
+      await adminSendNotification({
+        title: notifTitle,
+        body: notifBody,
+        linkUrl: notifLinkUrl,
+        linkLabel: notifLinkLabel,
+        targetUserId: notifTarget === "all" ? null : notifTarget,
+      });
+      setNotifTitle("");
+      setNotifBody("");
+      setNotifLinkUrl("");
+      setNotifLinkLabel("");
+      setNotifTarget("all");
+      void notifications.refetch();
+      toast.success(t("Notification sent."));
+    } catch {
+      toast.error(t("We couldn't send the notification."));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const onDeleteNotification = async (id: string) => {
+    try {
+      await adminDeleteNotification(id);
+      void notifications.refetch();
+      toast.success(t("Notification removed."));
+    } catch {
+      toast.error(t("We couldn't remove the notification."));
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -417,6 +474,7 @@ function AdminPage() {
             [
               ["overview", t("Overview"), <BarChart3 key="a" className="size-4" />],
               ["people", t("People"), <Users key="b" className="size-4" />],
+              ["notifications", t("Notifications"), <Bell key="f" className="size-4" />],
               ["referral", t("Referral programme"), <Gift key="e" className="size-4" />],
               ["menu", t("Side menu"), <Link2 key="c" className="size-4" />],
               ["identity", t("System identity"), <Palette key="d" className="size-4" />],
@@ -562,6 +620,123 @@ function AdminPage() {
               </div>
             </>
           )}
+        </section>
+        )}
+
+        {/* ---------- notifications ---------- */}
+        {tab === "notifications" && (
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-center gap-2">
+            <Bell className="size-4 text-primary" />
+            <h2 className="font-display text-lg font-bold tracking-tight">
+              {t("Notifications")}
+            </h2>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("Send a message to everyone or to one account. It shows up in their bell icon.")}
+          </p>
+
+          <div className="mt-5 space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground">{t("Who receives it")}</label>
+              <select
+                value={notifTarget}
+                onChange={(e) => setNotifTarget(e.target.value)}
+                className="mt-1 h-10 w-full rounded-md border border-border bg-background px-2 text-sm"
+              >
+                <option value="all">{t("Everyone")}</option>
+                {(users.data ?? []).map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.email ?? u.full_name ?? u.id}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground">{t("Title")}</label>
+              <Input
+                className="mt-1"
+                value={notifTitle}
+                onChange={(e) => setNotifTitle(e.target.value)}
+                placeholder={t("New feature available")}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground">{t("Message")}</label>
+              <Textarea
+                className="mt-1 min-h-[110px]"
+                value={notifBody}
+                onChange={(e) => setNotifBody(e.target.value)}
+                placeholder={t("Write the notification content here.")}
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">
+                  {t("Button link (optional)")}
+                </label>
+                <Input
+                  className="mt-1"
+                  value={notifLinkUrl}
+                  onChange={(e) => setNotifLinkUrl(e.target.value)}
+                  placeholder="https://"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">
+                  {t("Button text")}
+                </label>
+                <Input
+                  className="mt-1"
+                  value={notifLinkLabel}
+                  onChange={(e) => setNotifLinkLabel(e.target.value)}
+                  placeholder={t("Learn more")}
+                />
+              </div>
+            </div>
+            <Button onClick={() => void onSendNotification()} disabled={sending}>
+              {sending ? (
+                <Loader2 className="mr-1.5 size-4 animate-spin" />
+              ) : (
+                <Bell className="mr-1.5 size-4" />
+              )}
+              {t("Send notification")}
+            </Button>
+          </div>
+
+          <div className="mt-6 border-t border-border/60 pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("Sent notifications")}
+            </p>
+            <div className="mt-3 space-y-2">
+              {(notifications.data ?? []).length === 0 && (
+                <p className="text-xs text-muted-foreground">{t("Nothing sent yet.")}</p>
+              )}
+              {(notifications.data ?? []).map((n) => (
+                <div
+                  key={n.id}
+                  className="flex items-start gap-3 rounded-xl border border-border bg-background/60 p-3"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold">{n.title}</span>
+                    <span className="block text-xs text-muted-foreground">{n.body}</span>
+                    <span className="mt-1 block text-[11px] text-muted-foreground">
+                      {n.target_user_id ? (n.target_email ?? t("One account")) : t("Everyone")} ·{" "}
+                      {new Date(n.created_at).toLocaleString()}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void onDeleteNotification(n.id)}
+                    className="text-muted-foreground transition-colors hover:text-destructive"
+                    aria-label={t("Remove")}
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
         )}
 

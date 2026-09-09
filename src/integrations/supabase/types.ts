@@ -38,6 +38,68 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_reads: {
+        Row: {
+          id: string
+          notification_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notification_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notification_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_reads_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          link_label: string | null
+          link_url: string | null
+          target_user_id: string | null
+          title: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          link_label?: string | null
+          link_url?: string | null
+          target_user_id?: string | null
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          link_label?: string | null
+          link_url?: string | null
+          target_user_id?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       overlay_presets: {
         Row: {
           config: Json
@@ -273,8 +335,20 @@ export type Database = {
         Args: { _amount: number; _user_id: string }
         Returns: Json
       }
+      admin_delete_notification: { Args: { _id: string }; Returns: Json }
+      admin_list_notifications: { Args: never; Returns: Json }
       admin_list_users: { Args: never; Returns: Json }
       admin_platform_stats: { Args: never; Returns: Json }
+      admin_send_notification: {
+        Args: {
+          _body: string
+          _link_label: string
+          _link_url: string
+          _target_user_id: string
+          _title: string
+        }
+        Returns: Json
+      }
       admin_update_user: {
         Args: {
           _access_expires_at?: string

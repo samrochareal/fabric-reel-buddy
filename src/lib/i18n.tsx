@@ -366,6 +366,33 @@ const PT: Record<string, string> = {
   "Programme off": "Programa desativado",
   "Links shown inside the hamburger menu. They open in a new tab.":
     "Links exibidos dentro do menu lateral. Eles abrem em uma nova aba.",
+  // notifications
+  "Notifications": "Notificações",
+  "Tap a notification to read it.": "Toque em uma notificação para ler.",
+  "You have no notifications yet.": "Você ainda não tem notificações.",
+  "Open link": "Abrir link",
+  "Remove metadata": "Remover metadados",
+  "The processed video carries none of the original file's metadata.":
+    "O vídeo processado não mantém nenhum metadado do arquivo original.",
+  "Send a message to everyone or to one account. It shows up in their bell icon.":
+    "Envie uma mensagem para todos ou para uma conta. Ela aparece no ícone de sino.",
+  "Who receives it": "Quem recebe",
+  "Everyone": "Todos",
+  "New feature available": "Nova funcionalidade disponível",
+  "Message": "Mensagem",
+  "Write the notification content here.": "Escreva o conteúdo da notificação aqui.",
+  "Button link (optional)": "Link do botão (opcional)",
+  "Button text": "Texto do botão",
+  "Learn more": "Saiba mais",
+  "Send notification": "Enviar notificação",
+  "Sent notifications": "Notificações enviadas",
+  "Nothing sent yet.": "Nada enviado ainda.",
+  "One account": "Uma conta",
+  "Notification sent.": "Notificação enviada.",
+  "Notification removed.": "Notificação removida.",
+  "Give the notification a title.": "Dê um título à notificação.",
+  "We couldn't send the notification.": "Não foi possível enviar a notificação.",
+  "We couldn't remove the notification.": "Não foi possível remover a notificação.",
 };
 
 

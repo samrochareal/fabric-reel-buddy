@@ -68,6 +68,8 @@ export type EditOptions = {
   overlayOpacity: number;
   overlayColor: string;
   bgImage: BackgroundImage;
+  /** drop every tag/metadata carried by the original file */
+  stripMetadata: boolean;
 };
 
 export const defaultEditOptions = (): EditOptions => ({
@@ -101,6 +103,7 @@ export const defaultEditOptions = (): EditOptions => ({
   overlayOpacity: 0,
   overlayColor: "#000000",
   bgImage: { enabled: false, src: null, opacity: 1, layer: "back" },
+  stripMetadata: false,
 });
 
 
@@ -482,6 +485,22 @@ export async function processVideo(
       args.push("-c:a", "aac", "-b:a", "96k", "-ac", "2", "-ar", "44100");
     } else {
       args.push("-c:a", "copy");
+    }
+    if (opts.stripMetadata) {
+      args.push(
+        "-map_metadata",
+        "-1",
+        "-map_chapters",
+        "-1",
+        "-fflags",
+        "+bitexact",
+        "-flags:v",
+        "+bitexact",
+        "-flags:a",
+        "+bitexact",
+        "-metadata",
+        "title=",
+      );
     }
     args.push("-movflags", "+faststart", outputName);
 
