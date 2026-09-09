@@ -1059,7 +1059,42 @@ function EditorPage() {
           </>
           )}
 
+          <div className="sticky bottom-0 space-y-2 bg-background pb-1 pt-2">
+            <Button
+              className="h-12 w-full text-base disabled:opacity-100"
+              onClick={() => void handleProcess()}
+              disabled={running || queuedClips.length === 0}
+            >
+              {running ? (
+                <>
+                  <Loader2 className="mr-2 size-5 animate-spin" /> {t("Processing…")}
+                </>
+              ) : paused && queuedClips.length > 0 ? (
+                <>
+                  <Play className="mr-2 size-5" /> {t("Resume processing")} ({queuedClips.length})
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 size-5" />{" "}
+                  {t("Process {n} video(s)", { n: queuedClips.length })}
+                </>
+              )}
+            </Button>
+            {running && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  cancelledRef.current = true;
+                  toast.info(t("Processing will pause after the current video."));
+                }}
+              >
+                <Pause className="mr-2 size-4" /> {t("Pause processing")}
+              </Button>
+            )}
+          </div>
         </section>
+
 
         {/* ---------- Column 4: edit tabs + process ---------- */}
         <section className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4">
