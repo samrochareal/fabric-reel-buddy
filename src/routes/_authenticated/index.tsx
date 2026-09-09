@@ -875,7 +875,10 @@ function EditorPage() {
         {/* ---------- Column 2: preview ---------- */}
         <section className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4">
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mx-auto max-w-[250px]">
+            <div
+              className="mx-auto w-full"
+              style={{ maxWidth: "min(250px, calc((100dvh - 330px) * 0.5625))" }}
+            >
               {previewClip ? framePreview(previewClip, false) : framePreview(undefined, false)}
             </div>
 
