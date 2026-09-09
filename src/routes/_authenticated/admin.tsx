@@ -251,15 +251,31 @@ function UserDialog({
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>
-              {t("Close")}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              disabled={deleting || saving || Boolean(user?.is_admin)}
+              onClick={() => void remove()}
+            >
+              {deleting ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 size-4" />
+              )}
+              {t("Delete account")}
             </Button>
-            <Button onClick={() => void submit()} disabled={saving}>
-              {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
-              {t("Save changes")}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                {t("Close")}
+              </Button>
+              <Button onClick={() => void submit()} disabled={saving}>
+                {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
+                {t("Save changes")}
+              </Button>
+            </div>
           </div>
+
         </div>
       </DialogContent>
     </Dialog>
