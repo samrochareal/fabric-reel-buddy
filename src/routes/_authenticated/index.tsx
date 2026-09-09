@@ -1167,7 +1167,8 @@ function EditorPage() {
             )}
 
             {tab === "overlay" && toolEnabled(account, "overlay") && (
-              <>
+              <div className="scrollbar-hidden max-h-[60vh] overflow-y-auto overscroll-contain">
+
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-bold">{t("Background overlay")}</p>
                   <Switch
