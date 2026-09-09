@@ -48,12 +48,12 @@ function NewPasswordPage() {
     }
     setSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({
+      const attributes: Record<string, unknown> = {
         password,
-        // @ts-expect-error current_password is accepted by the auth server
-        current_password: temporary || undefined,
         data: { must_change_password: false },
-      });
+      };
+      if (temporary.trim()) attributes["current_password"] = temporary.trim();
+      const { error } = await supabase.auth.updateUser(attributes as never);
       if (error) throw error;
       await supabase.auth.refreshSession();
       toast.success(t("Password updated."));
