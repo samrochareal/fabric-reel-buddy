@@ -901,18 +901,6 @@ function EditorPage() {
               </button>
             </div>
 
-            {activeClip && (
-              <div className="mt-4">
-                <div className="flex items-center gap-2 text-xs">
-                  <Loader2 className="size-3.5 animate-spin text-primary" />
-                  <span className="flex-1 truncate">{activeClip.file.name}</span>
-                  <span className="text-muted-foreground">
-                    {Math.round(activeClip.progress * 100)}%
-                  </span>
-                </div>
-                <Progress value={activeClip.progress * 100} className="mt-2 h-1.5" />
-              </div>
-            )}
 
             {doneClips.length > 0 && (
               <div className="mt-4 flex justify-end border-t border-border/60 pt-3">
