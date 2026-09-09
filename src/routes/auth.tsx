@@ -21,7 +21,7 @@ export const Route = createFileRoute("/auth")({
       {
         name: "description",
         content:
-          "Sign in with Google or e-mail and password to open your saved editing settings and overlays.",
+          "Sign in with your e-mail and password to open your saved editing settings and overlays.",
       },
       { property: "og:title", content: "Sign in — batch video editor" },
       {
