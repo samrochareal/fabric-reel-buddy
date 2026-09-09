@@ -199,7 +199,8 @@ async function loadCore(onLog?: (msg: string) => void): Promise<FFmpeg> {
     const instance = new FFmpeg();
     if (onLog) instance.on("log", ({ message }) => onLog(message));
     try {
-      await tryLoad(instance, attempt.base, attempt.multi, worker);
+      const plain = (attempt as { plain?: boolean }).plain === true;
+      await tryLoad(instance, attempt.base, attempt.multi, plain ? undefined : worker);
       ffmpegThreads = attempt.multi ? Math.min(8, cores) : 1;
       return instance;
     } catch (err) {
