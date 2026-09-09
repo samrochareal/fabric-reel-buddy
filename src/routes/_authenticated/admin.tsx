@@ -276,9 +276,15 @@ function AdminPage() {
   const [savingLinks, setSavingLinks] = useState(false);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<PlatformUser | null>(null);
-  const [tab, setTab] = useState<"overview" | "people" | "referral" | "menu" | "identity">(
-    "overview",
-  );
+  const [tab, setTab] = useState<
+    "overview" | "people" | "notifications" | "referral" | "menu" | "identity"
+  >("overview");
+  const [notifTitle, setNotifTitle] = useState("");
+  const [notifBody, setNotifBody] = useState("");
+  const [notifLinkUrl, setNotifLinkUrl] = useState("");
+  const [notifLinkLabel, setNotifLinkLabel] = useState("");
+  const [notifTarget, setNotifTarget] = useState("all");
+  const [sending, setSending] = useState(false);
   const [referralOn, setReferralOn] = useState(false);
   const [referralCredits, setReferralCredits] = useState(5);
   const [savingReferral, setSavingReferral] = useState(false);
