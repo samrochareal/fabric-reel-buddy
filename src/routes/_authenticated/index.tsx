@@ -36,7 +36,7 @@ import {
   ASPECTS,
   defaultEditOptions,
   fontStack,
-  TEXT_FONTS,
+  
   type EditOptions,
   type TextBlock,
 } from "@/lib/video";
