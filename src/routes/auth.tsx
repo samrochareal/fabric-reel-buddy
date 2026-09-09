@@ -230,6 +230,47 @@ function AuthPage() {
                   onKeyDown={(e) => e.key === "Enter" && void withEmail()}
                 />
               </div>
+              {mode === "signup" && (
+                <>
+                  <div>
+                    <p className="text-xs font-semibold">{t("Confirm password")}</p>
+                    <Input
+                      className="mt-1.5 h-11"
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder={t("Repeat your password")}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && void withEmail()}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold">{t("Security check")}</p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <span className="flex h-11 select-none items-center rounded-md border border-border bg-background/60 px-3 font-display text-sm font-bold tracking-wider">
+                        {captcha.a} + {captcha.b} = ?
+                      </span>
+                      <Input
+                        className="h-11 flex-1"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        placeholder={t("Your answer")}
+                        value={captchaAnswer}
+                        onChange={(e) => setCaptchaAnswer(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && void withEmail()}
+                      />
+                      <button
+                        type="button"
+                        onClick={newCaptcha}
+                        aria-label={t("New challenge")}
+                        className="flex size-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        <RefreshCw className="size-4" />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
               <Button className="h-11 w-full" onClick={withEmail} disabled={busy}>
                 {busy && <Loader2 className="mr-2 size-4 animate-spin" />}
                 {mode === "signin" ? t("Sign in") : t("Create account")}
