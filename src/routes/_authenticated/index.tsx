@@ -1316,7 +1316,8 @@ function EditorPage() {
                 </div>
 
 
-              </>
+              </div>
+
             )}
 
 
