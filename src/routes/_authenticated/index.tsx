@@ -475,7 +475,18 @@ function EditorPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "fabrica-de-reels.zip";
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const slug =
+      (branding.system_name || "reels")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "reels";
+    a.download = `${slug}_${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
+      now.getDate(),
+    )}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}.zip`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
