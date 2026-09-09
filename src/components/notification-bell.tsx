@@ -73,7 +73,11 @@ export function NotificationBell() {
                 <Bell className="mt-0.5 size-4 shrink-0 text-primary" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold">{item.title}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{item.body}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {item.body?.replace(/\s+/g, " ").slice(0, 60)}
+                    {(item.body?.length ?? 0) > 60 ? "…" : ""}
+                  </span>
+
                   <span className="mt-1 block text-[11px] text-muted-foreground">
                     {new Date(item.created_at).toLocaleString()}
                   </span>
