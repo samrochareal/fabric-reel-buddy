@@ -151,7 +151,6 @@ function EditorPage() {
           ...prev,
           ...saved,
           title: { ...prev.title, ...(saved.title ?? {}) },
-          bottom: { ...prev.bottom, ...(saved.bottom ?? {}) },
           border: { ...prev.border, ...(saved.border ?? {}) },
           bgImage: { ...prev.bgImage, ...(saved.bgImage ?? {}) },
         }));
@@ -951,6 +950,7 @@ function EditorPage() {
           aria-disabled={running}
         >
           {toolEnabled(account, "finetune") && (
+          <>
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1">
               <button
@@ -1072,6 +1072,7 @@ function EditorPage() {
           >
             <RotateCcw className="mr-1.5 size-4" /> {t("Reset all edits")}
           </Button>
+          </>
           )}
 
         </section>
