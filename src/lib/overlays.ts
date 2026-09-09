@@ -3,6 +3,8 @@ import { guestStore, isGuest } from "@/lib/guest-mode";
 
 export type TextAlign = "left" | "center" | "right";
 
+export type ImageMode = "background" | "watermark";
+
 export type OverlayConfig = {
   photo: string | null;
   name: string;
@@ -19,6 +21,14 @@ export type OverlayConfig = {
   photoX: number;
   photoY: number;
   photoSize: number;
+  /** optional uploaded image used as full background or as a watermark */
+  image: string | null;
+  imageMode: ImageMode;
+  imageX: number;
+  imageY: number;
+  /** width of the image relative to the frame width (watermark only) */
+  imageSize: number;
+  imageOpacity: number;
 };
 
 export type OverlayPreset = {
@@ -49,7 +59,14 @@ export const defaultOverlayConfig = (): OverlayConfig => ({
   photoX: 0.5,
   photoY: 0.5,
   photoSize: 0.26,
+  image: null,
+  imageMode: "background",
+  imageX: 0.5,
+  imageY: 0.5,
+  imageSize: 0.35,
+  imageOpacity: 1,
 });
+
 
 type Row = {
   slot: number;
