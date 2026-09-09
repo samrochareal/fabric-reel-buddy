@@ -121,6 +121,13 @@ export async function savePlatformUser(input: {
   await updateUser({ data: input });
 }
 
+/** Master-only: deletes an account for good. */
+export async function deletePlatformUser(userId: string): Promise<void> {
+  const { deleteUser } = await import("@/lib/admin.functions");
+  await deleteUser({ data: { userId } });
+}
+
+
 /** Records processed videos so the master dashboard can report usage. */
 export async function logVideoJobs(input: {
   clips: number;

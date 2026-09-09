@@ -64,7 +64,7 @@ export function SideMenu() {
           </div>
 
           {account && !guest && (
-            <div className="mt-4 grid grid-cols-2 gap-2 text-center">
+            <div className="mt-4 text-center">
               <div className="rounded-lg border border-border bg-card px-2 py-2">
                 <p className="font-display text-lg font-bold">
                   {account.premium ? "∞" : account.credits}
@@ -73,14 +73,9 @@ export function SideMenu() {
                   {t("Credits")}
                 </p>
               </div>
-              <div className="rounded-lg border border-border bg-card px-2 py-2">
-                <p className="font-display text-lg font-bold">{account.credits_used}</p>
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                  {t("Used")}
-                </p>
-              </div>
             </div>
           )}
+
         </div>
 
         {/* navigation + master links */}

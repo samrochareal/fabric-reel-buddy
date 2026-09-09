@@ -27,7 +27,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  deletePlatformUser,
   fetchPlatformStats,
+
   fetchPlatformUsers,
   savePlatformUser,
   useIsAdmin,
@@ -131,6 +133,24 @@ function UserDialog({
   const [days, setDays] = useState("");
   const [tools, setTools] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const remove = async () => {
+    if (!user) return;
+    if (!window.confirm(t("Delete this account for good? This cannot be undone."))) return;
+    setDeleting(true);
+    try {
+      await deletePlatformUser(user.id);
+      toast.success(t("Account deleted."));
+      onSaved();
+      onClose();
+    } catch {
+      toast.error(t("We couldn't delete this account."));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
 
   useEffect(() => {
     if (!user) return;
@@ -251,15 +271,31 @@ function UserDialog({
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>
-              {t("Close")}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              disabled={deleting || saving || Boolean(user?.is_admin)}
+              onClick={() => void remove()}
+            >
+              {deleting ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 size-4" />
+              )}
+              {t("Delete account")}
             </Button>
-            <Button onClick={() => void submit()} disabled={saving}>
-              {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
-              {t("Save changes")}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                {t("Close")}
+              </Button>
+              <Button onClick={() => void submit()} disabled={saving}>
+                {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
+                {t("Save changes")}
+              </Button>
+            </div>
           </div>
+
         </div>
       </DialogContent>
     </Dialog>

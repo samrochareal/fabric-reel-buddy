@@ -93,3 +93,18 @@ export const updateUser = createServerFn({ method: "POST" })
     if (error) throw error;
     return updated;
   });
+
+/** Master-only: permanently removes one account and everything tied to it. */
+export const deleteUser = createServerFn({ method: "POST" })
+  .inputValidator((input: { userId: string }) => input)
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.userId === context.userId)
+      throw new Response("Cannot delete your own account", { status: 400 });
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) throw error;
+    return { ok: true };
+  });
+
