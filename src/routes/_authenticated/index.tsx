@@ -181,7 +181,7 @@ function EditorPage() {
   const [playing, setPlaying] = useState(false);
   const [pos, setPos] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
 
   const togglePlay = () => {
     const el = playerRef.current;
