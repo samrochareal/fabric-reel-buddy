@@ -80,45 +80,46 @@ function AuthPage() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const withGoogle = async () => {
-    setBusy(true);
-    setRememberMe(remember);
-    try {
-
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) {
-        toast.error(t("We couldn't sign you in with Google. Please try again."));
-        return;
-      }
-      if (result.redirected) return;
-      void navigate({ to: "/", replace: true });
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const withEmail = async () => {
-    if (!email.trim() || password.length < 6) {
+    const address = email.trim();
+    if (!isValidEmail(address) || password.length < 6) {
       toast.error(t("Enter your e-mail and a password with at least 6 characters."));
       return;
     }
+    if (mode === "signup") {
+      if (!fullName.trim()) {
+        toast.error(t("Enter your name."));
+        return;
+      }
+      if (isDisposableEmail(address)) {
+        toast.error(t("Temporary e-mail addresses are not accepted. Use a permanent e-mail."));
+        return;
+      }
+      if (password !== confirmPassword) {
+        toast.error(t("The two passwords don't match."));
+        return;
+      }
+      if (Number(captchaAnswer.trim()) !== captcha.a + captcha.b) {
+        toast.error(t("The security answer is wrong. Please try again."));
+        newCaptcha();
+        return;
+      }
+    }
     setBusy(true);
     setRememberMe(remember);
     try {
-
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
+          email: address,
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { full_name: fullName.trim() || null },
+            data: { full_name: fullName.trim() },
           },
         });
         if (error) {
           toast.error(error.message);
+          newCaptcha();
           return;
         }
         if (!data.session) {
@@ -128,7 +129,7 @@ function AuthPage() {
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
+          email: address,
           password,
         });
         if (error) {
