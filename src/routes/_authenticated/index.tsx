@@ -594,7 +594,7 @@ function EditorPage() {
           <video
             key={clip.id}
             ref={isMain ? playerRef : undefined}
-            src={clip.resultUrl ?? clip.previewUrl}
+            src={clip.previewUrl}
             className={`size-full ${o.fit === "cover" ? "object-cover" : "object-contain"}`}
             style={{ transform: o.mirror ? "scaleX(-1)" : undefined }}
             muted={isMain ? muted : true}
@@ -746,7 +746,7 @@ function EditorPage() {
 
       <main className="grid gap-4 px-4 pb-24 pt-4 xl:grid-cols-[260px_minmax(0,1fr)_280px_300px]">
         {/* ---------- Column 1: upload + queue ---------- */}
-        <section className="space-y-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1">
+        <section className="space-y-3">
           <div
             className={`flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/40 px-4 py-8 text-center transition-colors ${
               running
@@ -812,7 +812,7 @@ function EditorPage() {
 
 
 
-            <ul className="max-h-[540px] divide-y divide-border/60 overflow-y-auto">
+            <ul className="divide-y divide-border/60">
               {clips.length === 0 && (
                 <li className="px-3 py-6 text-center text-xs text-muted-foreground">
                   {t("Your queue is empty.")}
@@ -878,13 +878,13 @@ function EditorPage() {
         </section>
 
         {/* ---------- Column 2: preview ---------- */}
-        <section className="space-y-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1">
+        <section className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("Preview")} · {ASPECTS[opts.aspect].label}
           </p>
 
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mx-auto max-w-[300px]">
+            <div className="mx-auto max-w-[150px]">
               {previewClip ? framePreview(previewClip, false) : framePreview(undefined, false)}
             </div>
 
@@ -949,7 +949,7 @@ function EditorPage() {
 
         {/* ---------- Column 3: batch fine-tune ---------- */}
         <section
-          className={`space-y-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1 ${running ? "pointer-events-none opacity-50" : ""}`}
+          className={`space-y-3 ${running ? "pointer-events-none opacity-50" : ""}`}
           aria-disabled={running}
         >
           {toolEnabled(account, "finetune") && (
@@ -1112,7 +1112,7 @@ function EditorPage() {
         </section>
 
         {/* ---------- Column 4: edit tabs + process ---------- */}
-        <section className="space-y-3 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1">
+        <section className="space-y-3">
           <Button
             variant="outline"
             className="w-full"
