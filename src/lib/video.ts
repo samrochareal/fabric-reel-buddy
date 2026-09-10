@@ -532,12 +532,18 @@ async function renderOnce(
       "0:a?",
       "-c:v",
       "libx264",
-      // Superfast cuts browser processing time substantially. CRF 18 protects
-      // fine detail, while maxrate keeps the result near the original size.
+      // veryfast + a hand-tuned x264 parameter set: the expensive motion
+      // search, B-frames and lookahead are trimmed (that is where the time
+      // goes), while CRF 20 keeps the compression visually imperceptible.
       "-preset",
-      "superfast",
+      "veryfast",
+      "-tune",
+      "fastdecode",
       "-crf",
-      "18",
+      "20",
+      "-x264-params",
+      "ref=1:bframes=0:subme=1:me=dia:trellis=0:mixed-refs=0:8x8dct=0:" +
+        "weightp=0:rc-lookahead=10:scenecut=0:aq-mode=1:fast-pskip=1",
       "-maxrate",
       `${Math.round(videoBitrate * 1.08)}k`,
       "-bufsize",
@@ -555,6 +561,7 @@ async function renderOnce(
       "-pix_fmt",
       "yuv420p",
     );
+
     if (opts.speed === 1) {
       // Preserve the original audio without another encode whenever its timing
       // is unchanged. This is lossless and removes work from every render.
