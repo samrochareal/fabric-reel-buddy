@@ -504,8 +504,8 @@ async function renderOnce(
       "0:a?",
       "-c:v",
       "libx264",
-      // At 720x1280 a fast preset already yields small files, so we trade a
-      // little compression efficiency for a much shorter encode.
+      // fast preset, quality driven by CRF instead of a tight bitrate budget
+
       "-preset",
       "veryfast",
       // constant quality: keeps the picture close to the source instead of
