@@ -241,17 +241,17 @@ export function resetFFmpeg(): void {
   }
 }
 
-/** frame size actually encoded (9:16, HD instead of full 1080p) */
-const ENCODE_SIZE = { w: 720, h: 1280 };
+/** frame size actually encoded (9:16, full vertical HD) */
+const ENCODE_SIZE = { w: 1080, h: 1920 };
 
 /** how many clips one wasm instance renders before it is recycled */
 const RECYCLE_EVERY = 5;
 let rendersSinceBoot = 0;
 
 /**
- * Keeps the output below the source's average bitrate whenever possible.
- * A hard ceiling prevents short-form clips from becoming unnecessarily large,
- * while the floor avoids visibly destroying already highly-compressed videos.
+ * Ceiling for the output bitrate. Quality comes first: the cap sits slightly
+ * ABOVE the source's average bitrate, so re-encoding never starves a clip of
+ * data, while still preventing runaway file sizes.
  */
 async function targetVideoBitrate(file: File): Promise<number> {
   const duration = await new Promise<number>((resolve) => {
@@ -268,11 +268,11 @@ async function targetVideoBitrate(file: File): Promise<number> {
     video.src = url;
   });
 
-  if (duration <= 0) return 1_200;
+  if (duration <= 0) return 4_000;
   const sourceKbps = (file.size * 8) / duration / 1_000;
-  const videoBudget = sourceKbps * 0.82 - 64;
-  return Math.round(Math.min(1_400, Math.max(280, videoBudget)));
+  return Math.round(Math.min(8_000, Math.max(2_000, sourceKbps * 1.15)));
 }
+
 
 /**
  * Renders titles, bottom captions, borders and colour overlays into a
