@@ -241,6 +241,9 @@ export function resetFFmpeg(): void {
   }
 }
 
+/** frame size actually encoded (9:16, HD instead of full 1080p) */
+const ENCODE_SIZE = { w: 720, h: 1280 };
+
 /** how many clips one wasm instance renders before it is recycled */
 const RECYCLE_EVERY = 5;
 let rendersSinceBoot = 0;
