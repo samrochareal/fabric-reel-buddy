@@ -471,22 +471,21 @@ async function renderOnce(
       "0:a?",
       "-c:v",
       "libx264",
-      // ultrafast skips the costly analysis passes; the tightened crf keeps the
-      // visual quality equivalent while cutting encode time substantially.
+      // "ultrafast" plus the crippled x264 settings we used before produced
+      // enormous files (an 18 MB clip came out around 50 MB), and every extra
+      // megabyte also costs write/encode time. "veryfast" keeps normal x264
+      // compression tools enabled, so the output is far smaller at the same
+      // visual quality and finishes quicker overall.
       "-preset",
-      "ultrafast",
-      "-tune",
-      "fastdecode",
-      // trimmed x264 search settings: big speed win, visually near-identical
-      "-x264-params",
-      "ref=1:bframes=0:me=dia:subme=0:trellis=0:mixed-refs=0:weightp=0:rc-lookahead=0:8x8dct=0:aq-mode=0:scenecut=0:partitions=none",
+      "veryfast",
       "-crf",
-      "25",
+      "28",
+      // hard ceiling on the bitrate: 9:16 1080p at 30fps looks clean well below
+      // this, and it keeps a busy clip from ballooning.
       "-maxrate",
-      "4000k",
+      "2200k",
       "-bufsize",
-      "8000k",
-
+      "4400k",
       "-profile:v",
       "high",
       "-level",
@@ -500,13 +499,7 @@ async function renderOnce(
       "-pix_fmt",
       "yuv420p",
     );
-    const mp4Audio = /mp4|quicktime|m4v/i.test(file.type);
-    if (opts.speed !== 1 || !mp4Audio) {
-
-      args.push("-c:a", "aac", "-b:a", "96k", "-ac", "2", "-ar", "44100");
-    } else {
-      args.push("-c:a", "copy");
-    }
+    args.push("-c:a", "aac", "-b:a", "96k", "-ac", "2", "-ar", "44100");
     if (opts.stripMetadata) {
       args.push(
         "-map_metadata",
