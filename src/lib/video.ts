@@ -396,9 +396,9 @@ function buildFilterChain(
   // and the empty area is transparent, so the background shows through.
   const fitContain = opts.fit !== "cover";
   const fitChain = fitContain
-    ? `scale=${sw}:${sh}:force_original_aspect_ratio=decrease:flags=fast_bilinear,` +
+    ? `scale=${sw}:${sh}:force_original_aspect_ratio=decrease:flags=bilinear,` +
       `format=rgba,pad=${sw}:${sh}:(ow-iw)/2:(oh-ih)/2:color=0x00000000`
-    : `scale=${sw}:${sh}:force_original_aspect_ratio=increase:flags=fast_bilinear,crop=${sw}:${sh}`;
+    : `scale=${sw}:${sh}:force_original_aspect_ratio=increase:flags=bilinear,crop=${sw}:${sh}`;
   parts.push(
     // capping the frame rate first means every later filter (and the encoder)
     // handles far fewer frames on 50/60fps sources without visible loss.
@@ -507,18 +507,15 @@ async function renderOnce(
       // At 720x1280 a fast preset already yields small files, so we trade a
       // little compression efficiency for a much shorter encode.
       "-preset",
-      "ultrafast",
-      "-tune",
-      "fastdecode",
-      "-b:v",
-      `${videoBitrate}k`,
+      "veryfast",
+      // constant quality: keeps the picture close to the source instead of
+      // forcing every clip into a fixed (and often too small) bitrate.
+      "-crf",
+      "21",
       "-maxrate",
-      `${Math.round(videoBitrate * 1.08)}k`,
+      `${videoBitrate}k`,
       "-bufsize",
       `${videoBitrate * 2}k`,
-      // trimming x264's most expensive analysis steps
-      "-x264-params",
-      "ref=1:bframes=0:subme=1:me=dia:trellis=0:rc-lookahead=10:aq-mode=0:8x8dct=0:mixed-refs=0:weightp=0:scenecut=0",
       "-profile:v",
       "main",
       "-level",
@@ -532,7 +529,7 @@ async function renderOnce(
       "-pix_fmt",
       "yuv420p",
     );
-    args.push("-c:a", "aac", "-b:a", "64k", "-ac", "2", "-ar", "44100");
+    args.push("-c:a", "aac", "-b:a", "128k", "-ac", "2", "-ar", "44100");
     if (opts.stripMetadata) {
       args.push(
         "-map_metadata",
