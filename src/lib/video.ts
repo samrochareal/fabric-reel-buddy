@@ -249,6 +249,32 @@ const RECYCLE_EVERY = 5;
 let rendersSinceBoot = 0;
 
 /**
+ * Keeps the output below the source's average bitrate whenever possible.
+ * A hard ceiling prevents short-form clips from becoming unnecessarily large,
+ * while the floor avoids visibly destroying already highly-compressed videos.
+ */
+async function targetVideoBitrate(file: File): Promise<number> {
+  const duration = await new Promise<number>((resolve) => {
+    const video = document.createElement("video");
+    const url = URL.createObjectURL(file);
+    const finish = (value: number) => {
+      URL.revokeObjectURL(url);
+      video.removeAttribute("src");
+      resolve(value);
+    };
+    video.preload = "metadata";
+    video.onloadedmetadata = () => finish(Number.isFinite(video.duration) ? video.duration : 0);
+    video.onerror = () => finish(0);
+    video.src = url;
+  });
+
+  if (duration <= 0) return 1_200;
+  const sourceKbps = (file.size * 8) / duration / 1_000;
+  const videoBudget = sourceKbps * 0.82 - 64;
+  return Math.round(Math.min(1_400, Math.max(280, videoBudget)));
+}
+
+/**
  * Renders titles, bottom captions, borders and colour overlays into a
  * transparent PNG the size of the output frame. Text drawing happens on a
  * canvas (browser fonts) instead of ffmpeg's drawtext, which keeps typography
@@ -428,6 +454,7 @@ async function renderOnce(
   onProgress: (ratio: number) => void,
 ): Promise<Blob> {
   const ff = await getFFmpeg();
+  const videoBitrate = await targetVideoBitrate(file);
   const stamp = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const inputName = `in_${stamp}.mp4`;
   const overlayName = `ovl_${stamp}.png`;
@@ -480,15 +507,15 @@ async function renderOnce(
       // At 720x1280 a fast preset already yields small files, so we trade a
       // little compression efficiency for a much shorter encode.
       "-preset",
-      "superfast",
+      "ultrafast",
       "-tune",
       "fastdecode",
-      "-crf",
-      "26",
+      "-b:v",
+      `${videoBitrate}k`,
       "-maxrate",
-      "1800k",
+      `${Math.round(videoBitrate * 1.08)}k`,
       "-bufsize",
-      "3600k",
+      `${videoBitrate * 2}k`,
       // trimming x264's most expensive analysis steps
       "-x264-params",
       "ref=1:bframes=0:subme=1:me=dia:trellis=0:rc-lookahead=10:aq-mode=0:8x8dct=0:mixed-refs=0:weightp=0:scenecut=0",
@@ -505,7 +532,7 @@ async function renderOnce(
       "-pix_fmt",
       "yuv420p",
     );
-    args.push("-c:a", "aac", "-b:a", "96k", "-ac", "2", "-ar", "44100");
+    args.push("-c:a", "aac", "-b:a", "64k", "-ac", "2", "-ar", "44100");
     if (opts.stripMetadata) {
       args.push(
         "-map_metadata",
