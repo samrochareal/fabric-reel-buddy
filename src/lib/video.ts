@@ -241,38 +241,61 @@ export function resetFFmpeg(): void {
   }
 }
 
-/** frame size actually encoded (9:16, full vertical HD) */
+/** largest frame we ever encode (9:16, full vertical HD) */
 const ENCODE_SIZE = { w: 1080, h: 1920 };
 
 /** how many clips one wasm instance renders before it is recycled */
 const RECYCLE_EVERY = 5;
 let rendersSinceBoot = 0;
 
+type SourceInfo = { duration: number; width: number; height: number };
+
+function probeSource(file: File): Promise<SourceInfo> {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    const url = URL.createObjectURL(file);
+    const finish = (info: SourceInfo) => {
+      URL.revokeObjectURL(url);
+      video.removeAttribute("src");
+      resolve(info);
+    };
+    video.preload = "metadata";
+    video.onloadedmetadata = () =>
+      finish({
+        duration: Number.isFinite(video.duration) ? video.duration : 0,
+        width: video.videoWidth || 0,
+        height: video.videoHeight || 0,
+      });
+    video.onerror = () => finish({ duration: 0, width: 0, height: 0 });
+    video.src = url;
+  });
+}
+
+/**
+ * Frame size actually encoded. Upscaling a 720p source to 1080p costs a lot of
+ * time and adds no detail, so the output never exceeds the source resolution
+ * (kept 9:16 and never below 720x1280 so short-form video stays crisp).
+ */
+function encodeSize(info: SourceInfo): { w: number; h: number } {
+  const sourceLong = Math.max(info.width, info.height);
+  if (!sourceLong) return ENCODE_SIZE;
+  const h = Math.min(ENCODE_SIZE.h, Math.max(1280, sourceLong));
+  const even = (n: number) => Math.round(n / 2) * 2;
+  return { w: even((h * 9) / 16), h: even(h) };
+}
+
 /**
  * Video budget derived from the original file. Reserving room for audio keeps
  * the finished file close to the source size, while a small headroom allowance
  * avoids crushing detailed frames during the unavoidable re-encode.
  */
-async function targetVideoBitrate(file: File): Promise<number> {
-  const duration = await new Promise<number>((resolve) => {
-    const video = document.createElement("video");
-    const url = URL.createObjectURL(file);
-    const finish = (value: number) => {
-      URL.revokeObjectURL(url);
-      video.removeAttribute("src");
-      resolve(value);
-    };
-    video.preload = "metadata";
-    video.onloadedmetadata = () => finish(Number.isFinite(video.duration) ? video.duration : 0);
-    video.onerror = () => finish(0);
-    video.src = url;
-  });
-
-  if (duration <= 0) return 4_000;
-  const sourceTotalKbps = (file.size * 8) / duration / 1_000;
+function targetVideoBitrate(file: File, info: SourceInfo): number {
+  if (info.duration <= 0) return 4_000;
+  const sourceTotalKbps = (file.size * 8) / info.duration / 1_000;
   const sourceVideoBudget = sourceTotalKbps * 1.03 - 128;
   return Math.round(Math.min(10_000, Math.max(700, sourceVideoBudget)));
 }
+
 
 
 /**
