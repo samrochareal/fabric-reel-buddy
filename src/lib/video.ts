@@ -477,29 +477,29 @@ async function renderOnce(
       "0:a?",
       "-c:v",
       "libx264",
-      // "ultrafast" plus the crippled x264 settings we used before produced
-      // enormous files (an 18 MB clip came out around 50 MB), and every extra
-      // megabyte also costs write/encode time. "veryfast" keeps normal x264
-      // compression tools enabled, so the output is far smaller at the same
-      // visual quality and finishes quicker overall.
+      // At 720x1280 a fast preset already yields small files, so we trade a
+      // little compression efficiency for a much shorter encode.
       "-preset",
-      "veryfast",
+      "superfast",
+      "-tune",
+      "fastdecode",
       "-crf",
-      "28",
-      // hard ceiling on the bitrate: 9:16 1080p at 30fps looks clean well below
-      // this, and it keeps a busy clip from ballooning.
+      "26",
       "-maxrate",
-      "2200k",
+      "1800k",
       "-bufsize",
-      "4400k",
+      "3600k",
+      // trimming x264's most expensive analysis steps
+      "-x264-params",
+      "ref=1:bframes=0:subme=1:me=dia:trellis=0:rc-lookahead=10:aq-mode=0:8x8dct=0:mixed-refs=0:weightp=0:scenecut=0",
       "-profile:v",
-      "high",
+      "main",
       "-level",
       "4.0",
       "-r",
       "30",
       "-g",
-      "60",
+      "90",
       "-threads",
       String(ffmpegThreads),
       "-pix_fmt",
