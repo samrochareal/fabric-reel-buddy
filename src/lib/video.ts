@@ -386,11 +386,12 @@ export async function buildOverlayPng(
 function buildFilterChain(
   opts: EditOptions,
   inputs: { bgIndex: number | null; overlayIndex: number | null },
+  size: { w: number; h: number } = ENCODE_SIZE,
 ): string {
-  // Encoding at 720x1280 instead of 1080x1920 means every filter and the
-  // encoder handle ~2.25x fewer pixels. On vertical short-form video the
-  // difference is not visible, and processing gets much faster.
-  const { w, h } = ENCODE_SIZE;
+  // Matching the source resolution keeps every filter and the encoder from
+  // handling more pixels than the original ever had.
+  const { w, h } = size;
+
   const zoom = Math.min(5, Math.max(0.5, opts.zoom));
   // zoom 1 = video covers the whole frame; below 1 it shrinks over the background.
   const sw = Math.max(2, Math.round((w * zoom) / 2) * 2);
