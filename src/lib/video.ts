@@ -223,6 +223,29 @@ export async function getFFmpeg(onLog?: (msg: string) => void): Promise<FFmpeg> 
 }
 
 /**
+ * Throws the current wasm instance away. The wasm heap only ever grows, so a
+ * long batch eventually runs out of memory and every remaining clip fails.
+ * Recycling gives the next clip a clean heap.
+ */
+export function resetFFmpeg(): void {
+  const instance = ffmpeg;
+  ffmpeg = null;
+  loading = null;
+  rendersSinceBoot = 0;
+  if (instance) {
+    try {
+      instance.terminate();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** how many clips one wasm instance renders before it is recycled */
+const RECYCLE_EVERY = 5;
+let rendersSinceBoot = 0;
+
+/**
  * Renders titles, bottom captions, borders and colour overlays into a
  * transparent PNG the size of the output frame. Text drawing happens on a
  * canvas (browser fonts) instead of ffmpeg's drawtext, which keeps typography
