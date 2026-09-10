@@ -223,6 +223,29 @@ export async function getFFmpeg(onLog?: (msg: string) => void): Promise<FFmpeg> 
 }
 
 /**
+ * Throws the current wasm instance away. The wasm heap only ever grows, so a
+ * long batch eventually runs out of memory and every remaining clip fails.
+ * Recycling gives the next clip a clean heap.
+ */
+export function resetFFmpeg(): void {
+  const instance = ffmpeg;
+  ffmpeg = null;
+  loading = null;
+  rendersSinceBoot = 0;
+  if (instance) {
+    try {
+      instance.terminate();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** how many clips one wasm instance renders before it is recycled */
+const RECYCLE_EVERY = 5;
+let rendersSinceBoot = 0;
+
+/**
  * Renders titles, bottom captions, borders and colour overlays into a
  * transparent PNG the size of the output frame. Text drawing happens on a
  * canvas (browser fonts) instead of ffmpeg's drawtext, which keeps typography
@@ -392,7 +415,7 @@ function buildFilterChain(
 }
 
 
-export async function processVideo(
+async function renderOnce(
   file: File,
   opts: EditOptions,
   titleText: string,
@@ -448,22 +471,21 @@ export async function processVideo(
       "0:a?",
       "-c:v",
       "libx264",
-      // ultrafast skips the costly analysis passes; the tightened crf keeps the
-      // visual quality equivalent while cutting encode time substantially.
+      // "ultrafast" plus the crippled x264 settings we used before produced
+      // enormous files (an 18 MB clip came out around 50 MB), and every extra
+      // megabyte also costs write/encode time. "veryfast" keeps normal x264
+      // compression tools enabled, so the output is far smaller at the same
+      // visual quality and finishes quicker overall.
       "-preset",
-      "ultrafast",
-      "-tune",
-      "fastdecode",
-      // trimmed x264 search settings: big speed win, visually near-identical
-      "-x264-params",
-      "ref=1:bframes=0:me=dia:subme=0:trellis=0:mixed-refs=0:weightp=0:rc-lookahead=0:8x8dct=0:aq-mode=0:scenecut=0:partitions=none",
+      "veryfast",
       "-crf",
-      "25",
+      "28",
+      // hard ceiling on the bitrate: 9:16 1080p at 30fps looks clean well below
+      // this, and it keeps a busy clip from ballooning.
       "-maxrate",
-      "4000k",
+      "2200k",
       "-bufsize",
-      "8000k",
-
+      "4400k",
       "-profile:v",
       "high",
       "-level",
@@ -477,13 +499,7 @@ export async function processVideo(
       "-pix_fmt",
       "yuv420p",
     );
-    const mp4Audio = /mp4|quicktime|m4v/i.test(file.type);
-    if (opts.speed !== 1 || !mp4Audio) {
-
-      args.push("-c:a", "aac", "-b:a", "96k", "-ac", "2", "-ar", "44100");
-    } else {
-      args.push("-c:a", "copy");
-    }
+    args.push("-c:a", "aac", "-b:a", "96k", "-ac", "2", "-ar", "44100");
     if (opts.stripMetadata) {
       args.push(
         "-map_metadata",
@@ -516,6 +532,38 @@ export async function processVideo(
     await ff.deleteFile(outputName).catch(() => {});
     await ff.deleteFile(overlayName).catch(() => {});
     await ff.deleteFile(bgName).catch(() => {});
+  }
+}
+
+/**
+ * Renders one clip, recycling the wasm engine as needed. The wasm heap never
+ * shrinks, so long batches used to die partway through ("failed" from roughly
+ * the tenth clip on). Now the engine is rebooted every few clips, and a failed
+ * clip gets one clean retry on a fresh engine before it is reported as failed.
+ */
+export async function processVideo(
+  file: File,
+  opts: EditOptions,
+  titleText: string,
+  onProgress: (ratio: number) => void,
+): Promise<Blob> {
+  if (rendersSinceBoot >= RECYCLE_EVERY) resetFFmpeg();
+  try {
+    const blob = await renderOnce(file, opts, titleText, onProgress);
+    rendersSinceBoot += 1;
+    return blob;
+  } catch (err) {
+    // out-of-memory and aborted-worker failures leave the engine unusable
+    resetFFmpeg();
+    onProgress(0);
+    try {
+      const blob = await renderOnce(file, opts, titleText, onProgress);
+      rendersSinceBoot += 1;
+      return blob;
+    } catch {
+      resetFFmpeg();
+      throw err instanceof Error ? err : new Error(String(err));
+    }
   }
 }
 
