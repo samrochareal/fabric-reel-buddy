@@ -1058,7 +1058,8 @@ function EditorPage() {
           >
             <RotateCcw className="mr-1.5 size-4" /> {t("Reset all edits")}
           </Button>
-          </>
+          </div>
+
           )}
 
           <div className="sticky bottom-0 space-y-2 bg-background pb-1 pt-2">
