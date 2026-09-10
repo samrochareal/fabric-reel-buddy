@@ -930,11 +930,11 @@ function EditorPage() {
 
         {/* ---------- Column 3: batch fine-tune ---------- */}
         <section
-          className={`scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4 ${running ? "pointer-events-none opacity-50" : ""}`}
-          aria-disabled={running}
+          className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4"
         >
           {toolEnabled(account, "finetune") && (
-          <>
+          <div className={`space-y-3 ${running ? "pointer-events-none opacity-50" : ""}`} aria-disabled={running}>
+
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1">
               <button
@@ -1058,7 +1058,8 @@ function EditorPage() {
           >
             <RotateCcw className="mr-1.5 size-4" /> {t("Reset all edits")}
           </Button>
-          </>
+          </div>
+
           )}
 
           <div className="sticky bottom-0 space-y-2 bg-background pb-1 pt-2">
