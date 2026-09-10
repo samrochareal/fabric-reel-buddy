@@ -479,7 +479,10 @@ async function renderOnce(
   onProgress: (ratio: number) => void,
 ): Promise<Blob> {
   const ff = await getFFmpeg();
-  const videoBitrate = await targetVideoBitrate(file);
+  const source = await probeSource(file);
+  const size = encodeSize(source);
+  const videoBitrate = targetVideoBitrate(file, source);
+
   const stamp = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const inputName = `in_${stamp}.mp4`;
   const overlayName = `ovl_${stamp}.png`;
