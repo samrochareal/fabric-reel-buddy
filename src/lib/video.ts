@@ -241,6 +241,9 @@ export function resetFFmpeg(): void {
   }
 }
 
+/** frame size actually encoded (9:16, HD instead of full 1080p) */
+const ENCODE_SIZE = { w: 720, h: 1280 };
+
 /** how many clips one wasm instance renders before it is recycled */
 const RECYCLE_EVERY = 5;
 let rendersSinceBoot = 0;
@@ -334,7 +337,10 @@ function buildFilterChain(
   opts: EditOptions,
   inputs: { bgIndex: number | null; overlayIndex: number | null },
 ): string {
-  const { w, h } = ASPECTS[opts.aspect];
+  // Encoding at 720x1280 instead of 1080x1920 means every filter and the
+  // encoder handle ~2.25x fewer pixels. On vertical short-form video the
+  // difference is not visible, and processing gets much faster.
+  const { w, h } = ENCODE_SIZE;
   const zoom = Math.min(5, Math.max(0.5, opts.zoom));
   // zoom 1 = video covers the whole frame; below 1 it shrinks over the background.
   const sw = Math.max(2, Math.round((w * zoom) / 2) * 2);
@@ -471,29 +477,29 @@ async function renderOnce(
       "0:a?",
       "-c:v",
       "libx264",
-      // "ultrafast" plus the crippled x264 settings we used before produced
-      // enormous files (an 18 MB clip came out around 50 MB), and every extra
-      // megabyte also costs write/encode time. "veryfast" keeps normal x264
-      // compression tools enabled, so the output is far smaller at the same
-      // visual quality and finishes quicker overall.
+      // At 720x1280 a fast preset already yields small files, so we trade a
+      // little compression efficiency for a much shorter encode.
       "-preset",
-      "veryfast",
+      "superfast",
+      "-tune",
+      "fastdecode",
       "-crf",
-      "28",
-      // hard ceiling on the bitrate: 9:16 1080p at 30fps looks clean well below
-      // this, and it keeps a busy clip from ballooning.
+      "26",
       "-maxrate",
-      "2200k",
+      "1800k",
       "-bufsize",
-      "4400k",
+      "3600k",
+      // trimming x264's most expensive analysis steps
+      "-x264-params",
+      "ref=1:bframes=0:subme=1:me=dia:trellis=0:rc-lookahead=10:aq-mode=0:8x8dct=0:mixed-refs=0:weightp=0:scenecut=0",
       "-profile:v",
-      "high",
+      "main",
       "-level",
       "4.0",
       "-r",
       "30",
       "-g",
-      "60",
+      "90",
       "-threads",
       String(ffmpegThreads),
       "-pix_fmt",
