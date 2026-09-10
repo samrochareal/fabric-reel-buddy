@@ -241,38 +241,61 @@ export function resetFFmpeg(): void {
   }
 }
 
-/** frame size actually encoded (9:16, full vertical HD) */
+/** largest frame we ever encode (9:16, full vertical HD) */
 const ENCODE_SIZE = { w: 1080, h: 1920 };
 
 /** how many clips one wasm instance renders before it is recycled */
 const RECYCLE_EVERY = 5;
 let rendersSinceBoot = 0;
 
+type SourceInfo = { duration: number; width: number; height: number };
+
+function probeSource(file: File): Promise<SourceInfo> {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    const url = URL.createObjectURL(file);
+    const finish = (info: SourceInfo) => {
+      URL.revokeObjectURL(url);
+      video.removeAttribute("src");
+      resolve(info);
+    };
+    video.preload = "metadata";
+    video.onloadedmetadata = () =>
+      finish({
+        duration: Number.isFinite(video.duration) ? video.duration : 0,
+        width: video.videoWidth || 0,
+        height: video.videoHeight || 0,
+      });
+    video.onerror = () => finish({ duration: 0, width: 0, height: 0 });
+    video.src = url;
+  });
+}
+
+/**
+ * Frame size actually encoded. Upscaling a 720p source to 1080p costs a lot of
+ * time and adds no detail, so the output never exceeds the source resolution
+ * (kept 9:16 and never below 720x1280 so short-form video stays crisp).
+ */
+function encodeSize(info: SourceInfo): { w: number; h: number } {
+  const sourceLong = Math.max(info.width, info.height);
+  if (!sourceLong) return ENCODE_SIZE;
+  const h = Math.min(ENCODE_SIZE.h, Math.max(1280, sourceLong));
+  const even = (n: number) => Math.round(n / 2) * 2;
+  return { w: even((h * 9) / 16), h: even(h) };
+}
+
 /**
  * Video budget derived from the original file. Reserving room for audio keeps
  * the finished file close to the source size, while a small headroom allowance
  * avoids crushing detailed frames during the unavoidable re-encode.
  */
-async function targetVideoBitrate(file: File): Promise<number> {
-  const duration = await new Promise<number>((resolve) => {
-    const video = document.createElement("video");
-    const url = URL.createObjectURL(file);
-    const finish = (value: number) => {
-      URL.revokeObjectURL(url);
-      video.removeAttribute("src");
-      resolve(value);
-    };
-    video.preload = "metadata";
-    video.onloadedmetadata = () => finish(Number.isFinite(video.duration) ? video.duration : 0);
-    video.onerror = () => finish(0);
-    video.src = url;
-  });
-
-  if (duration <= 0) return 4_000;
-  const sourceTotalKbps = (file.size * 8) / duration / 1_000;
+function targetVideoBitrate(file: File, info: SourceInfo): number {
+  if (info.duration <= 0) return 4_000;
+  const sourceTotalKbps = (file.size * 8) / info.duration / 1_000;
   const sourceVideoBudget = sourceTotalKbps * 1.03 - 128;
   return Math.round(Math.min(10_000, Math.max(700, sourceVideoBudget)));
 }
+
 
 
 /**
@@ -363,11 +386,12 @@ export async function buildOverlayPng(
 function buildFilterChain(
   opts: EditOptions,
   inputs: { bgIndex: number | null; overlayIndex: number | null },
+  size: { w: number; h: number } = ENCODE_SIZE,
 ): string {
-  // Encoding at 720x1280 instead of 1080x1920 means every filter and the
-  // encoder handle ~2.25x fewer pixels. On vertical short-form video the
-  // difference is not visible, and processing gets much faster.
-  const { w, h } = ENCODE_SIZE;
+  // Matching the source resolution keeps every filter and the encoder from
+  // handling more pixels than the original ever had.
+  const { w, h } = size;
+
   const zoom = Math.min(5, Math.max(0.5, opts.zoom));
   // zoom 1 = video covers the whole frame; below 1 it shrinks over the background.
   const sw = Math.max(2, Math.round((w * zoom) / 2) * 2);
@@ -455,7 +479,10 @@ async function renderOnce(
   onProgress: (ratio: number) => void,
 ): Promise<Blob> {
   const ff = await getFFmpeg();
-  const videoBitrate = await targetVideoBitrate(file);
+  const source = await probeSource(file);
+  const size = encodeSize(source);
+  const videoBitrate = targetVideoBitrate(file, source);
+
   const stamp = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const inputName = `in_${stamp}.mp4`;
   const overlayName = `ovl_${stamp}.png`;
@@ -492,7 +519,7 @@ async function renderOnce(
       "-filter_complex_threads",
       String(ffmpegThreads),
       "-filter_complex",
-      buildFilterChain(opts, { bgIndex, overlayIndex }),
+      buildFilterChain(opts, { bgIndex, overlayIndex }, size),
       "-map",
       "[outv]",
     );
@@ -505,12 +532,18 @@ async function renderOnce(
       "0:a?",
       "-c:v",
       "libx264",
-      // Superfast cuts browser processing time substantially. CRF 18 protects
-      // fine detail, while maxrate keeps the result near the original size.
+      // veryfast + a hand-tuned x264 parameter set: the expensive motion
+      // search, B-frames and lookahead are trimmed (that is where the time
+      // goes), while CRF 20 keeps the compression visually imperceptible.
       "-preset",
-      "superfast",
+      "veryfast",
+      "-tune",
+      "fastdecode",
       "-crf",
-      "18",
+      "20",
+      "-x264-params",
+      "ref=1:bframes=0:subme=1:me=dia:trellis=0:mixed-refs=0:8x8dct=0:" +
+        "weightp=0:rc-lookahead=10:scenecut=0:aq-mode=1:fast-pskip=1",
       "-maxrate",
       `${Math.round(videoBitrate * 1.08)}k`,
       "-bufsize",
@@ -528,6 +561,7 @@ async function renderOnce(
       "-pix_fmt",
       "yuv420p",
     );
+
     if (opts.speed === 1) {
       // Preserve the original audio without another encode whenever its timing
       // is unchanged. This is lossless and removes work from every render.
