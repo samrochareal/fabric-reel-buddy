@@ -415,7 +415,7 @@ function buildFilterChain(
 }
 
 
-export async function processVideo(
+async function renderOnce(
   file: File,
   opts: EditOptions,
   titleText: string,
