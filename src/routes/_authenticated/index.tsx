@@ -929,12 +929,12 @@ function EditorPage() {
         </section>
 
         {/* ---------- Column 3: batch fine-tune ---------- */}
-        <section
-          className={`scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4 ${running ? "pointer-events-none opacity-50" : ""}`}
-          aria-disabled={running}
-        >
+        <section className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4">
           {toolEnabled(account, "finetune") && (
-          <>
+          <div
+            className={`space-y-3 ${running ? "pointer-events-none opacity-50" : ""}`}
+            aria-disabled={running}
+          >
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1">
               <button
