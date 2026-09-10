@@ -249,9 +249,9 @@ const RECYCLE_EVERY = 5;
 let rendersSinceBoot = 0;
 
 /**
- * Ceiling for the output bitrate. Quality comes first: the cap sits slightly
- * ABOVE the source's average bitrate, so re-encoding never starves a clip of
- * data, while still preventing runaway file sizes.
+ * Video budget derived from the original file. Reserving room for audio keeps
+ * the finished file close to the source size, while a small headroom allowance
+ * avoids crushing detailed frames during the unavoidable re-encode.
  */
 async function targetVideoBitrate(file: File): Promise<number> {
   const duration = await new Promise<number>((resolve) => {
@@ -269,8 +269,9 @@ async function targetVideoBitrate(file: File): Promise<number> {
   });
 
   if (duration <= 0) return 4_000;
-  const sourceKbps = (file.size * 8) / duration / 1_000;
-  return Math.round(Math.min(8_000, Math.max(2_000, sourceKbps * 1.15)));
+  const sourceTotalKbps = (file.size * 8) / duration / 1_000;
+  const sourceVideoBudget = sourceTotalKbps * 1.03 - 128;
+  return Math.round(Math.min(10_000, Math.max(700, sourceVideoBudget)));
 }
 
 
@@ -504,18 +505,16 @@ async function renderOnce(
       "0:a?",
       "-c:v",
       "libx264",
-      // fast preset, quality driven by CRF instead of a tight bitrate budget
-
+      // Superfast cuts browser processing time substantially. CRF 18 protects
+      // fine detail, while maxrate keeps the result near the original size.
       "-preset",
-      "veryfast",
-      // constant quality: keeps the picture close to the source instead of
-      // forcing every clip into a fixed (and often too small) bitrate.
+      "superfast",
       "-crf",
-      "21",
+      "18",
       "-maxrate",
-      `${videoBitrate}k`,
+      `${Math.round(videoBitrate * 1.08)}k`,
       "-bufsize",
-      `${videoBitrate * 2}k`,
+      `${Math.round(videoBitrate * 1.5)}k`,
       "-profile:v",
       "main",
       "-level",
@@ -529,7 +528,13 @@ async function renderOnce(
       "-pix_fmt",
       "yuv420p",
     );
-    args.push("-c:a", "aac", "-b:a", "128k", "-ac", "2", "-ar", "44100");
+    if (opts.speed === 1) {
+      // Preserve the original audio without another encode whenever its timing
+      // is unchanged. This is lossless and removes work from every render.
+      args.push("-c:a", "copy");
+    } else {
+      args.push("-c:a", "aac", "-b:a", "128k", "-ac", "2", "-ar", "44100");
+    }
     if (opts.stripMetadata) {
       args.push(
         "-map_metadata",
