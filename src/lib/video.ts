@@ -519,7 +519,7 @@ async function renderOnce(
       "-filter_complex_threads",
       String(ffmpegThreads),
       "-filter_complex",
-      buildFilterChain(opts, { bgIndex, overlayIndex }),
+      buildFilterChain(opts, { bgIndex, overlayIndex }, size),
       "-map",
       "[outv]",
     );
