@@ -535,6 +535,38 @@ async function renderOnce(
   }
 }
 
+/**
+ * Renders one clip, recycling the wasm engine as needed. The wasm heap never
+ * shrinks, so long batches used to die partway through ("failed" from roughly
+ * the tenth clip on). Now the engine is rebooted every few clips, and a failed
+ * clip gets one clean retry on a fresh engine before it is reported as failed.
+ */
+export async function processVideo(
+  file: File,
+  opts: EditOptions,
+  titleText: string,
+  onProgress: (ratio: number) => void,
+): Promise<Blob> {
+  if (rendersSinceBoot >= RECYCLE_EVERY) resetFFmpeg();
+  try {
+    const blob = await renderOnce(file, opts, titleText, onProgress);
+    rendersSinceBoot += 1;
+    return blob;
+  } catch (err) {
+    // out-of-memory and aborted-worker failures leave the engine unusable
+    resetFFmpeg();
+    onProgress(0);
+    try {
+      const blob = await renderOnce(file, opts, titleText, onProgress);
+      rendersSinceBoot += 1;
+      return blob;
+    } catch {
+      resetFFmpeg();
+      throw err instanceof Error ? err : new Error(String(err));
+    }
+  }
+}
+
 export function outputName(originalName: string, aspect: AspectId): string {
   const base = originalName.replace(/\.[^.]+$/, "") || "video";
   return `${base}_${aspect.replace(":", "x")}.mp4`;
