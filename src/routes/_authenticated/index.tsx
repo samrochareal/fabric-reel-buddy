@@ -162,14 +162,17 @@ function ProjectsPage() {
               {t("Each project keeps its own edit settings, overlays and titles.")}
             </p>
           </div>
-          <Button
-            onClick={() => {
-              setNewName("");
-              setCreating(true);
-            }}
-          >
-            <Plus className="mr-1.5 size-4" /> {t("New project")}
-          </Button>
+          {toolEnabled(account, "projects") && (
+            <Button
+              onClick={() => {
+                setNewName("");
+                setCreating(true);
+              }}
+            >
+              <Plus className="mr-1.5 size-4" /> {t("New project")}
+            </Button>
+          )}
+
         </div>
 
         {loading ? (
