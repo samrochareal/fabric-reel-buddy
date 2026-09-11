@@ -13,7 +13,6 @@ import {
   GripVertical,
   Images,
   Layers,
-  LogIn,
   Plus,
   Rocket,
   ShieldCheck,
@@ -755,7 +754,13 @@ export function LandingView({
   return (
     <div className="min-h-screen bg-background text-foreground" style={pageStyle}>
       {/* header */}
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
+      <header className={cn("sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur", isHidden("header") && !editing && "hidden", isHidden("header") && editing && "opacity-35")}>
+        {edit && (
+          <Button type="button" size="sm" variant="outline" onClick={() => toggleHidden("header")} className="absolute left-2 top-1 z-50">
+            {isHidden("header") ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+            {isHidden("header") ? "Mostrar cabeçalho" : "Ocultar cabeçalho"}
+          </Button>
+        )}
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
           <div className="flex min-w-0 items-center gap-2">
             {brandImage && !isHidden("header.brand") ? (
@@ -792,7 +797,6 @@ export function LandingView({
           {((shown(content.nav.login) && !isHidden("nav.login")) || editing) && (
             <LandingCta editing={editing}>
               <Button size="sm" className="font-bold">
-                <LogIn className="size-4" />
                 <EditableText value={content.nav.login} onChange={on("nav", "login")} placeholder="Entrar" />
                 {editing && <span onClick={() => toggleHidden("nav.login")} title={isHidden("nav.login") ? "Mostrar botão" : "Ocultar botão"}>{isHidden("nav.login") ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</span>}
               </Button>
@@ -807,7 +811,13 @@ export function LandingView({
         </SectionShell>
       ))}
 
-      <footer className="border-t border-border/60 py-10">
+      <footer className={cn("relative border-t border-border/60 py-10", isHidden("footer") && !editing && "hidden", isHidden("footer") && editing && "opacity-35")}>
+        {edit && (
+          <Button type="button" size="sm" variant="outline" onClick={() => toggleHidden("footer")} className="absolute left-2 top-2">
+            {isHidden("footer") ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+            {isHidden("footer") ? "Mostrar rodapé" : "Ocultar rodapé"}
+          </Button>
+        )}
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:flex-row">
           <div className="flex min-w-0 items-center gap-2">
             {brandImage ? (
