@@ -19,8 +19,8 @@ import { listOverlays, type OverlayPreset } from "@/lib/overlays";
 import {
   Scissors,
   UploadCloud,
-  Loader2,
   Download,
+  Trash2,
   Trash2,
   Zap,
   Archive,
