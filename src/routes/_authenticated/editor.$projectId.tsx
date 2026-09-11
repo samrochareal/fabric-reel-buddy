@@ -21,7 +21,6 @@ import {
   UploadCloud,
   Download,
   Trash2,
-  Trash2,
   Zap,
   Archive,
   X,
