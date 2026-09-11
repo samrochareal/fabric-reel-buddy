@@ -401,6 +401,10 @@ function AdminPage() {
   const [defDays, setDefDays] = useState("");
   const [defTools, setDefTools] = useState<Record<string, boolean>>({});
   const [applyingDefaults, setApplyingDefaults] = useState(false);
+  const [specOpen, setSpecOpen] = useState(false);
+  const [specIds, setSpecIds] = useState<string[]>([]);
+  const [specSearch, setSpecSearch] = useState("");
+  const [applyingSpec, setApplyingSpec] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
