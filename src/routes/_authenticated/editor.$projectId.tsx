@@ -29,6 +29,9 @@ import {
   Play,
   Pause,
   Plus,
+  Pencil,
+  ArrowLeft,
+
   Sparkles,
   Volume2,
   VolumeX,
@@ -113,15 +116,28 @@ const MAX_FILE_MB = 100;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 const MAX_DURATION_S = 180;
 
-type EditTab = "bordas" | "overlay" | "title" | "extras";
+type EditTab = "adjust" | "bordas" | "overlay" | "title" | "extras";
 const TABS: { id: EditTab; label: string; tool: ToolKey }[] = [
+  { id: "adjust", label: "Adjust", tool: "finetune" },
   { id: "bordas", label: "Borders", tool: "borders" },
   { id: "overlay", label: "Overlay", tool: "overlay" },
   { id: "title", label: "Title", tool: "text" },
   { id: "extras", label: "Extras", tool: "extras" },
 ];
 
+/** merges a partial change into a full set of edit options, nested blocks included */
+function mergeOptions(base: EditOptions, next: Partial<EditOptions>): EditOptions {
+  return {
+    ...base,
+    ...next,
+    title: { ...base.title, ...(next.title ?? {}) },
+    border: { ...base.border, ...(next.border ?? {}) },
+    bgImage: { ...base.bgImage, ...(next.bgImage ?? {}) },
+  };
+}
+
 type FineTune = { zoom: number; posX: number; posY: number };
+
 
 function statusLabel(status: ClipStatus, progress: number, t: (s: string) => string) {
   if (status === "done") return t("done");
