@@ -824,7 +824,7 @@ function EditorPage() {
         </p>
       </div>
 
-      <main className="scrollbar-hidden grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain px-4 pb-24 pt-4 xl:overflow-hidden xl:pb-4 xl:grid-cols-[260px_minmax(0,1fr)_340px]">
+      <main className="scrollbar-hidden grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain px-4 pb-28 pt-4 xl:overflow-hidden xl:pb-4 xl:grid-cols-[260px_minmax(0,1fr)_340px]">
         {/* ---------- Column 1: upload + queue ---------- */}
         <section className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4">
           <div
@@ -1515,7 +1515,7 @@ function EditorPage() {
             <RotateCcw className="mr-1.5 size-4" /> {t("Reset all edits")}
           </Button>
 
-          <div className="sticky bottom-0 space-y-2 bg-background pb-1 pt-2">
+          <div className="fixed bottom-0 left-0 right-0 z-50 space-y-2 border-t border-border bg-background p-4 xl:sticky xl:bottom-0 xl:z-auto xl:border-t-0 xl:bg-transparent xl:p-0">
             <Button
               className="h-12 w-full text-base disabled:opacity-100"
               onClick={() => void handleProcess()}
