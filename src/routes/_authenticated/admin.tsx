@@ -786,19 +786,66 @@ function AdminPage() {
 
           <div className="mt-5 space-y-3">
             <div>
-              <label className="text-xs font-semibold text-muted-foreground">{t("Who receives it")}</label>
-              <select
-                value={notifTarget}
-                onChange={(e) => setNotifTarget(e.target.value)}
-                className="mt-1 h-10 w-full rounded-md border border-border bg-background px-2 text-sm"
-              >
-                <option value="all">{t("Everyone")}</option>
-                {(users.data ?? []).map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.email ?? u.full_name ?? u.id}
-                  </option>
-                ))}
-              </select>
+              <label className="text-xs font-semibold text-muted-foreground">
+                {t("Who receives it")}
+              </label>
+              <label className="mt-1.5 flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={notifAll}
+                  onChange={(e) => setNotifAll(e.target.checked)}
+                />
+                {t("Everyone")}
+              </label>
+
+              {!notifAll && (
+                <>
+                  <Input
+                    className="mt-2 h-9"
+                    placeholder={t("Search by name or e-mail")}
+                    value={notifSearch}
+                    onChange={(e) => setNotifSearch(e.target.value)}
+                  />
+                  <div className="mt-2 max-h-56 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
+                    {(users.data ?? [])
+                      .filter((u) => {
+                        const q = notifSearch.trim().toLowerCase();
+                        if (!q) return true;
+                        return (
+                          (u.email ?? "").toLowerCase().includes(q) ||
+                          (u.full_name ?? "").toLowerCase().includes(q)
+                        );
+                      })
+                      .map((u) => (
+                        <label
+                          key={u.id}
+                          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent"
+                        >
+                          <input
+                            type="checkbox"
+                            className="size-4 accent-primary"
+                            checked={notifIds.includes(u.id)}
+                            onChange={(e) =>
+                              setNotifIds((prev) =>
+                                e.target.checked
+                                  ? [...prev, u.id]
+                                  : prev.filter((id) => id !== u.id),
+                              )
+                            }
+                          />
+                          <span className="min-w-0 flex-1 truncate">
+                            <span className="font-semibold">{u.full_name || t("no name")}</span>{" "}
+                            <span className="text-muted-foreground">{u.email}</span>
+                          </span>
+                        </label>
+                      ))}
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {t("{n} account(s) selected", { n: notifIds.length })}
+                  </p>
+                </>
+              )}
             </div>
             <div>
               <label className="text-xs font-semibold text-muted-foreground">{t("Title")}</label>
