@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBranding } from "@/lib/branding";
+import { withSystemName } from "@/lib/landing-content";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -132,9 +133,17 @@ function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const branding = useBranding();
   const brandImage = branding.logo_url || branding.icon_url;
+  const content = branding.landing_content;
+  const featureIcons = [Layers, Crop, Frame, Images, TypeIcon, Wand2, Zap, Gauge, ShieldCheck];
+  const features = content.features.items.map((item, i) => ({ ...item, icon: featureIcons[i % featureIcons.length] }));
+  const pageStyle = {
+    "--primary": content.colors.primary,
+    "--background": content.colors.background,
+    "--accent": content.colors.accent,
+  } as React.CSSProperties;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground" style={pageStyle}>
       {/* header */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
@@ -156,15 +165,15 @@ function LandingPage() {
           </div>
 
           <nav className="hidden items-center gap-7 text-sm font-semibold text-muted-foreground md:flex">
-            <a href="#recursos" className="transition-colors hover:text-foreground">Recursos</a>
-            <a href="#como-funciona" className="transition-colors hover:text-foreground">Como funciona</a>
-            <a href="#para-quem" className="transition-colors hover:text-foreground">Para quem é</a>
-            <a href="#faq" className="transition-colors hover:text-foreground">FAQ</a>
+            <a href="#recursos" className="transition-colors hover:text-foreground"> {content.nav.features}</a>
+            <a href="#como-funciona" className="transition-colors hover:text-foreground"> {content.nav.how}</a>
+            <a href="#para-quem" className="transition-colors hover:text-foreground"> {content.nav.audience}</a>
+            <a href="#faq" className="transition-colors hover:text-foreground"> {content.nav.faq}</a>
           </nav>
 
           <Link to="/login">
             <Button size="sm" className="font-bold">
-              <LogIn className="size-4" /> Entrar
+              <LogIn className="size-4" /> {content.nav.login}
             </Button>
           </Link>
         </div>
@@ -180,39 +189,38 @@ function LandingPage() {
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 md:py-24 lg:grid-cols-2">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-              Edite mais. Produza mais.
+              {content.hero.eyebrow}
             </p>
             <h1 className="mt-4 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-              Transforme horas de edição em{" "}
-              <span className="text-primary">resultados reais.</span>
+              {content.hero.title}{" "}
+              <span className="text-primary">{content.hero.highlight}</span>
             </h1>
             <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">
-              O {branding.system_name} edita dezenas de vídeos ao mesmo tempo: enquadramento, bordas,
-              overlays e títulos aplicados em lote e prontos para Reels, TikTok e Shorts.
+              <span className="md:hidden">{withSystemName(content.mobile.heroText, branding.system_name)}</span>
+              <span className="hidden md:inline">{withSystemName(content.hero.text, branding.system_name)}</span>
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link to="/login">
                 <Button size="lg" className="font-bold">
-                  Começar agora <ArrowRight className="size-4" />
+                  {content.hero.primaryCta} <ArrowRight className="size-4" />
                 </Button>
               </Link>
               <a href="#como-funciona">
                 <Button size="lg" variant="outline" className="font-bold">
-                  Ver como funciona
+                  {content.hero.secondaryCta}
                 </Button>
               </a>
             </div>
 
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-muted-foreground">
-              <span className="flex items-center gap-2"><Rocket className="size-4 text-primary" /> Até 100 vídeos por lote</span>
-              <span className="flex items-center gap-2"><Zap className="size-4 text-primary" /> Modo turbo</span>
-              <span className="flex items-center gap-2"><Sparkles className="size-4 text-primary" /> Sem instalar nada</span>
+              {content.hero.badges.map((badge, i) => { const Icon = [Rocket, Zap, Sparkles][i % 3]; return <span key={badge} className="flex items-center gap-2"><Icon className="size-4 text-primary" /> {badge}</span>; })}
             </div>
           </div>
 
-          {/* editor mock */}
+          {/* editor mock or master-provided visual */}
           <div className="relative rounded-2xl border border-border bg-card p-3 shadow-2xl">
+            {content.hero.image ? <img src={content.hero.image} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" /> : <>
             <div className="flex items-center gap-2 px-2 pb-3">
               <span className="size-2.5 rounded-full bg-primary/70" />
               <span className="size-2.5 rounded-full bg-muted-foreground/40" />
@@ -268,6 +276,7 @@ function LandingPage() {
                 </div>
               </div>
             </div>
+            </>}
           </div>
         </div>
       </section>
@@ -276,11 +285,11 @@ function LandingPage() {
       <section id="recursos" className="border-t border-border/60 bg-card/30 py-16 md:py-24">
         <div className="mx-auto max-w-6xl px-4">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-            Tudo em um só lugar
+            {content.features.eyebrow}
           </p>
           <div className="mt-3 gap-8 md:flex md:items-end md:justify-between">
             <h2 className="max-w-xl font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              Seu fluxo de criação <span className="text-primary">muito mais simples.</span>
+              <span className="md:hidden">{content.mobile.featuresTitle}</span><span className="hidden md:inline">{content.features.title} <span className="text-primary">{content.features.highlight}</span></span>
             </h2>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground md:mt-0">
               Cada recurso existe para tirar trabalho repetitivo do seu dia e devolver tempo
@@ -289,7 +298,7 @@ function LandingPage() {
           </div>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f) => (
+            {features.map((f) => (
               <div
                 key={f.title}
                 className="group rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/60"
@@ -310,10 +319,10 @@ function LandingPage() {
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 lg:grid-cols-2">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-              Do primeiro clipe à publicação
+              {content.benefits.eyebrow}
             </p>
             <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              Tudo o que você precisa para criar <span className="text-primary">sem limites.</span>
+              {content.benefits.title} <span className="text-primary">{content.benefits.highlight}</span>
             </h2>
             <ul className="mt-7 space-y-3">
               {[
@@ -341,9 +350,9 @@ function LandingPage() {
               { k: "0", v: "programas para instalar" },
               { k: "1 clique", v: "para aplicar em todos" },
             ].map((s) => (
-              <div key={s.k} className="rounded-xl border border-border bg-card p-6">
-                <p className="font-display text-3xl font-bold text-primary">{s.k}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{s.v}</p>
+              <div key={s.title} className="rounded-xl border border-border bg-card p-6">
+                <p className="font-display text-3xl font-bold text-primary">{s.title}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{s.text}</p>
               </div>
             ))}
           </div>
@@ -351,17 +360,17 @@ function LandingPage() {
       </section>
 
       {/* how it works */}
-      <section id="como-funciona" className="border-y border-border/60 bg-card/30 py-16 md:py-24">
+      <section id="como-funciona" className="hidden border-y md:block border-border/60 bg-card/30 py-16 md:py-24">
         <div className="mx-auto max-w-6xl px-4">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Como funciona</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{content.steps.eyebrow}</p>
           <h2 className="mt-3 max-w-xl font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            Em poucos passos, <span className="text-primary">você vai mais longe.</span>
+            {content.steps.title} <span className="text-primary">{content.steps.highlight}</span>
           </h2>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map((s) => (
-              <div key={s.n} className="rounded-xl border border-border bg-card p-5">
-                <p className="font-display text-2xl font-bold text-primary">{s.n}</p>
+            {content.steps.items.map((s, i) => (
+              <div key={`${s.title}-${i}`} className="rounded-xl border border-border bg-card p-5">
+                <p className="font-display text-2xl font-bold text-primary">{String(i + 1).padStart(2, "0")}</p>
                 <h3 className="mt-3 text-base font-bold">{s.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.text}</p>
               </div>
@@ -371,17 +380,17 @@ function LandingPage() {
       </section>
 
       {/* for who */}
-      <section id="para-quem" className="py-16 md:py-24">
+      <section id="para-quem" className="hidden py-16 md:block md:py-24">
         <div className="mx-auto max-w-6xl px-4">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
             Para criadores, marcas e equipes
           </p>
           <h2 className="mt-3 max-w-xl font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            Feito para quem <span className="text-primary">vive de conteúdo.</span>
+            {content.audience.title} <span className="text-primary">{content.audience.highlight}</span>
           </h2>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {FOR_WHO.map((f) => (
+            {content.audience.items.map((f) => (
               <div key={f.title} className="rounded-xl border border-border bg-card p-5">
                 <h3 className="text-base font-bold">{f.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.text}</p>
@@ -392,19 +401,19 @@ function LandingPage() {
       </section>
 
       {/* faq */}
-      <section id="faq" className="border-t border-border/60 bg-card/30 py-16 md:py-24">
+      <section id="faq" className="hidden border-t md:block border-border/60 bg-card/30 py-16 md:py-24">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[1fr_1.4fr]">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-              Dúvidas frequentes
+              {content.faq.eyebrow}
             </p>
             <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              Perguntas <span className="text-primary">mais comuns.</span>
+              {content.faq.title} <span className="text-primary">{content.faq.highlight}</span>
             </h2>
           </div>
 
           <div className="divide-y divide-border rounded-xl border border-border bg-card">
-            {FAQ.map((item, i) => (
+            {content.faq.items.map((item, i) => (
               <div key={item.q}>
                 <button
                   type="button"
@@ -419,7 +428,7 @@ function LandingPage() {
                 </button>
                 {openFaq === i && (
                   <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">
-                    {item.a.replace("Speed Flow", branding.system_name)}
+                    {withSystemName(item.a, branding.system_name)}
                   </p>
                 )}
               </div>
@@ -431,7 +440,7 @@ function LandingPage() {
       {/* final cta */}
       <section className="py-16 md:py-24">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card px-6 py-14 text-center">
+          <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card px-6 py-14 text-center" style={content.cta.image ? { backgroundImage: `linear-gradient(rgb(0 0 0 / .68), rgb(0 0 0 / .68)), url(${content.cta.image})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
             <div
               className="pointer-events-none absolute inset-x-0 -bottom-24 h-64 opacity-30 blur-3xl"
               style={{ background: "radial-gradient(circle, var(--primary), transparent 65%)" }}
@@ -449,7 +458,7 @@ function LandingPage() {
             <div className="relative mt-8 flex flex-wrap justify-center gap-3">
               <Link to="/login">
                 <Button size="lg" className="font-bold">
-                  Começar agora <ArrowRight className="size-4" />
+                  {content.hero.primaryCta} <ArrowRight className="size-4" />
                 </Button>
               </Link>
               <a href="#recursos">
@@ -480,7 +489,7 @@ function LandingPage() {
               {branding.system_name}
             </span>
           </div>
-          <p className="text-xs">Mais conteúdo. Mais resultados.</p>
+          <p className="text-xs">{content.footer.text}</p>
           <Link to="/login" className="text-xs font-bold text-primary hover:underline">
             Entrar na plataforma
           </Link>
