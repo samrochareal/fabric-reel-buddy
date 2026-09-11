@@ -692,11 +692,21 @@ function EditorPage() {
   const pendingInBatch = Math.max(0, (batch?.total ?? 0) - finishedInBatch);
   const avgPerVideo =
     finishedInBatch > 0 ? (batch!.lastTickAt - batch!.startedAt) / finishedInBatch : 25_000;
+  // live estimate: uses the current video's real progress, so the countdown
+  // stretches when a video takes longer than the average instead of hitting 0
+  const processingClip = clips.find((c) => c.status === "processing");
+  const clipProgress = processingClip ? Math.min(0.99, Math.max(0, processingClip.progress)) : 0;
+  const elapsedCurrent = processingClip ? now - (batch?.lastTickAt ?? now) : 0;
+  const projectedTotal =
+    clipProgress > 0.02 ? elapsedCurrent / clipProgress : avgPerVideo;
+  const currentRemaining = processingClip
+    ? (1 - clipProgress) * Math.max(avgPerVideo, projectedTotal)
+    : 0;
+  const queuedCount = clips.filter((c) => c.status === "queued").length;
   const etaSeconds = batch
-    ? Math.max(
-        0,
-        Math.round((pendingInBatch * avgPerVideo - (now - batch.lastTickAt)) / 1000),
-      )
+    ? pendingInBatch > 0
+      ? Math.max(1, Math.round((currentRemaining + queuedCount * avgPerVideo) / 1000))
+      : 0
     : 0;
 
   const previewClip = selected;
