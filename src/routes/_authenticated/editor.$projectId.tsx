@@ -172,6 +172,22 @@ function EditorPage() {
 
   const [engineReady, setEngineReady] = useState(false);
 
+  /** live numbers of the running batch, used by the time estimate panel */
+  const [batch, setBatch] = useState<{
+    total: number;
+    done: number;
+    failed: number;
+    startedAt: number;
+  } | null>(null);
+  const [now, setNow] = useState(Date.now());
+  const usedNames = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [running]);
+
   // load this project's own edit settings
   const settingsLoaded = useRef(false);
   useEffect(() => {
@@ -400,6 +416,25 @@ function EditorPage() {
     }
   };
 
+
+  /** project name turned into a safe file prefix */
+  const projectSlug = () =>
+    (projectName || "video")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "video";
+
+  /** project name plus 8 random digits that never repeat in this session */
+  function makeOutputName() {
+    let suffix = "";
+    do {
+      suffix = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join("");
+    } while (usedNames.current.has(suffix));
+    usedNames.current.add(suffix);
+    return `${projectSlug()}_${suffix}.mp4`;
+  }
 
   async function handleProcess() {
     if (queuedClips.length === 0) {
