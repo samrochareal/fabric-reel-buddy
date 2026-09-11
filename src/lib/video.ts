@@ -69,6 +69,8 @@ export type EditOptions = {
   bgImage: BackgroundImage;
   /** drop every tag/metadata carried by the original file */
   stripMetadata: boolean;
+  /** fastest possible render: lower resolution/bitrate, slightly softer image */
+  turbo: boolean;
 };
 
 export const defaultEditOptions = (): EditOptions => ({
@@ -94,6 +96,7 @@ export const defaultEditOptions = (): EditOptions => ({
   overlayColor: "#000000",
   bgImage: { enabled: false, src: null, opacity: 1, layer: "back" },
   stripMetadata: false,
+  turbo: false,
 });
 
 
@@ -276,10 +279,12 @@ function probeSource(file: File): Promise<SourceInfo> {
  * time and adds no detail, so the output never exceeds the source resolution
  * (kept 9:16 and never below 720x1280 so short-form video stays crisp).
  */
-function encodeSize(info: SourceInfo): { w: number; h: number } {
+function encodeSize(info: SourceInfo, turbo = false): { w: number; h: number } {
   const sourceLong = Math.max(info.width, info.height);
-  if (!sourceLong) return ENCODE_SIZE;
-  const h = Math.min(ENCODE_SIZE.h, Math.max(1280, sourceLong));
+  // Turbo renders at 720x1280, which is far less pixel work per frame.
+  const cap = turbo ? 1280 : ENCODE_SIZE.h;
+  if (!sourceLong) return turbo ? { w: 720, h: 1280 } : ENCODE_SIZE;
+  const h = Math.min(cap, Math.max(turbo ? 854 : 1280, sourceLong));
   const even = (n: number) => Math.round(n / 2) * 2;
   return { w: even((h * 9) / 16), h: even(h) };
 }
@@ -289,11 +294,13 @@ function encodeSize(info: SourceInfo): { w: number; h: number } {
  * the finished file close to the source size, while a small headroom allowance
  * avoids crushing detailed frames during the unavoidable re-encode.
  */
-function targetVideoBitrate(file: File, info: SourceInfo): number {
-  if (info.duration <= 0) return 4_000;
+function targetVideoBitrate(file: File, info: SourceInfo, turbo = false): number {
+  if (info.duration <= 0) return turbo ? 1_600 : 4_000;
   const sourceTotalKbps = (file.size * 8) / info.duration / 1_000;
-  const sourceVideoBudget = sourceTotalKbps * 1.03 - 128;
-  return Math.round(Math.min(10_000, Math.max(700, sourceVideoBudget)));
+  const sourceVideoBudget = sourceTotalKbps * (turbo ? 0.5 : 1.03) - 128;
+  return turbo
+    ? Math.round(Math.min(2_500, Math.max(500, sourceVideoBudget)))
+    : Math.round(Math.min(10_000, Math.max(700, sourceVideoBudget)));
 }
 
 
@@ -480,8 +487,9 @@ async function renderOnce(
 ): Promise<Blob> {
   const ff = await getFFmpeg();
   const source = await probeSource(file);
-  const size = encodeSize(source);
-  const videoBitrate = targetVideoBitrate(file, source);
+  const turbo = opts.turbo === true;
+  const size = encodeSize(source, turbo);
+  const videoBitrate = targetVideoBitrate(file, source, turbo);
 
   const stamp = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const inputName = `in_${stamp}.mp4`;
@@ -536,11 +544,11 @@ async function renderOnce(
       // search, B-frames and lookahead are trimmed (that is where the time
       // goes), while CRF 20 keeps the compression visually imperceptible.
       "-preset",
-      "veryfast",
+      turbo ? "ultrafast" : "veryfast",
       "-tune",
-      "fastdecode",
+      turbo ? "zerolatency" : "fastdecode",
       "-crf",
-      "20",
+      turbo ? "30" : "20",
       "-x264-params",
       "ref=1:bframes=0:subme=1:me=dia:trellis=0:mixed-refs=0:8x8dct=0:" +
         "weightp=0:rc-lookahead=10:scenecut=0:aq-mode=1:fast-pskip=1",
@@ -553,9 +561,9 @@ async function renderOnce(
       "-level",
       "4.0",
       "-r",
-      "30",
+      turbo ? "24" : "30",
       "-g",
-      "90",
+      turbo ? "120" : "90",
       "-threads",
       String(ffmpegThreads),
       "-pix_fmt",
@@ -567,7 +575,7 @@ async function renderOnce(
       // is unchanged. This is lossless and removes work from every render.
       args.push("-c:a", "copy");
     } else {
-      args.push("-c:a", "aac", "-b:a", "128k", "-ac", "2", "-ar", "44100");
+      args.push("-c:a", "aac", "-b:a", turbo ? "96k" : "128k", "-ac", "2", "-ar", "44100");
     }
     if (opts.stripMetadata) {
       args.push(
