@@ -455,6 +455,8 @@ function EditorPage() {
     setRunning(true);
     setPaused(false);
     cancelledRef.current = false;
+    setBatch({ total: queuedClips.length, done: 0, failed: 0, startedAt: Date.now() });
+    setNow(Date.now());
 
     const firstQueued = queuedClips[0];
     if (firstQueued) {
@@ -510,13 +512,14 @@ function EditorPage() {
                     progress: 1,
                     resultBlob: blob,
                     resultUrl: URL.createObjectURL(blob),
-                    resultName: videoLib.outputName(clip.file.name, settings.aspect),
+                    resultName: makeOutputName(),
                   }
                 : c,
             ),
           );
           rendered += 1;
           renderedBytes += blob.size;
+          setBatch((b) => (b ? { ...b, done: b.done + 1 } : b));
 
         } catch (err) {
 
@@ -531,7 +534,7 @@ function EditorPage() {
                 : c,
             ),
           );
-        }
+          setBatch((b) => (b ? { ...b, failed: b.failed + 1 } : b));
       }
 
       if (rendered > 0) {
