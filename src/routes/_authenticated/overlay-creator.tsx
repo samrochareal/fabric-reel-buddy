@@ -56,6 +56,8 @@ const H = OVERLAY_H;
 
 function OverlayCreator() {
   const t = useT();
+  const { account } = useMyAccount();
+
   const [cfg, setCfg] = useState<OverlayConfig>(defaultOverlayConfig);
   const [presets, setPresets] = useState<OverlayPreset[]>([]);
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
