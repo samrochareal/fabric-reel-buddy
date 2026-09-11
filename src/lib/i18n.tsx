@@ -295,6 +295,12 @@ const PT: Record<string, string> = {
   "never": "nunca",
   "Fine tuning & framing": "Ajuste fino e enquadramento",
   "Borders": "Bordas",
+  "Speed control": "Controle de velocidade",
+  "Background images": "Imagens de fundo",
+  "Overlay creator": "Criador de overlay",
+  "Create new projects": "Criar novos projetos",
+  "Also block the Overlay creator page": "Bloquear também a página do criador de overlay",
+
   "no name": "sem nome",
 
   // sign-in
