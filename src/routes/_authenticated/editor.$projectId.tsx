@@ -177,6 +177,7 @@ function EditorPage() {
     done: number;
     failed: number;
     startedAt: number;
+    lastTickAt: number;
   } | null>(null);
   const [now, setNow] = useState(Date.now());
   const usedNames = useRef<Set<string>>(new Set());
@@ -465,7 +466,13 @@ function EditorPage() {
     setRunning(true);
     setPaused(false);
     cancelledRef.current = false;
-    setBatch({ total: queuedClips.length, done: 0, failed: 0, startedAt: Date.now() });
+    setBatch({
+      total: queuedClips.length,
+      done: 0,
+      failed: 0,
+      startedAt: Date.now(),
+      lastTickAt: Date.now(),
+    });
     setNow(Date.now());
 
     const firstQueued = queuedClips[0];
@@ -529,7 +536,7 @@ function EditorPage() {
           );
           rendered += 1;
           renderedBytes += blob.size;
-          setBatch((b) => (b ? { ...b, done: b.done + 1 } : b));
+          setBatch((b) => (b ? { ...b, done: b.done + 1, lastTickAt: Date.now() } : b));
 
         } catch (err) {
 
@@ -544,7 +551,7 @@ function EditorPage() {
                 : c,
             ),
           );
-          setBatch((b) => (b ? { ...b, failed: b.failed + 1 } : b));
+          setBatch((b) => (b ? { ...b, failed: b.failed + 1, lastTickAt: Date.now() } : b));
         }
       }
 
@@ -683,11 +690,12 @@ function EditorPage() {
   /** seconds left in the running batch, from the average time already measured */
   const finishedInBatch = (batch?.done ?? 0) + (batch?.failed ?? 0);
   const pendingInBatch = Math.max(0, (batch?.total ?? 0) - finishedInBatch);
+  const avgPerVideo =
+    finishedInBatch > 0 ? (batch!.lastTickAt - batch!.startedAt) / finishedInBatch : 25_000;
   const etaSeconds = batch
-    ? Math.round(
-        ((finishedInBatch > 0 ? (now - batch.startedAt) / finishedInBatch : 25_000) *
-          pendingInBatch) /
-          1000,
+    ? Math.max(
+        0,
+        Math.round((pendingInBatch * avgPerVideo - (now - batch.lastTickAt)) / 1000),
       )
     : 0;
 
