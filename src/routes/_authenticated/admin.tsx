@@ -34,6 +34,7 @@ import {
   fetchPlatformUsers,
   resetPlatformUserPassword,
   savePlatformUser,
+  savePlatformDefaults,
   useIsAdmin,
   type PlatformUser,
 } from "@/lib/admin";
@@ -385,11 +386,21 @@ function AdminPage() {
   const [notifBody, setNotifBody] = useState("");
   const [notifLinkUrl, setNotifLinkUrl] = useState("");
   const [notifLinkLabel, setNotifLinkLabel] = useState("");
-  const [notifTarget, setNotifTarget] = useState("all");
+  const [notifAll, setNotifAll] = useState(true);
+  const [notifIds, setNotifIds] = useState<string[]>([]);
+  const [notifSearch, setNotifSearch] = useState("");
   const [sending, setSending] = useState(false);
   const [referralOn, setReferralOn] = useState(false);
   const [referralCredits, setReferralCredits] = useState(5);
   const [savingReferral, setSavingReferral] = useState(false);
+  const [defCredits, setDefCredits] = useState(5);
+  const [defRefillAmount, setDefRefillAmount] = useState(5);
+  const [defRefillHours, setDefRefillHours] = useState(12);
+  const [defPremium, setDefPremium] = useState(false);
+  const [defBlocked, setDefBlocked] = useState(false);
+  const [defDays, setDefDays] = useState("");
+  const [defTools, setDefTools] = useState<Record<string, boolean>>({});
+  const [applyingDefaults, setApplyingDefaults] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -444,25 +455,67 @@ function AdminPage() {
     enabled: isAdmin,
   });
 
+  /** applies one set of settings to every ordinary account in one go */
+  const onApplyDefaults = async () => {
+    if (!window.confirm(t("Apply these settings to every account?"))) return;
+    setApplyingDefaults(true);
+    try {
+      const parsed = Number(defDays);
+      const accessDays =
+        defDays.trim() === ""
+          ? undefined
+          : Number.isFinite(parsed) && parsed > 0
+            ? parsed
+            : null;
+      const result = await savePlatformDefaults({
+        credits: defCredits,
+        creditRefillAmount: defRefillAmount,
+        creditRefillHours: defRefillHours,
+        premium: defPremium,
+        blocked: defBlocked,
+        allowedTools: defTools,
+        ...(accessDays === undefined ? {} : { accessDays }),
+      });
+      await users.refetch();
+      toast.success(t("{n} account(s) updated.", { n: result.updated }));
+    } catch {
+      toast.error(t("We couldn't update these accounts."));
+    } finally {
+      setApplyingDefaults(false);
+    }
+  };
+
   const onSendNotification = async () => {
     if (!notifTitle.trim()) {
       toast.error(t("Give the notification a title."));
       return;
     }
+    if (!notifAll && notifIds.length === 0) {
+      toast.error(t("Pick who receives it."));
+      return;
+    }
     setSending(true);
     try {
-      await adminSendNotification({
+      const payload = {
         title: notifTitle,
         body: notifBody,
         linkUrl: notifLinkUrl,
         linkLabel: notifLinkLabel,
-        targetUserId: notifTarget === "all" ? null : notifTarget,
-      });
+      };
+      if (notifAll) {
+        await adminSendNotification({ ...payload, targetUserId: null });
+      } else {
+        for (const id of notifIds) {
+          await adminSendNotification({ ...payload, targetUserId: id });
+        }
+      }
       setNotifTitle("");
       setNotifBody("");
       setNotifLinkUrl("");
       setNotifLinkLabel("");
-      setNotifTarget("all");
+      setNotifIds([]);
+      setNotifAll(true);
+      setNotifSearch("");
       void notifications.refetch();
       toast.success(t("Notification sent."));
     } catch {
