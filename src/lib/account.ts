@@ -16,8 +16,22 @@ export type Account = {
   allowed_tools: Record<string, boolean>;
 };
 
-/** Editing areas the master user can switch off per account. */
-export const TOOL_KEYS = ["text", "overlay", "extras", "finetune", "borders"] as const;
+/** Editing areas and features the master user can switch off per account. */
+export const TOOL_KEYS = [
+  "text",
+  "overlay",
+  "extras",
+  "finetune",
+  "borders",
+  "turbo",
+  "antidup",
+  "speed",
+  "mirror",
+  "metadata",
+  "backgrounds",
+  "overlay_creator",
+  "projects",
+] as const;
 export type ToolKey = (typeof TOOL_KEYS)[number];
 
 export const TOOL_LABELS: Record<ToolKey, string> = {
@@ -26,7 +40,16 @@ export const TOOL_LABELS: Record<ToolKey, string> = {
   extras: "Extras",
   finetune: "Fine tuning & framing",
   borders: "Borders",
+  turbo: "Turbo processing",
+  antidup: "Anti-duplicate mode",
+  speed: "Speed control",
+  mirror: "Mirror videos",
+  metadata: "Remove metadata",
+  backgrounds: "Background images",
+  overlay_creator: "Overlay creator",
+  projects: "Create new projects",
 };
+
 
 export const accountQueryKey = ["my-account"] as const;
 

@@ -1313,20 +1313,23 @@ function EditorPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-start justify-between gap-2 rounded-lg border border-border p-3">
-                  <div>
-                    <p className="text-xs font-bold">{t("Turbo processing")}</p>
-                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                      {t(
-                        "Renders the batch as fast as possible and keeps files light. The final image loses a little quality because of the stronger compression.",
-                      )}
-                    </p>
+                {toolEnabled(account, "turbo") && (
+                  <div className="mt-4 flex items-start justify-between gap-2 rounded-lg border border-border p-3">
+                    <div>
+                      <p className="text-xs font-bold">{t("Turbo processing")}</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                        {t(
+                          "Renders the batch as fast as possible and keeps files light. The final image loses a little quality because of the stronger compression.",
+                        )}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={view.turbo === true}
+                      onCheckedChange={(v) => patch({ turbo: v })}
+                    />
                   </div>
-                  <Switch
-                    checked={view.turbo === true}
-                    onCheckedChange={(v) => patch({ turbo: v })}
-                  />
-                </div>
+                )}
+
               </div>
             )}
 
@@ -1452,13 +1455,16 @@ function EditorPage() {
                     reader.readAsDataURL(file);
                   }}
                 />
-                <Button
-                  variant="outline"
-                  className="mt-4 w-full"
-                  onClick={() => logoInputRef.current?.click()}
-                >
-                  <Plus className="mr-1.5 size-4" /> {t("Upload background image")}
-                </Button>
+                {toolEnabled(account, "backgrounds") && (
+                  <Button
+                    variant="outline"
+                    className="mt-4 w-full"
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    <Plus className="mr-1.5 size-4" /> {t("Upload background image")}
+                  </Button>
+                )}
+
 
                 {view.bgImage.src && (
                   <div className="mt-3 space-y-3 rounded-lg border border-border bg-background/60 p-3">
@@ -1502,7 +1508,9 @@ function EditorPage() {
                 )}
 
                 {/* the user's own background images, saved with a name */}
+                {toolEnabled(account, "backgrounds") && (
                 <div className="mt-4 rounded-lg border border-border bg-background/60 p-3">
+
                   <p className="text-xs font-bold">{t("Saved background images")}</p>
                   {backgrounds.length === 0 ? (
                     <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
@@ -1555,6 +1563,8 @@ function EditorPage() {
                     </div>
                   )}
                 </div>
+                )}
+
 
                 <div className="mt-4 rounded-lg border border-border bg-background/60 p-3">
                   <div className="flex items-center justify-between">
@@ -1596,11 +1606,14 @@ function EditorPage() {
                       ))}
                     </div>
                   )}
-                  <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
-                    <a href="/overlay-creator" target="_blank" rel="noreferrer">
-                      {t("Open the Overlay creator")}
-                    </a>
-                  </Button>
+                  {toolEnabled(account, "overlay_creator") && (
+                    <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
+                      <a href="/overlay-creator" target="_blank" rel="noreferrer">
+                        {t("Open the Overlay creator")}
+                      </a>
+                    </Button>
+                  )}
+
                 </div>
               </div>
             )}
@@ -1609,52 +1622,61 @@ function EditorPage() {
               <div className="space-y-3 text-xs">
                 <p className="text-sm font-bold">{t("Extras")}</p>
                 <div className="space-y-3">
+                  {toolEnabled(account, "antidup") && (
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-bold">{t("Anti-duplicate mode")}</p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                          {t("Applies small variations to every video to reduce duplicate detection.")}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={antiDup}
+                        onCheckedChange={(v) => {
+                          setAntiDup(v);
+                          patch({ speed: v ? 1.02 : 1, ...(v ? { stripMetadata: true } : {}) });
+                        }}
+                      />
+                    </div>
+                  )}
+                  {toolEnabled(account, "speed") && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">
+                        {t("Speed")} {view.speed.toFixed(2)}x
+                      </span>
+                      <div className="w-28">
+                        <Slider
+                          value={[view.speed]}
+                          min={0.9}
+                          max={1.15}
+                          step={0.01}
+                          onValueChange={([v]) => patch({ speed: v ?? 1 })}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {toolEnabled(account, "mirror") && (
+                  <div className="flex items-center justify-between border-t border-border/60 pt-3">
+                    <span className="text-muted-foreground">{t("Mirror videos")}</span>
+                    <Switch checked={view.mirror} onCheckedChange={(v) => patch({ mirror: v })} />
+                  </div>
+                )}
+                {toolEnabled(account, "metadata") && (
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-xs font-bold">{t("Anti-duplicate mode")}</p>
+                      <p className="text-xs font-bold">{t("Remove metadata")}</p>
                       <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                        {t("Applies small variations to every video to reduce duplicate detection.")}
+                        {t("The processed video carries none of the original file's metadata.")}
                       </p>
                     </div>
                     <Switch
-                      checked={antiDup}
-                      onCheckedChange={(v) => {
-                        setAntiDup(v);
-                        patch({ speed: v ? 1.02 : 1, ...(v ? { stripMetadata: true } : {}) });
-                      }}
+                      checked={view.stripMetadata}
+                      onCheckedChange={(v) => patch({ stripMetadata: v })}
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">
-                      {t("Speed")} {view.speed.toFixed(2)}x
-                    </span>
-                    <div className="w-28">
-                      <Slider
-                        value={[view.speed]}
-                        min={0.9}
-                        max={1.15}
-                        step={0.01}
-                        onValueChange={([v]) => patch({ speed: v ?? 1 })}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between border-t border-border/60 pt-3">
-                  <span className="text-muted-foreground">{t("Mirror videos")}</span>
-                  <Switch checked={view.mirror} onCheckedChange={(v) => patch({ mirror: v })} />
-                </div>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-bold">{t("Remove metadata")}</p>
-                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                      {t("The processed video carries none of the original file's metadata.")}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={view.stripMetadata}
-                    onCheckedChange={(v) => patch({ stripMetadata: v })}
-                  />
-                </div>
+                )}
+
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
                   {t("Everything runs in your browser: your files are never uploaded to any server.")}
                 </p>

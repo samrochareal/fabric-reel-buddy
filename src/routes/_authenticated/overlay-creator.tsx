@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { LanguageToggle, useT } from "@/lib/i18n";
+import { useMyAccount, toolEnabled } from "@/lib/account";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -54,6 +56,8 @@ const H = OVERLAY_H;
 
 function OverlayCreator() {
   const t = useT();
+  const { account } = useMyAccount();
+
   const [cfg, setCfg] = useState<OverlayConfig>(defaultOverlayConfig);
   const [presets, setPresets] = useState<OverlayPreset[]>([]);
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
@@ -335,8 +339,19 @@ function OverlayCreator() {
     { id: "right", icon: AlignRight },
   ];
 
+  if (!toolEnabled(account, "overlay_creator")) {
+    return (
+      <div className="flex h-[100dvh] items-center justify-center bg-background px-6 text-center">
+        <p className="text-sm font-semibold text-muted-foreground">
+          {t("This feature is not available for your account.")}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
+
       <header className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
         <div>
         <h1 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight">

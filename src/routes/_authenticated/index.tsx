@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { useBranding } from "@/lib/branding";
 import { useT } from "@/lib/i18n";
-import { useMyAccount } from "@/lib/account";
+import { useMyAccount, toolEnabled } from "@/lib/account";
 import {
   createProject,
   deleteProject,
@@ -162,14 +162,17 @@ function ProjectsPage() {
               {t("Each project keeps its own edit settings, overlays and titles.")}
             </p>
           </div>
-          <Button
-            onClick={() => {
-              setNewName("");
-              setCreating(true);
-            }}
-          >
-            <Plus className="mr-1.5 size-4" /> {t("New project")}
-          </Button>
+          {toolEnabled(account, "projects") && (
+            <Button
+              onClick={() => {
+                setNewName("");
+                setCreating(true);
+              }}
+            >
+              <Plus className="mr-1.5 size-4" /> {t("New project")}
+            </Button>
+          )}
+
         </div>
 
         {loading ? (

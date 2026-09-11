@@ -295,6 +295,12 @@ const PT: Record<string, string> = {
   "never": "nunca",
   "Fine tuning & framing": "Ajuste fino e enquadramento",
   "Borders": "Bordas",
+  "Speed control": "Controle de velocidade",
+  "Background images": "Imagens de fundo",
+  "Create new projects": "Criar novos projetos",
+  "This feature is not available for your account.": "Esta função não está disponível para sua conta.",
+
+
   "no name": "sem nome",
 
   // sign-in
