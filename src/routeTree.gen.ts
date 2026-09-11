@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedLandingEditorRouteImport } from './routes/_authenticated/landing-editor'
 import { Route as AuthenticatedNewPasswordRouteImport } from './routes/_authenticated/new-password'
 import { Route as AuthenticatedOverlayCreatorRouteImport } from './routes/_authenticated/overlay-creator'
 import { Route as AuthenticatedReferralsRouteImport } from './routes/_authenticated/referrals'
@@ -55,6 +56,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLandingEditorRoute =
+  AuthenticatedLandingEditorRouteImport.update({
+    id: '/landing-editor',
+    path: '/landing-editor',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedNewPasswordRoute =
   AuthenticatedNewPasswordRouteImport.update({
     id: '/new-password',
@@ -86,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/landing-editor': typeof AuthenticatedLandingEditorRoute
   '/new-password': typeof AuthenticatedNewPasswordRoute
   '/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
   '/referrals': typeof AuthenticatedReferralsRoute
@@ -98,6 +106,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/landing-editor': typeof AuthenticatedLandingEditorRoute
   '/new-password': typeof AuthenticatedNewPasswordRoute
   '/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
   '/referrals': typeof AuthenticatedReferralsRoute
@@ -112,6 +121,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/landing-editor': typeof AuthenticatedLandingEditorRoute
   '/_authenticated/new-password': typeof AuthenticatedNewPasswordRoute
   '/_authenticated/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
   '/_authenticated/referrals': typeof AuthenticatedReferralsRoute
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin'
     | '/dashboard'
+    | '/landing-editor'
     | '/new-password'
     | '/overlay-creator'
     | '/referrals'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin'
     | '/dashboard'
+    | '/landing-editor'
     | '/new-password'
     | '/overlay-creator'
     | '/referrals'
@@ -151,6 +163,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
+    | '/_authenticated/landing-editor'
     | '/_authenticated/new-password'
     | '/_authenticated/overlay-creator'
     | '/_authenticated/referrals'
@@ -216,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/landing-editor': {
+      id: '/_authenticated/landing-editor'
+      path: '/landing-editor'
+      fullPath: '/landing-editor'
+      preLoaderRoute: typeof AuthenticatedLandingEditorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/new-password': {
       id: '/_authenticated/new-password'
       path: '/new-password'
@@ -250,6 +270,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedLandingEditorRoute: typeof AuthenticatedLandingEditorRoute
   AuthenticatedNewPasswordRoute: typeof AuthenticatedNewPasswordRoute
   AuthenticatedOverlayCreatorRoute: typeof AuthenticatedOverlayCreatorRoute
   AuthenticatedReferralsRoute: typeof AuthenticatedReferralsRoute
@@ -259,6 +280,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedLandingEditorRoute: AuthenticatedLandingEditorRoute,
   AuthenticatedNewPasswordRoute: AuthenticatedNewPasswordRoute,
   AuthenticatedOverlayCreatorRoute: AuthenticatedOverlayCreatorRoute,
   AuthenticatedReferralsRoute: AuthenticatedReferralsRoute,

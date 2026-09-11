@@ -51,7 +51,6 @@ import {
   type ExternalLink,
   type Palette as BrandPalette,
 } from "@/lib/branding";
-import { defaultLandingContent, normalizeLandingContent, saveLandingContent, type LandingContent } from "@/lib/landing-content";
 import { LanguageToggle, useT } from "@/lib/i18n";
 import { LINK_ICON_NAMES, LinkGlyph } from "@/components/link-icons";
 import {
@@ -364,70 +363,6 @@ function UserDialog({
   );
 }
 
-const LANDING_LABELS: Record<string, string> = {
-  eyebrow: "Chamada curta", title: "Título", highlight: "Texto em destaque", text: "Texto",
-  intro: "Introdução", primaryCta: "Botão principal", secondaryCta: "Botão secundário",
-  primary: "Botão principal", secondary: "Botão secundário", login: "Entrar", features: "Recursos",
-  how: "Como funciona", audience: "Para quem é", faq: "FAQ", q: "Pergunta", a: "Resposta",
-  heroText: "Resumo principal", featuresTitle: "Título de recursos", ctaText: "Resumo final",
-};
-
-function LandingEditor<T extends object>({
-  title, value, onChange, imageKeys = [],
-}: { title: string; value: T; onChange: (value: T) => void; imageKeys?: string[] }) {
-  const record = value as Record<string, unknown>;
-  const update = (key: string, next: unknown) => onChange({ ...record, [key]: next } as T);
-  return (
-    <div className="rounded-xl border border-border p-4">
-      <h3 className="text-sm font-bold">{title}</h3>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        {Object.entries(record).map(([key, current]) => {
-          if (imageKeys.includes(key)) {
-            return (
-              <div key={key} className="sm:col-span-2">
-                <p className="text-xs font-semibold">Imagem da seção (opcional)</p>
-                <div className="mt-2 flex items-center gap-3">
-                  {current ? <img src={String(current)} alt="Prévia" className="h-20 w-32 rounded-md border border-border object-cover" /> : <div className="flex h-20 w-32 items-center justify-center rounded-md border border-dashed border-border"><ImageIcon className="size-5 text-muted-foreground" /></div>}
-                  <input type="file" accept="image/*" className="text-xs" onChange={async (e) => {
-                    const file = e.target.files?.[0]; if (!file) return;
-                    try { update(key, await readFileAsDataUrl(file, "Escolha uma imagem de até 1 MB.", "Não foi possível ler a imagem.", 1_000_000)); }
-                    catch (err) { toast.error(err instanceof Error ? err.message : "Imagem inválida."); }
-                  }} />
-                  {Boolean(current) && <Button type="button" size="sm" variant="outline" onClick={() => update(key, null)}>Remover</Button>}
-                </div>
-              </div>
-            );
-          }
-          if (Array.isArray(current)) {
-            return (
-              <div key={key} className="space-y-2 sm:col-span-2">
-                <p className="text-xs font-semibold">{key === "items" ? "Itens" : "Destaques"}</p>
-                {current.map((item, index) => typeof item === "string" ? (
-                  <Input key={index} value={item} onChange={(e) => update(key, current.map((v, i) => i === index ? e.target.value : v))} />
-                ) : (
-                  <div key={index} className="grid gap-2 rounded-lg bg-background/60 p-3 sm:grid-cols-2">
-                    {Object.entries(item as Record<string, unknown>).map(([itemKey, itemValue]) => (
-                      <div key={itemKey} className={itemKey === "text" || itemKey === "a" ? "sm:col-span-2" : ""}>
-                        <label className="text-[11px] font-semibold text-muted-foreground">{LANDING_LABELS[itemKey] ?? itemKey}</label>
-                        {(itemKey === "text" || itemKey === "a") ? <Textarea className="mt-1" value={String(itemValue)} onChange={(e) => update(key, current.map((v, i) => i === index ? { ...(v as object), [itemKey]: e.target.value } : v))} /> : <Input className="mt-1" value={String(itemValue)} onChange={(e) => update(key, current.map((v, i) => i === index ? { ...(v as object), [itemKey]: e.target.value } : v))} />}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            );
-          }
-          return (
-            <div key={key} className={(key === "text" || key.endsWith("Text")) ? "sm:col-span-2" : ""}>
-              <label className="text-xs font-semibold text-muted-foreground">{LANDING_LABELS[key] ?? key}</label>
-              {(key === "text" || key.endsWith("Text")) ? <Textarea className="mt-1" value={String(current ?? "")} onChange={(e) => update(key, e.target.value)} /> : <Input className="mt-1" value={String(current ?? "")} onChange={(e) => update(key, e.target.value)} />}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function AdminPage() {
   const t = useT();
@@ -444,12 +379,10 @@ function AdminPage() {
   const [links, setLinks] = useState<ExternalLink[]>([]);
   const [saving, setSaving] = useState(false);
   const [savingLinks, setSavingLinks] = useState(false);
-  const [landing, setLanding] = useState<LandingContent>(defaultLandingContent);
-  const [savingLanding, setSavingLanding] = useState(false);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<PlatformUser | null>(null);
   const [tab, setTab] = useState<
-    "overview" | "people" | "notifications" | "referral" | "menu" | "identity" | "landing"
+    "overview" | "people" | "notifications" | "referral" | "menu" | "identity"
   >("overview");
   const [notifTitle, setNotifTitle] = useState("");
   const [notifBody, setNotifBody] = useState("");
@@ -492,22 +425,9 @@ function AdminPage() {
       setLinks(b.external_links);
       setReferralOn(b.referral_enabled);
       setReferralCredits(b.referral_reward_credits);
-      setLanding(normalizeLandingContent(b.landing_content));
     });
   }, []);
 
-  const onSaveLanding = async () => {
-    setSavingLanding(true);
-    try {
-      await saveLandingContent(landing);
-      refreshBranding();
-      toast.success("Landing Page atualizada.");
-    } catch {
-      toast.error("Não foi possível salvar a Landing Page.");
-    } finally {
-      setSavingLanding(false);
-    }
-  };
 
   const onSaveReferral = async () => {
     setSavingReferral(true);
@@ -753,7 +673,6 @@ function AdminPage() {
               ["notifications", t("Notifications"), <Bell key="f" className="size-4" />],
               ["referral", t("Rewards"), <Gift key="e" className="size-4" />],
               ["menu", t("Side menu"), <Link2 key="c" className="size-4" />],
-              ["landing", "Landing Page", <LayoutTemplate key="g" className="size-4" />],
               ["identity", t("System identity"), <Palette key="d" className="size-4" />],
             ] as const
           ).map(([key, label, icon]) => (
@@ -768,6 +687,12 @@ function AdminPage() {
               {icon} {label}
             </button>
           ))}
+          <Link
+            to="/landing-editor"
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent"
+          >
+            <LayoutTemplate className="size-4" /> Landing Page
+          </Link>
         </aside>
 
         <div>
@@ -1492,48 +1417,8 @@ function AdminPage() {
         </section>
         )}
 
-        {/* ---------- landing page content ---------- */}
-        {tab === "landing" && (
-        <section className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-center gap-2">
-            <LayoutTemplate className="size-4 text-primary" />
-            <h2 className="font-display text-lg font-bold tracking-tight">Landing Page</h2>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">Edite textos, cores e imagens sem alterar a estrutura da página.</p>
 
-          <div className="mt-5 space-y-5">
-            <div className="rounded-xl border border-border p-4">
-              <h3 className="text-sm font-bold">Cores da página</h3>
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                {([['primary', 'Cor principal'], ['background', 'Fundo'], ['accent', 'Destaque']] as const).map(([key, label]) => (
-                  <label key={key} className="flex items-center gap-3 text-xs font-semibold">
-                    <input type="color" className="size-9" value={landing.colors[key]} onChange={(e) => setLanding((p) => ({ ...p, colors: { ...p.colors, [key]: e.target.value } }))} />
-                    {label} <span className="text-muted-foreground">{landing.colors[key]}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
 
-            <LandingEditor title="Menu e botões" value={landing.nav} onChange={(nav) => setLanding((p) => ({ ...p, nav }))} />
-            <LandingEditor title="Seção principal" value={landing.hero} onChange={(hero) => setLanding((p) => ({ ...p, hero }))} imageKeys={["image"]} />
-            <LandingEditor title="Recursos" value={landing.features} onChange={(features) => setLanding((p) => ({ ...p, features }))} />
-            <LandingEditor title="Benefícios e números" value={landing.benefits} onChange={(benefits) => setLanding((p) => ({ ...p, benefits }))} />
-            <LandingEditor title="Como funciona" value={landing.steps} onChange={(steps) => setLanding((p) => ({ ...p, steps }))} />
-            <LandingEditor title="Para quem é" value={landing.audience} onChange={(audience) => setLanding((p) => ({ ...p, audience }))} />
-            <LandingEditor title="Perguntas frequentes" value={landing.faq} onChange={(faq) => setLanding((p) => ({ ...p, faq }))} />
-            <LandingEditor title="Chamada final" value={landing.cta} onChange={(cta) => setLanding((p) => ({ ...p, cta }))} imageKeys={["image"]} />
-            <LandingEditor title="Rodapé" value={landing.footer} onChange={(footer) => setLanding((p) => ({ ...p, footer }))} />
-            <LandingEditor title="Textos resumidos para celular" value={landing.mobile} onChange={(mobile) => setLanding((p) => ({ ...p, mobile }))} />
-          </div>
-
-          <div className="sticky bottom-3 mt-6 flex justify-end rounded-xl border border-border bg-background/90 p-3 backdrop-blur">
-            <Button onClick={() => void onSaveLanding()} disabled={savingLanding}>
-              {savingLanding ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
-              Salvar e publicar
-            </Button>
-          </div>
-        </section>
-        )}
 
         {/* ---------- identity ---------- */}
         {tab === "identity" && (
