@@ -389,7 +389,6 @@ const PT: Record<string, string> = {
   "We couldn't update these accounts.": "Não foi possível atualizar estas contas.",
   "Applying…": "Aplicando…",
   "Apply these settings to every account?": "Aplicar estas configurações a todas as contas?",
-  "Search by name or e-mail": "Buscar por nome ou e-mail",
   "New feature available": "Nova funcionalidade disponível",
   "Message": "Mensagem",
   "Write the notification content here.": "Escreva o conteúdo da notificação aqui.",
