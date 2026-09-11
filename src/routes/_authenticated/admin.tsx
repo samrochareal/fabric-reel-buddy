@@ -1492,48 +1492,8 @@ function AdminPage() {
         </section>
         )}
 
-        {/* ---------- landing page content ---------- */}
-        {tab === "landing" && (
-        <section className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-center gap-2">
-            <LayoutTemplate className="size-4 text-primary" />
-            <h2 className="font-display text-lg font-bold tracking-tight">Landing Page</h2>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">Edite textos, cores e imagens sem alterar a estrutura da página.</p>
 
-          <div className="mt-5 space-y-5">
-            <div className="rounded-xl border border-border p-4">
-              <h3 className="text-sm font-bold">Cores da página</h3>
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                {([['primary', 'Cor principal'], ['background', 'Fundo'], ['accent', 'Destaque']] as const).map(([key, label]) => (
-                  <label key={key} className="flex items-center gap-3 text-xs font-semibold">
-                    <input type="color" className="size-9" value={landing.colors[key]} onChange={(e) => setLanding((p) => ({ ...p, colors: { ...p.colors, [key]: e.target.value } }))} />
-                    {label} <span className="text-muted-foreground">{landing.colors[key]}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
 
-            <LandingEditor title="Menu e botões" value={landing.nav} onChange={(nav) => setLanding((p) => ({ ...p, nav }))} />
-            <LandingEditor title="Seção principal" value={landing.hero} onChange={(hero) => setLanding((p) => ({ ...p, hero }))} imageKeys={["image"]} />
-            <LandingEditor title="Recursos" value={landing.features} onChange={(features) => setLanding((p) => ({ ...p, features }))} />
-            <LandingEditor title="Benefícios e números" value={landing.benefits} onChange={(benefits) => setLanding((p) => ({ ...p, benefits }))} />
-            <LandingEditor title="Como funciona" value={landing.steps} onChange={(steps) => setLanding((p) => ({ ...p, steps }))} />
-            <LandingEditor title="Para quem é" value={landing.audience} onChange={(audience) => setLanding((p) => ({ ...p, audience }))} />
-            <LandingEditor title="Perguntas frequentes" value={landing.faq} onChange={(faq) => setLanding((p) => ({ ...p, faq }))} />
-            <LandingEditor title="Chamada final" value={landing.cta} onChange={(cta) => setLanding((p) => ({ ...p, cta }))} imageKeys={["image"]} />
-            <LandingEditor title="Rodapé" value={landing.footer} onChange={(footer) => setLanding((p) => ({ ...p, footer }))} />
-            <LandingEditor title="Textos resumidos para celular" value={landing.mobile} onChange={(mobile) => setLanding((p) => ({ ...p, mobile }))} />
-          </div>
-
-          <div className="sticky bottom-3 mt-6 flex justify-end rounded-xl border border-border bg-background/90 p-3 backdrop-blur">
-            <Button onClick={() => void onSaveLanding()} disabled={savingLanding}>
-              {savingLanding ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
-              Salvar e publicar
-            </Button>
-          </div>
-        </section>
-        )}
 
         {/* ---------- identity ---------- */}
         {tab === "identity" && (
