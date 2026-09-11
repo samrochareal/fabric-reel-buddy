@@ -721,7 +721,7 @@ function OverlayCreator() {
             </p>
           </div>
 
-          <div className="mt-4 max-h-[70vh] space-y-3 overflow-y-auto pr-1">
+          <div className="mt-4 space-y-3 pr-1">
             {Array.from({ length: OVERLAY_SLOTS }, (_, i) => i + 1).map((slot) => {
               const preset = presets.find((p) => p.slot === slot);
               const active = editingSlot === slot;
