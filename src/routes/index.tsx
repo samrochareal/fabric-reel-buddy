@@ -50,7 +50,7 @@ function LandingPage() {
   const brandImage = branding.logo_url || branding.icon_url;
   const content = branding.landing_content;
   const featureIcons = [Layers, Crop, Frame, Images, TypeIcon, Wand2, Zap, Gauge, ShieldCheck];
-  const features = content.features.items.map((item, i) => ({ ...item, icon: featureIcons[i % featureIcons.length] }));
+  const features = content.features.items.map((item, i) => ({ ...item, icon: featureIcons[i % featureIcons.length] ?? Layers }));
   const pageStyle = {
     "--primary": content.colors.primary,
     "--background": content.colors.background,
@@ -129,7 +129,7 @@ function LandingPage() {
             </div>
 
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-muted-foreground">
-              {content.hero.badges.map((badge, i) => { const Icon = [Rocket, Zap, Sparkles][i % 3]; return <span key={badge} className="flex items-center gap-2"><Icon className="size-4 text-primary" /> {badge}</span>; })}
+              {content.hero.badges.map((badge, i) => { const Icon = [Rocket, Zap, Sparkles][i % 3] ?? Sparkles; return <span key={badge} className="flex items-center gap-2"><Icon className="size-4 text-primary" /> {badge}</span>; })}
             </div>
           </div>
 
