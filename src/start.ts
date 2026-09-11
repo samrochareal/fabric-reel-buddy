@@ -1,7 +1,9 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+// Project-specific bearer middleware (refreshes expiring sessions) replaces the
+// generated attachSupabaseAuth, which only read the cached session.
+import { attachSupabaseBearer } from "@/lib/supabase-bearer";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
