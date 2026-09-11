@@ -401,6 +401,10 @@ function AdminPage() {
   const [defDays, setDefDays] = useState("");
   const [defTools, setDefTools] = useState<Record<string, boolean>>({});
   const [applyingDefaults, setApplyingDefaults] = useState(false);
+  const [specOpen, setSpecOpen] = useState(false);
+  const [specIds, setSpecIds] = useState<string[]>([]);
+  const [specSearch, setSpecSearch] = useState("");
+  const [applyingSpec, setApplyingSpec] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -482,6 +486,47 @@ function AdminPage() {
       toast.error(t("We couldn't update these accounts."));
     } finally {
       setApplyingDefaults(false);
+    }
+  };
+
+  /** applies the same settings only to the accounts picked in the popup */
+  const onApplyToSelected = async () => {
+    if (specIds.length === 0) {
+      toast.error(t("Pick at least one account."));
+      return;
+    }
+    setApplyingSpec(true);
+    try {
+      const parsed = Number(defDays);
+      const accessDays =
+        defDays.trim() === ""
+          ? undefined
+          : Number.isFinite(parsed) && parsed > 0
+            ? parsed
+            : null;
+      const payload = {
+        credits: defCredits,
+        creditRefillAmount: defRefillAmount,
+        creditRefillHours: defRefillHours,
+        premium: defPremium,
+        blocked: defBlocked,
+        allowedTools: defTools,
+        ...(accessDays === undefined ? {} : { accessDays }),
+      };
+      let updated = 0;
+      for (const userId of specIds) {
+        await savePlatformUser({ userId, ...payload });
+        updated += 1;
+      }
+      await users.refetch();
+      toast.success(t("{n} account(s) updated.", { n: updated }));
+      setSpecOpen(false);
+      setSpecIds([]);
+      setSpecSearch("");
+    } catch {
+      toast.error(t("We couldn't update these accounts."));
+    } finally {
+      setApplyingSpec(false);
     }
   };
 
@@ -1108,14 +1153,91 @@ function AdminPage() {
               ))}
             </div>
 
-            <Button
-              className="mt-4"
-              size="sm"
-              onClick={() => void onApplyDefaults()}
-              disabled={applyingDefaults}
-            >
-              {applyingDefaults ? t("Applying…") : t("Apply to all users")}
-            </Button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                onClick={() => void onApplyDefaults()}
+                disabled={applyingDefaults || applyingSpec}
+              >
+                {applyingDefaults ? t("Applying…") : t("Apply to all users")}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSpecOpen(true)}
+                disabled={applyingDefaults || applyingSpec}
+              >
+                {t("Specific users")}
+              </Button>
+            </div>
+
+            {/* popup to pick which accounts receive the settings above */}
+            <Dialog open={specOpen} onOpenChange={setSpecOpen}>
+              <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>{t("Specific users")}</DialogTitle>
+                  <DialogDescription>
+                    {t("Pick the accounts that will receive these settings.")}
+                  </DialogDescription>
+                </DialogHeader>
+                <Input
+                  className="h-9"
+                  placeholder={t("Search by name or e-mail")}
+                  value={specSearch}
+                  onChange={(e) => setSpecSearch(e.target.value)}
+                />
+                <div className="mt-2 max-h-72 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
+                  {(users.data ?? [])
+                    .filter((u) => !u.is_admin)
+                    .filter((u) => {
+                      const q = specSearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return (
+                        (u.email ?? "").toLowerCase().includes(q) ||
+                        (u.full_name ?? "").toLowerCase().includes(q)
+                      );
+                    })
+                    .map((u) => (
+                      <label
+                        key={u.id}
+                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent"
+                      >
+                        <input
+                          type="checkbox"
+                          className="size-4 accent-primary"
+                          checked={specIds.includes(u.id)}
+                          onChange={(e) =>
+                            setSpecIds((prev) =>
+                              e.target.checked
+                                ? [...prev, u.id]
+                                : prev.filter((id) => id !== u.id),
+                            )
+                          }
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          <span className="font-semibold">{u.full_name || t("no name")}</span>{" "}
+                          <span className="text-muted-foreground">{u.email}</span>
+                        </span>
+                      </label>
+                    ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {t("{n} account(s) selected", { n: specIds.length })}
+                </p>
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setSpecOpen(false)}>
+                    {t("Cancel")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => void onApplyToSelected()}
+                    disabled={applyingSpec || specIds.length === 0}
+                  >
+                    {applyingSpec ? t("Applying…") : t("Apply to selected")}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
 
