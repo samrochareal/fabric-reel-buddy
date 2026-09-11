@@ -84,7 +84,7 @@ export function SideMenu() {
             <Link
               to="/admin"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 hover:text-black"
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
             >
               <ShieldCheck className="size-4" /> {t("Master panel")}
             </Link>
@@ -94,7 +94,7 @@ export function SideMenu() {
             <Link
               to="/referrals"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-accent hover:text-black"
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-accent"
             >
               <Gift className="size-4 text-primary" /> {t("Referrals")}
             </Link>
@@ -111,7 +111,7 @@ export function SideMenu() {
                   href={link.url}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-accent hover:text-black"
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-accent"
                 >
                   <LinkGlyph name={link.icon} className="size-4 text-primary" />
                   <span className="truncate">{link.title}</span>
@@ -130,7 +130,7 @@ export function SideMenu() {
           <button
             type="button"
             onClick={() => void signOut()}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-sm font-semibold transition-colors hover:border-destructive/60 hover:text-black"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-sm font-semibold transition-colors hover:border-destructive/60 hover:text-destructive"
           >
             <LogOut className="size-4" /> {guest ? t("Leave guest mode") : t("Sign out")}
           </button>
