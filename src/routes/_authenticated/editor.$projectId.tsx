@@ -1088,7 +1088,7 @@ function EditorPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
                     <span className="tabular-nums">
-                      {t("Est. {t} left", { t: fmtCountdown(etaSeconds) })}
+                      {t("About {t} left", { t: fmtCountdown(etaSeconds) })}
                     </span>
                     <span className="font-bold tabular-nums text-foreground">
                       {String(batch?.done ?? 0).padStart(3, "0")}/

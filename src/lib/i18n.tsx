@@ -435,6 +435,11 @@ const PT: Record<string, string> = {
   "Image renamed.": "Imagem renomeada.",
   "We couldn't save the image.": "Não foi possível salvar a imagem.",
   "No background image saved yet.": "Nenhuma imagem de fundo salva ainda.",
+  "About {t} left": "Faltam aprox. {t}",
+  "{h} hours, {m} minutes and {s} seconds": "{h} horas, {m} minutos e {s} segundos",
+  "{m} minutes and {s} seconds": "{m} minutos e {s} segundos",
+  "{s} seconds": "{s} segundos",
+  "{n} failed": "{n} falharam",
 };
 
 
