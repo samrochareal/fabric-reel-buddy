@@ -177,6 +177,7 @@ export type Database = {
           external_links: Json
           icon_url: string | null
           id: boolean
+          landing_content: Json
           logo_url: string | null
           palette: Json
           referral_enabled: boolean
@@ -190,6 +191,7 @@ export type Database = {
           external_links?: Json
           icon_url?: string | null
           id?: boolean
+          landing_content?: Json
           logo_url?: string | null
           palette?: Json
           referral_enabled?: boolean
@@ -203,6 +205,7 @@ export type Database = {
           external_links?: Json
           icon_url?: string | null
           id?: boolean
+          landing_content?: Json
           logo_url?: string | null
           palette?: Json
           referral_enabled?: boolean
