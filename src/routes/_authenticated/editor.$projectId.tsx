@@ -1515,7 +1515,7 @@ function EditorPage() {
             <RotateCcw className="mr-1.5 size-4" /> {t("Reset all edits")}
           </Button>
 
-          <div className="sticky bottom-0 space-y-2 bg-background pb-1 pt-2">
+          <div className="fixed bottom-0 left-0 right-0 z-50 space-y-2 border-t border-border bg-background p-4 xl:sticky xl:bottom-0 xl:z-auto xl:border-t-0 xl:bg-transparent xl:p-0">
             <Button
               className="h-12 w-full text-base disabled:opacity-100"
               onClick={() => void handleProcess()}
