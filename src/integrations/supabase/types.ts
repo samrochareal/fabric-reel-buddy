@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      background_images: {
+        Row: {
+          created_at: string
+          data_url: string
+          id: string
+          name: string
+          project_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_url: string
+          id?: string
+          name?: string
+          project_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          data_url?: string
+          id?: string
+          name?: string
+          project_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "background_images_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_transactions: {
         Row: {
           amount: number
@@ -226,6 +264,39 @@ export type Database = {
           premium?: boolean
           referral_code?: string | null
           referred_by?: string | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          anti_dup: boolean
+          created_at: string
+          id: string
+          name: string
+          options: Json
+          overrides: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          anti_dup?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          options?: Json
+          overrides?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          anti_dup?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          options?: Json
+          overrides?: Json
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
