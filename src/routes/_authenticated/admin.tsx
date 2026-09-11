@@ -51,7 +51,6 @@ import {
   type ExternalLink,
   type Palette as BrandPalette,
 } from "@/lib/branding";
-import { defaultLandingContent, normalizeLandingContent, saveLandingContent, type LandingContent } from "@/lib/landing-content";
 import { LanguageToggle, useT } from "@/lib/i18n";
 import { LINK_ICON_NAMES, LinkGlyph } from "@/components/link-icons";
 import {
