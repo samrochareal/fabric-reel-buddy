@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { useBranding } from "@/lib/branding";
 import { useT } from "@/lib/i18n";
-import { useMyAccount } from "@/lib/account";
+import { useMyAccount, toolEnabled } from "@/lib/account";
 import {
   createProject,
   deleteProject,
