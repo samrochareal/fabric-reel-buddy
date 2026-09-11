@@ -685,7 +685,7 @@ function OverlayCreator() {
         </section>
 
         {/* Pré-definições */}
-        <section className="scrollbar-hidden rounded-xl border border-border bg-card p-4 lg:h-full lg:overflow-y-auto lg:overscroll-contain">
+        <section className="scrollbar-hidden rounded-xl border border-border bg-card p-4">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-bold">{t("Presets")}</p>
