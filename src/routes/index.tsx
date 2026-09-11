@@ -19,17 +19,18 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useBranding } from "@/lib/branding";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Speed Flow — edite e publique dezenas de vídeos em minutos" },
+      { title: "Edição de vídeos em massa" },
       {
         name: "description",
         content:
           "Suba até 100 vídeos, ajuste enquadramento, bordas, overlays e títulos em lote e baixe tudo pronto para Reels, TikTok e Shorts. Tudo direto no navegador.",
       },
-      { property: "og:title", content: "Speed Flow — edição de vídeos em massa" },
+      { property: "og:title", content: "Edição de vídeos em massa" },
       {
         property: "og:description",
         content:
@@ -129,18 +130,28 @@ const FAQ = [
 
 function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const branding = useBranding();
+  const brandImage = branding.logo_url || branding.icon_url;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* header */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Scissors className="size-4" />
-            </span>
-            <span className="font-display text-lg font-bold tracking-tight">
-              Speed <span className="text-primary">Flow</span>
+          <div className="flex min-w-0 items-center gap-2">
+            {brandImage ? (
+              <img
+                src={brandImage}
+                alt=""
+                className="size-9 shrink-0 object-contain"
+              />
+            ) : (
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <Scissors className="size-4" />
+              </span>
+            )}
+            <span className="truncate font-display text-lg font-bold">
+              {branding.system_name}
             </span>
           </div>
 
@@ -176,7 +187,7 @@ function LandingPage() {
               <span className="text-primary">resultados reais.</span>
             </h1>
             <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">
-              O Speed Flow edita dezenas de vídeos ao mesmo tempo: enquadramento, bordas,
+              O {branding.system_name} edita dezenas de vídeos ao mesmo tempo: enquadramento, bordas,
               overlays e títulos aplicados em lote e prontos para Reels, TikTok e Shorts.
             </p>
 
@@ -408,7 +419,7 @@ function LandingPage() {
                 </button>
                 {openFaq === i && (
                   <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">
-                    {item.a}
+                    {item.a.replace("Speed Flow", branding.system_name)}
                   </p>
                 )}
               </div>
@@ -453,12 +464,20 @@ function LandingPage() {
 
       <footer className="border-t border-border/60 py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:flex-row">
-          <div className="flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Scissors className="size-3.5" />
-            </span>
-            <span className="font-display font-bold text-foreground">
-              Speed <span className="text-primary">Flow</span>
+          <div className="flex min-w-0 items-center gap-2">
+            {brandImage ? (
+              <img
+                src={brandImage}
+                alt=""
+                className="size-8 shrink-0 object-contain"
+              />
+            ) : (
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <Scissors className="size-3.5" />
+              </span>
+            )}
+            <span className="truncate font-display font-bold text-foreground">
+              {branding.system_name}
             </span>
           </div>
           <p className="text-xs">Mais conteúdo. Mais resultados.</p>
