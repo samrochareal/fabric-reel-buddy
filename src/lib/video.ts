@@ -281,10 +281,11 @@ function probeSource(file: File): Promise<SourceInfo> {
  */
 function encodeSize(info: SourceInfo, turbo = false): { w: number; h: number } {
   const sourceLong = Math.max(info.width, info.height);
-  // Turbo renders at 720x1280, which is far less pixel work per frame.
-  const cap = turbo ? 1280 : ENCODE_SIZE.h;
-  if (!sourceLong) return turbo ? { w: 720, h: 1280 } : ENCODE_SIZE;
-  const h = Math.min(cap, Math.max(turbo ? 854 : 1280, sourceLong));
+  // Turbo always renders at 720x1280: the smallest 9:16 frame that still
+  // looks right on short-form feeds, and far less pixel work per frame.
+  if (turbo) return { w: 720, h: 1280 };
+  if (!sourceLong) return ENCODE_SIZE;
+  const h = Math.min(ENCODE_SIZE.h, Math.max(1280, sourceLong));
   const even = (n: number) => Math.round(n / 2) * 2;
   return { w: even((h * 9) / 16), h: even(h) };
 }
@@ -548,10 +549,16 @@ async function renderOnce(
       "-tune",
       turbo ? "zerolatency" : "fastdecode",
       "-crf",
-      turbo ? "30" : "20",
-      "-x264-params",
-      "ref=1:bframes=0:subme=1:me=dia:trellis=0:mixed-refs=0:8x8dct=0:" +
-        "weightp=0:rc-lookahead=10:scenecut=0:aq-mode=1:fast-pskip=1",
+      turbo ? "32" : "20",
+      // Turbo: ultrafast's own defaults are the fastest x264 path; the custom
+      // parameter set below would only slow it down.
+      ...(turbo
+        ? []
+        : [
+            "-x264-params",
+            "ref=1:bframes=0:subme=1:me=dia:trellis=0:mixed-refs=0:8x8dct=0:" +
+              "weightp=0:rc-lookahead=10:scenecut=0:aq-mode=1:fast-pskip=1",
+          ]),
       "-maxrate",
       `${Math.round(videoBitrate * 1.08)}k`,
       "-bufsize",
@@ -563,7 +570,7 @@ async function renderOnce(
       "-r",
       turbo ? "24" : "30",
       "-g",
-      turbo ? "120" : "90",
+      turbo ? "240" : "90",
       "-threads",
       String(ffmpegThreads),
       "-pix_fmt",
