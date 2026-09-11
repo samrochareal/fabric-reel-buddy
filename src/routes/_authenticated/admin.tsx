@@ -688,6 +688,12 @@ function AdminPage() {
               {icon} {label}
             </button>
           ))}
+          <Link
+            to="/landing-editor"
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent"
+          >
+            <LayoutTemplate className="size-4" /> Landing Page
+          </Link>
         </aside>
 
         <div>
