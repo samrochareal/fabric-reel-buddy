@@ -1110,10 +1110,6 @@ function EditorPage() {
                       </span>
                     )}
                   </div>
-                  <Progress
-                    className="mt-1 h-1"
-                    value={(finishedInBatch / Math.max(1, batch?.total ?? 1)) * 100}
-                  />
                 </div>
               </div>
             ) : (
