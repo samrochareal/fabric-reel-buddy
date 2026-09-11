@@ -51,7 +51,7 @@ import {
   type ExternalLink,
   type Palette as BrandPalette,
 } from "@/lib/branding";
-import { defaultLandingContent, saveLandingContent, type LandingContent } from "@/lib/landing-content";
+import { defaultLandingContent, normalizeLandingContent, saveLandingContent, type LandingContent } from "@/lib/landing-content";
 import { LanguageToggle, useT } from "@/lib/i18n";
 import { LINK_ICON_NAMES, LinkGlyph } from "@/components/link-icons";
 import {
@@ -492,7 +492,7 @@ function AdminPage() {
       setLinks(b.external_links);
       setReferralOn(b.referral_enabled);
       setReferralCredits(b.referral_reward_credits);
-      setLanding(b.landing_content);
+      setLanding(normalizeLandingContent(b.landing_content));
     });
   }, []);
 

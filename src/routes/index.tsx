@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBranding } from "@/lib/branding";
-import { withSystemName } from "@/lib/landing-content";
+import { normalizeLandingContent, withSystemName } from "@/lib/landing-content";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,7 +48,7 @@ function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const branding = useBranding();
   const brandImage = branding.logo_url || branding.icon_url;
-  const content = branding.landing_content;
+  const content = normalizeLandingContent(branding.landing_content);
   const featureIcons = [Layers, Crop, Frame, Images, TypeIcon, Wand2, Zap, Gauge, ShieldCheck];
   const features = content.features.items.map((item, i) => ({ ...item, icon: featureIcons[i % featureIcons.length] ?? Layers }));
   const pageStyle = {
