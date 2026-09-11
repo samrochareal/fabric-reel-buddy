@@ -379,8 +379,8 @@ export function LandingView({
     className: string,
   ) => (
     <h2 className={className}>
-      <EditableText value={title} onChange={on(group, "title")} placeholder="Título" />{" "}
-      <EditableText value={highlight} onChange={on(group, "highlight")} className="text-primary" placeholder="Destaque" />
+      <EditableText value={title} onChange={on(group, "title")} placeholder="Título" {...visibility(`${group}.title`)} />{" "}
+      <EditableText value={highlight} onChange={on(group, "highlight")} className="text-primary" placeholder="Destaque" {...visibility(`${group}.highlight`)} />
     </h2>
   );
 
@@ -391,6 +391,7 @@ export function LandingView({
       onChange={on(group, "eyebrow")}
       className="text-xs font-bold uppercase tracking-[0.2em] text-primary"
       placeholder="Etiqueta"
+      {...visibility(`${group}.eyebrow`)}
     />
   );
 
@@ -408,8 +409,8 @@ export function LandingView({
           <div>
             {eyebrow("hero", content.hero.eyebrow)}
             <h1 className={cn("mt-4 font-display font-bold leading-[1.05] tracking-tight", mobile ? "text-3xl" : "text-4xl sm:text-5xl lg:text-6xl")}>
-              <EditableText value={content.hero.title} onChange={on("hero", "title")} placeholder="Título" />{" "}
-              <EditableText value={content.hero.highlight} onChange={on("hero", "highlight")} className="text-primary" placeholder="Destaque" />
+              <EditableText value={content.hero.title} onChange={on("hero", "title")} placeholder="Título" {...visibility("hero.title")} />{" "}
+              <EditableText value={content.hero.highlight} onChange={on("hero", "highlight")} className="text-primary" placeholder="Destaque" {...visibility("hero.highlight")} />
             </h1>
             {(shown(heroText) || editing) && (
               <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">
@@ -417,23 +418,24 @@ export function LandingView({
                   value={editing ? heroText : withSystemName(heroText, systemName)}
                   onChange={heroTextField}
                   placeholder={mobile ? "Texto curto do celular" : "Texto da abertura"}
+                  {...visibility(mobile ? "mobile.heroText" : "hero.text")}
                 />
               </p>
             )}
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              {(shown(content.hero.primaryCta) || editing) && (
+              {((shown(content.hero.primaryCta) && !isHidden("hero.primaryCta")) || editing) && (
                 <LandingCta editing={editing}>
                   <Button size="lg" className="font-bold">
-                    <EditableText value={content.hero.primaryCta} onChange={on("hero", "primaryCta")} placeholder="Botão" />
+                    <EditableText value={content.hero.primaryCta} onChange={on("hero", "primaryCta")} placeholder="Botão" {...visibility("hero.primaryCta")} />
                     <ArrowRight className="size-4" />
                   </Button>
                 </LandingCta>
               )}
-              {(shown(content.hero.secondaryCta) || editing) && (
+              {((shown(content.hero.secondaryCta) && !isHidden("hero.secondaryCta")) || editing) && (
                 <a href={editing ? undefined : "#como-funciona"}>
                   <Button size="lg" variant="outline" className="font-bold">
-                    <EditableText value={content.hero.secondaryCta} onChange={on("hero", "secondaryCta")} placeholder="Botão" />
+                    <EditableText value={content.hero.secondaryCta} onChange={on("hero", "secondaryCta")} placeholder="Botão" {...visibility("hero.secondaryCta")} />
                   </Button>
                 </a>
               )}
@@ -493,6 +495,7 @@ export function LandingView({
                   value={shown(content.mobile.featuresTitle) || editing ? content.mobile.featuresTitle : content.features.title}
                   onChange={on("mobile", "featuresTitle")}
                   placeholder="Título curto do celular"
+                  {...visibility("mobile.featuresTitle")}
                 />
               </h2>
             ) : (
@@ -500,7 +503,7 @@ export function LandingView({
             )}
             {!mobile && (
               <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground md:mt-0">
-                <EditableText value={content.features.intro} onChange={on("features", "intro")} placeholder="Texto de apoio" />
+                <EditableText value={content.features.intro} onChange={on("features", "intro")} placeholder="Texto de apoio" {...visibility("features.intro")} />
               </p>
             )}
           </div>
@@ -706,28 +709,28 @@ export function LandingView({
               aria-hidden
             />
             <h2 className="relative font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              <EditableText value={content.cta.title} onChange={on("cta", "title")} placeholder="Título" />
+              <EditableText value={content.cta.title} onChange={on("cta", "title")} placeholder="Título" {...visibility("cta.title")} />
               <br />
-              <EditableText value={content.cta.highlight} onChange={on("cta", "highlight")} className="text-primary" placeholder="Destaque" />
+              <EditableText value={content.cta.highlight} onChange={on("cta", "highlight")} className="text-primary" placeholder="Destaque" {...visibility("cta.highlight")} />
             </h2>
             {(shown(ctaText) || editing) && (
               <p className="relative mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-                <EditableText value={ctaText} onChange={ctaTextField} placeholder={mobile ? "Texto curto do celular" : "Texto da chamada"} />
+                <EditableText value={ctaText} onChange={ctaTextField} placeholder={mobile ? "Texto curto do celular" : "Texto da chamada"} {...visibility(mobile ? "mobile.ctaText" : "cta.text")} />
               </p>
             )}
             <div className="relative mt-8 flex flex-wrap justify-center gap-3">
-              {(shown(content.cta.primary) || editing) && (
+              {((shown(content.cta.primary) && !isHidden("cta.primary")) || editing) && (
                 <LandingCta editing={editing}>
                   <Button size="lg" className="font-bold">
-                    <EditableText value={content.cta.primary} onChange={on("cta", "primary")} placeholder="Botão" />
+                    <EditableText value={content.cta.primary} onChange={on("cta", "primary")} placeholder="Botão" {...visibility("cta.primary")} />
                     <ArrowRight className="size-4" />
                   </Button>
                 </LandingCta>
               )}
-              {(shown(content.cta.secondary) || editing) && (
+              {((shown(content.cta.secondary) && !isHidden("cta.secondary")) || editing) && (
                 <a href={editing ? undefined : "#recursos"}>
                   <Button size="lg" variant="outline" className="font-bold">
-                    <EditableText value={content.cta.secondary} onChange={on("cta", "secondary")} placeholder="Botão" />
+                    <EditableText value={content.cta.secondary} onChange={on("cta", "secondary")} placeholder="Botão" {...visibility("cta.secondary")} />
                   </Button>
                 </a>
               )}
@@ -812,11 +815,11 @@ export function LandingView({
             ) : null}
             <span className="truncate font-display font-bold text-foreground">{systemName}</span>
           </div>
-          <EditableText as="p" value={content.footer.text} onChange={on("footer", "text")} className="text-xs" placeholder="Texto do rodapé" />
-          {(shown(content.footer.login) || editing) && (
+          <EditableText as="p" value={content.footer.text} onChange={on("footer", "text")} className="text-xs" placeholder="Texto do rodapé" {...visibility("footer.text")} />
+          {((shown(content.footer.login) && !isHidden("footer.login")) || editing) && (
             <LandingCta editing={editing}>
               <span className="text-xs font-bold text-primary hover:underline">
-                <EditableText value={content.footer.login} onChange={on("footer", "login")} placeholder="Link de login" />
+                <EditableText value={content.footer.login} onChange={on("footer", "login")} placeholder="Link de login" {...visibility("footer.login")} />
               </span>
             </LandingCta>
           )}
