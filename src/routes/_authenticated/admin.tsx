@@ -6,6 +6,7 @@ import {
   BarChart3,
   Gift,
   Image as ImageIcon,
+  LayoutTemplate,
   Link2,
   Loader2,
   Palette,
@@ -50,6 +51,7 @@ import {
   type ExternalLink,
   type Palette as BrandPalette,
 } from "@/lib/branding";
+import { defaultLandingContent, saveLandingContent, type LandingContent } from "@/lib/landing-content";
 import { LanguageToggle, useT } from "@/lib/i18n";
 import { LINK_ICON_NAMES, LinkGlyph } from "@/components/link-icons";
 import {
@@ -377,10 +379,12 @@ function AdminPage() {
   const [links, setLinks] = useState<ExternalLink[]>([]);
   const [saving, setSaving] = useState(false);
   const [savingLinks, setSavingLinks] = useState(false);
+  const [landing, setLanding] = useState<LandingContent>(defaultLandingContent);
+  const [savingLanding, setSavingLanding] = useState(false);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<PlatformUser | null>(null);
   const [tab, setTab] = useState<
-    "overview" | "people" | "notifications" | "referral" | "menu" | "identity"
+    "overview" | "people" | "notifications" | "referral" | "menu" | "identity" | "landing"
   >("overview");
   const [notifTitle, setNotifTitle] = useState("");
   const [notifBody, setNotifBody] = useState("");
@@ -423,8 +427,22 @@ function AdminPage() {
       setLinks(b.external_links);
       setReferralOn(b.referral_enabled);
       setReferralCredits(b.referral_reward_credits);
+      setLanding(b.landing_content);
     });
   }, []);
+
+  const onSaveLanding = async () => {
+    setSavingLanding(true);
+    try {
+      await saveLandingContent(landing);
+      refreshBranding();
+      toast.success("Landing Page atualizada.");
+    } catch {
+      toast.error("Não foi possível salvar a Landing Page.");
+    } finally {
+      setSavingLanding(false);
+    }
+  };
 
   const onSaveReferral = async () => {
     setSavingReferral(true);
@@ -670,6 +688,7 @@ function AdminPage() {
               ["notifications", t("Notifications"), <Bell key="f" className="size-4" />],
               ["referral", t("Rewards"), <Gift key="e" className="size-4" />],
               ["menu", t("Side menu"), <Link2 key="c" className="size-4" />],
+              ["landing", "Landing Page", <LayoutTemplate key="g" className="size-4" />],
               ["identity", t("System identity"), <Palette key="d" className="size-4" />],
             ] as const
           ).map(([key, label, icon]) => (
@@ -1403,6 +1422,49 @@ function AdminPage() {
                 <Save className="mr-2 size-4" />
               )}
               {t("Save links")}
+            </Button>
+          </div>
+        </section>
+        )}
+
+        {/* ---------- landing page content ---------- */}
+        {tab === "landing" && (
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-center gap-2">
+            <LayoutTemplate className="size-4 text-primary" />
+            <h2 className="font-display text-lg font-bold tracking-tight">Landing Page</h2>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">Edite textos, cores e imagens sem alterar a estrutura da página.</p>
+
+          <div className="mt-5 space-y-5">
+            <div className="rounded-xl border border-border p-4">
+              <h3 className="text-sm font-bold">Cores da página</h3>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                {([['primary', 'Cor principal'], ['background', 'Fundo'], ['accent', 'Destaque']] as const).map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-3 text-xs font-semibold">
+                    <input type="color" className="size-9" value={landing.colors[key]} onChange={(e) => setLanding((p) => ({ ...p, colors: { ...p.colors, [key]: e.target.value } }))} />
+                    {label} <span className="text-muted-foreground">{landing.colors[key]}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <LandingEditor title="Menu e botões" value={landing.nav} onChange={(nav) => setLanding((p) => ({ ...p, nav }))} />
+            <LandingEditor title="Seção principal" value={landing.hero} onChange={(hero) => setLanding((p) => ({ ...p, hero }))} imageKeys={["image"]} />
+            <LandingEditor title="Recursos" value={landing.features} onChange={(features) => setLanding((p) => ({ ...p, features }))} />
+            <LandingEditor title="Benefícios e números" value={landing.benefits} onChange={(benefits) => setLanding((p) => ({ ...p, benefits }))} />
+            <LandingEditor title="Como funciona" value={landing.steps} onChange={(steps) => setLanding((p) => ({ ...p, steps }))} />
+            <LandingEditor title="Para quem é" value={landing.audience} onChange={(audience) => setLanding((p) => ({ ...p, audience }))} />
+            <LandingEditor title="Perguntas frequentes" value={landing.faq} onChange={(faq) => setLanding((p) => ({ ...p, faq }))} />
+            <LandingEditor title="Chamada final" value={landing.cta} onChange={(cta) => setLanding((p) => ({ ...p, cta }))} imageKeys={["image"]} />
+            <LandingEditor title="Rodapé" value={landing.footer} onChange={(footer) => setLanding((p) => ({ ...p, footer }))} />
+            <LandingEditor title="Textos resumidos para celular" value={landing.mobile} onChange={(mobile) => setLanding((p) => ({ ...p, mobile }))} />
+          </div>
+
+          <div className="sticky bottom-3 mt-6 flex justify-end rounded-xl border border-border bg-background/90 p-3 backdrop-blur">
+            <Button onClick={() => void onSaveLanding()} disabled={savingLanding}>
+              {savingLanding ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
+              Salvar e publicar
             </Button>
           </div>
         </section>
