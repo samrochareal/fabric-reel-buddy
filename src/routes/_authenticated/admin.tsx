@@ -426,22 +426,9 @@ function AdminPage() {
       setLinks(b.external_links);
       setReferralOn(b.referral_enabled);
       setReferralCredits(b.referral_reward_credits);
-      setLanding(normalizeLandingContent(b.landing_content));
     });
   }, []);
 
-  const onSaveLanding = async () => {
-    setSavingLanding(true);
-    try {
-      await saveLandingContent(landing);
-      refreshBranding();
-      toast.success("Landing Page atualizada.");
-    } catch {
-      toast.error("Não foi possível salvar a Landing Page.");
-    } finally {
-      setSavingLanding(false);
-    }
-  };
 
   const onSaveReferral = async () => {
     setSavingReferral(true);
