@@ -570,7 +570,7 @@ async function renderOnce(
       "-r",
       turbo ? "24" : "30",
       "-g",
-      turbo ? "120" : "90",
+      turbo ? "240" : "90",
       "-threads",
       String(ffmpegThreads),
       "-pix_fmt",
