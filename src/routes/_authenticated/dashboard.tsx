@@ -25,7 +25,7 @@ import {
   type Project,
 } from "@/lib/projects";
 
-export const Route = createFileRoute("/_authenticated/")({
+export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "My projects — batch video editor" },

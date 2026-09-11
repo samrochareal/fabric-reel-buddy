@@ -196,7 +196,7 @@ function EditorPage() {
       .then((project) => {
         if (!project) {
           toast.error(t("Project not found."));
-          void navigate({ to: "/" });
+          void navigate({ to: "/dashboard" });
           return;
         }
         setProjectName(project.name);
@@ -902,7 +902,7 @@ function EditorPage() {
       <div className="flex items-end justify-between gap-4 px-4 pt-5">
         <div className="min-w-0">
           <Link
-            to="/"
+            to="/dashboard"
             className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="size-3.5" /> {t("Back to my projects")}
