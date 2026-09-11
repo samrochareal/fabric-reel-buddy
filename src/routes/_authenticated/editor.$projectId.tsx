@@ -1598,6 +1598,21 @@ function EditorPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!renamingBg} onOpenChange={(open) => !open && setRenamingBg(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("Rename")}</DialogTitle>
+            <DialogDescription>{t("Image name")}</DialogDescription>
+          </DialogHeader>
+          <Input
+            value={bgName}
+            onChange={(e) => setBgName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && void applyBgRename()}
+          />
+          <Button onClick={() => void applyBgRename()}>{t("Save")}</Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
