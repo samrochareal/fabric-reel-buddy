@@ -41,12 +41,12 @@ function EditableText({
   placeholder = "Texto",
 }: {
   value: string;
-  onChange?: (next: string) => void;
+  onChange?: ((next: string) => void) | undefined;
   as?: "span" | "p" | "h1" | "h2" | "h3" | "li" | "div";
-  className?: string;
-  placeholder?: string;
+  className?: string | undefined;
+  placeholder?: string | undefined;
 }) {
-  const Tag = as as keyof JSX.IntrinsicElements;
+  const Tag = as as React.ElementType;
 
   if (!onChange) {
     if (!shown(value)) return null;
@@ -94,11 +94,11 @@ function EditList<T>({
   editing: boolean;
   items: T[];
   keep: (item: T) => boolean;
-  onChange?: (next: T[]) => void;
-  blank?: () => T;
+  onChange?: ((next: T[]) => void) | undefined;
+  blank?: (() => T) | undefined;
   render: (item: T, index: number, setItem: (next: T) => void) => React.ReactNode;
-  className?: string;
-  addLabel?: string;
+  className?: string | undefined;
+  addLabel?: string | undefined;
 }) {
   const dragFrom = useRef<number | null>(null);
   const noop = () => {};
@@ -183,7 +183,7 @@ function ImageSlot({
 }: {
   value: string | null;
   onChange: (next: string | null) => void;
-  className?: string;
+  className?: string | undefined;
   label: string;
 }) {
   return (
@@ -229,7 +229,7 @@ function SectionShell({
   onMove,
   children,
 }: {
-  edit?: LandingEdit;
+  edit?: LandingEdit | undefined;
   order: LandingSection[];
   section: LandingSection;
   label: string;
@@ -292,7 +292,7 @@ export function LandingView({
   systemName: string;
   brandImage: string | null;
   device: LandingDevice;
-  edit?: LandingEdit;
+  edit?: LandingEdit | undefined;
 }) {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const editing = Boolean(edit);
@@ -383,7 +383,7 @@ export function LandingView({
             <div className="mt-8 flex flex-wrap items-center gap-3">
               {(shown(content.hero.primaryCta) || editing) && (
                 <LandingCta editing={editing}>
-                  <Button size="lg" className="font-bold" asChild={false}>
+                  <Button size="lg" className="font-bold">
                     <EditableText value={content.hero.primaryCta} onChange={on("hero", "primaryCta")} placeholder="Botão" />
                     <ArrowRight className="size-4" />
                   </Button>
