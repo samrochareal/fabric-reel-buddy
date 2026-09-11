@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { defaultLandingContent, normalizeLandingContent, type LandingContent } from "@/lib/landing-content";
 
 export type Palette = {
   primary: string;
@@ -19,6 +20,7 @@ export type Branding = {
   external_links: ExternalLink[];
   referral_enabled: boolean;
   referral_reward_credits: number;
+  landing_content: LandingContent;
 };
 
 export const defaultBranding: Branding = {
@@ -30,6 +32,7 @@ export const defaultBranding: Branding = {
   external_links: [],
   referral_enabled: false,
   referral_reward_credits: 5,
+  landing_content: defaultLandingContent,
 };
 
 export const brandingQueryKey = ["branding"] as const;
@@ -69,7 +72,7 @@ export async function fetchBranding(): Promise<Branding> {
   const { data, error } = await supabase
     .from("platform_settings")
     .select(
-      "system_name, tagline, palette, logo_url, icon_url, external_links, referral_enabled, referral_reward_credits",
+      "system_name, tagline, palette, logo_url, icon_url, external_links, referral_enabled, referral_reward_credits, landing_content",
     )
     .limit(1)
     .maybeSingle();
@@ -83,6 +86,7 @@ export async function fetchBranding(): Promise<Branding> {
     external_links: normalizeLinks(data.external_links),
     referral_enabled: Boolean(data.referral_enabled),
     referral_reward_credits: data.referral_reward_credits ?? defaultBranding.referral_reward_credits,
+    landing_content: normalizeLandingContent(data.landing_content),
   };
 }
 
@@ -173,6 +177,7 @@ export function useBranding(): Branding & { ready: boolean } {
     queryKey: brandingQueryKey,
     queryFn: fetchBranding,
     staleTime: 30_000,
+    refetchInterval: 15_000,
   });
   const branding = query.data ?? defaultBranding;
 
