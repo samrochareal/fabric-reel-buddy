@@ -297,9 +297,9 @@ const PT: Record<string, string> = {
   "Borders": "Bordas",
   "Speed control": "Controle de velocidade",
   "Background images": "Imagens de fundo",
-  "Overlay creator": "Criador de overlay",
   "Create new projects": "Criar novos projetos",
-  "Also block the Overlay creator page": "Bloquear também a página do criador de overlay",
+  "This feature is not available for your account.": "Esta função não está disponível para sua conta.",
+
 
   "no name": "sem nome",
 
