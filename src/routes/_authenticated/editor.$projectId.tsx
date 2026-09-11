@@ -1050,18 +1050,64 @@ function EditorPage() {
               </button>
             </div>
 
+          </div>
 
-            {doneClips.length > 0 && (
-              <div className="mt-4 flex justify-end border-t border-border/60 pt-3">
-                <Button variant="outline" size="sm" onClick={() => setDownloadOpen(true)}>
-                  <Download className="mr-1.5 size-4" /> {t("Download all")} ({doneClips.length})
+          {/* processing controls / time estimate — always visible under the preview */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 space-y-2 border-t border-border bg-background p-4 xl:sticky xl:bottom-0 xl:z-auto xl:border-t-0 xl:bg-transparent xl:p-0">
+            {running ? (
+              <div className="rounded-xl border border-border bg-card p-3">
+                <p className="text-xs font-bold">{t("Processing time estimate")}</p>
+                <p className="mt-1 font-display text-2xl font-bold tabular-nums">
+                  {fmtTime(etaSeconds)}
+                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                  <span className="font-bold tabular-nums text-foreground">
+                    {String(batch?.done ?? 0).padStart(3, "0")}/
+                    {String(batch?.total ?? 0).padStart(3, "0")}
+                  </span>
+                  <span>{t("{n} pending", { n: pendingInBatch })}</span>
+                  {(batch?.failed ?? 0) > 0 && (
+                    <span className="font-bold text-destructive">
+                      {t("{n} failed", { n: batch?.failed ?? 0 })}
+                    </span>
+                  )}
+                </div>
+                <Progress
+                  className="mt-2 h-1.5"
+                  value={(finishedInBatch / Math.max(1, batch?.total ?? 1)) * 100}
+                />
+                <Button
+                  variant="outline"
+                  className="mt-3 w-full"
+                  onClick={() => {
+                    cancelledRef.current = true;
+                    toast.info(t("Processing will pause after the current video."));
+                  }}
+                >
+                  <Pause className="mr-2 size-4" /> {t("Pause processing")}
                 </Button>
               </div>
+            ) : (
+              <Button
+                className="h-12 w-full text-base disabled:opacity-100"
+                onClick={() => void handleProcess()}
+                disabled={queuedClips.length === 0}
+              >
+                {paused && queuedClips.length > 0 ? (
+                  <>
+                    <Play className="mr-2 size-5" /> {t("Resume processing")} ({queuedClips.length})
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 size-5" />{" "}
+                    {t("Process {n} video(s)", { n: queuedClips.length })}
+                  </>
+                )}
+              </Button>
             )}
-
-
           </div>
         </section>
+
 
         {/* ---------- Column 3: edit tabs + process ---------- */}
         <section className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4">
