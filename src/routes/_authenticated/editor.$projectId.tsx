@@ -501,7 +501,26 @@ function EditorPage() {
       for (const clip of queuedClips) {
         if (cancelledRef.current) break;
         // 1 credit = 1 processed video
-        const spent = await spendOneCredit();
+        let spent: Awaited<ReturnType<typeof spendOneCredit>>;
+        try {
+          spent = await spendOneCredit();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          if (message.includes("Unauthorized")) {
+            // token expired mid-batch: refresh once and retry
+            const { supabase } = await import("@/integrations/supabase/client");
+            await supabase.auth.refreshSession();
+            try {
+              spent = await spendOneCredit();
+            } catch {
+              toast.error(t("Your session expired — please sign in again."));
+              break;
+            }
+          } else {
+            toast.error(message);
+            break;
+          }
+        }
         refreshAccount();
         if (!spent.ok) {
           toast.error(t("Out of credits — processing stopped."));
