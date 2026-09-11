@@ -535,6 +535,7 @@ function EditorPage() {
             ),
           );
           setBatch((b) => (b ? { ...b, failed: b.failed + 1 } : b));
+        }
       }
 
       if (rendered > 0) {
