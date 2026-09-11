@@ -81,7 +81,17 @@ function merge<T>(base: T, saved: unknown): T {
   return out as T;
 }
 
-export function normalizeLandingContent(value: unknown) { return merge(defaultLandingContent, value); }
+export function normalizeLandingContent(value: unknown) {
+  const merged = merge(defaultLandingContent, value);
+  const saved = Array.isArray(merged.sections) ? merged.sections : [];
+  const order = saved.filter((s): s is LandingSection => (LANDING_SECTIONS as readonly string[]).includes(s));
+  return { ...merged, sections: order.length ? order : [...LANDING_SECTIONS] };
+}
+
+/** An empty text means the master removed that element from the page. */
+export function shown(text: string | null | undefined) {
+  return Boolean(String(text ?? "").trim());
+}
 export function withSystemName(text: string, systemName: string) { return text.replaceAll("{system}", systemName); }
 
 export async function saveLandingContent(content: LandingContent) {
