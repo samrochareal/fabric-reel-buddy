@@ -674,7 +674,6 @@ function AdminPage() {
               ["notifications", t("Notifications"), <Bell key="f" className="size-4" />],
               ["referral", t("Rewards"), <Gift key="e" className="size-4" />],
               ["menu", t("Side menu"), <Link2 key="c" className="size-4" />],
-              ["landing", "Landing Page", <LayoutTemplate key="g" className="size-4" />],
               ["identity", t("System identity"), <Palette key="d" className="size-4" />],
             ] as const
           ).map(([key, label, icon]) => (
