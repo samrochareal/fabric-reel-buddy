@@ -434,6 +434,8 @@ const PT: Record<string, string> = {
 
   // adjust tab & backgrounds
   "Adjust": "Ajuste",
+  "Your session expired — please sign in again.":
+    "Sua sessão expirou — entre novamente.",
   "Changes apply only to the selected video.":
     "As alterações se aplicam apenas ao vídeo selecionado.",
   "Changes apply to every video in the queue.":
