@@ -364,7 +364,7 @@ function OverlayCreator() {
         <div className="flex items-center gap-2"><LanguageToggle /></div>
       </header>
 
-      <div className="scrollbar-hidden grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:overflow-hidden lg:grid-cols-[300px_minmax(0,1fr)_320px]">
+      <div className="scrollbar-hidden grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-[300px_minmax(0,1fr)_320px]">
         {/* Elementos */}
         <section className="scrollbar-hidden space-y-4 rounded-xl border border-border bg-card p-4 lg:h-full lg:overflow-y-auto lg:overscroll-contain">
           <div>
