@@ -8,12 +8,12 @@ export type Lang = "en" | "pt";
 
 const KEY = "fdr.lang";
 const listeners = new Set<() => void>();
-let current: Lang = "en";
+let current: Lang = "pt";
 
 function read(): Lang {
-  if (typeof window === "undefined") return "en";
+  if (typeof window === "undefined") return "pt";
   const saved = window.localStorage.getItem(KEY);
-  return saved === "pt" ? "pt" : "en";
+  return saved === "en" ? "en" : "pt";
 }
 
 function subscribe(fn: () => void) {
@@ -22,7 +22,7 @@ function subscribe(fn: () => void) {
 }
 
 function snapshot(): Lang {
-  if (typeof window === "undefined") return "en";
+  if (typeof window === "undefined") return "pt";
   current = read();
   return current;
 }
@@ -34,9 +34,10 @@ export function setLang(lang: Lang) {
 }
 
 export function useLang(): [Lang, (l: Lang) => void] {
-  const lang = useSyncExternalStore(subscribe, snapshot, () => "en" as Lang);
+  const lang = useSyncExternalStore(subscribe, snapshot, () => "pt" as Lang);
   return [lang, setLang];
 }
+
 
 /** English source string -> Portuguese */
 const PT: Record<string, string> = {
@@ -393,7 +394,49 @@ const PT: Record<string, string> = {
   "Give the notification a title.": "Dê um título à notificação.",
   "We couldn't send the notification.": "Não foi possível enviar a notificação.",
   "We couldn't remove the notification.": "Não foi possível remover a notificação.",
+
+  // projects dashboard
+  "My projects": "Meus projetos",
+  "Each project keeps its own edit settings, overlays and titles.":
+    "Cada projeto guarda suas próprias configurações de edição, overlays e títulos.",
+  "New project": "Novo projeto",
+  "Open": "Abrir",
+  "Rename": "Renomear",
+  "Delete": "Excluir",
+  "Project name": "Nome do projeto",
+  "e.g. Cinema batch": "Ex: Lote cinema",
+  "You have no projects yet. Create the first one.":
+    "Você ainda não tem projetos. Crie o primeiro.",
+  "Last edited {when}": "Editado em {when}",
+  "Create": "Criar",
+  "Save": "Salvar",
+  "Project created.": "Projeto criado.",
+  "Project renamed.": "Projeto renomeado.",
+  "Project deleted.": "Projeto excluído.",
+  "Delete this project?": "Excluir este projeto?",
+  "The edit settings saved in it are lost.": "As configurações de edição salvas nele serão perdidas.",
+  "We couldn't load your projects.": "Não foi possível carregar seus projetos.",
+  "We couldn't save the project.": "Não foi possível salvar o projeto.",
+  "Loading…": "Carregando…",
+  "Back to my projects": "Voltar para meus projetos",
+  "Project not found.": "Projeto não encontrado.",
+  "Give the project a name.": "Dê um nome ao projeto.",
+
+  // adjust tab & backgrounds
+  "Adjust": "Ajuste",
+  "Changes apply only to the selected video.":
+    "As alterações se aplicam apenas ao vídeo selecionado.",
+  "Changes apply to every video in the queue.":
+    "As alterações se aplicam a todos os vídeos da fila.",
+  "Image name": "Nome da imagem",
+  "Saved background images": "Imagens de fundo salvas",
+  "Background image saved.": "Imagem de fundo salva.",
+  "Background image removed.": "Imagem de fundo removida.",
+  "Image renamed.": "Imagem renomeada.",
+  "We couldn't save the image.": "Não foi possível salvar a imagem.",
+  "No background image saved yet.": "Nenhuma imagem de fundo salva ainda.",
 };
+
 
 
 function fill(text: string, vars?: Record<string, string | number>) {
