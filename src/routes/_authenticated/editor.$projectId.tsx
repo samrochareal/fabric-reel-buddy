@@ -256,6 +256,17 @@ function EditorPage() {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
+  /** countdown in hours, minutes and seconds: h:mm:ss (or m:ss under an hour) */
+  const fmtCountdown = (s: number) => {
+    if (!Number.isFinite(s) || s <= 0) return "0:00";
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = Math.floor(s % 60);
+    return h > 0
+      ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+      : `${m}:${String(sec).padStart(2, "0")}`;
+  };
+
 
 
   const addFiles = useCallback(async (files: FileList | File[]) => {
@@ -1051,54 +1062,56 @@ function EditorPage() {
 
           </div>
 
-          {/* processing controls / time estimate — always visible under the preview */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 space-y-2 border-t border-border bg-background p-4 xl:sticky xl:bottom-0 xl:z-auto xl:border-t-0 xl:bg-transparent xl:p-0">
+          {/* compact processing controls / time estimate — fixed under the preview */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background p-2 xl:sticky xl:bottom-0 xl:z-auto xl:border-t-0 xl:bg-transparent xl:p-0">
             {running ? (
-              <div className="rounded-xl border border-border bg-card p-3">
-                <p className="text-xs font-bold">{t("Processing time estimate")}</p>
-                <p className="mt-1 font-display text-2xl font-bold tabular-nums">
-                  {fmtTime(etaSeconds)}
-                </p>
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                  <span className="font-bold tabular-nums text-foreground">
-                    {String(batch?.done ?? 0).padStart(3, "0")}/
-                    {String(batch?.total ?? 0).padStart(3, "0")}
-                  </span>
-                  <span>{t("{n} pending", { n: pendingInBatch })}</span>
-                  {(batch?.failed ?? 0) > 0 && (
-                    <span className="font-bold text-destructive">
-                      {t("{n} failed", { n: batch?.failed ?? 0 })}
-                    </span>
-                  )}
-                </div>
-                <Progress
-                  className="mt-2 h-1.5"
-                  value={(finishedInBatch / Math.max(1, batch?.total ?? 1)) * 100}
-                />
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  className="mt-3 w-full"
+                  size="sm"
+                  className="h-8 shrink-0 px-3 text-xs"
                   onClick={() => {
                     cancelledRef.current = true;
                     toast.info(t("Processing will pause after the current video."));
                   }}
                 >
-                  <Pause className="mr-2 size-4" /> {t("Pause processing")}
+                  <Pause className="mr-1 size-3" /> {t("Pause")}
                 </Button>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                    <span className="tabular-nums">
+                      {t("Est. {t} left", { t: fmtCountdown(etaSeconds) })}
+                    </span>
+                    <span className="font-bold tabular-nums text-foreground">
+                      {String(batch?.done ?? 0).padStart(3, "0")}/
+                      {String(batch?.total ?? 0).padStart(3, "0")}
+                    </span>
+                    {(batch?.failed ?? 0) > 0 && (
+                      <span className="font-bold text-destructive">
+                        {t("{n} failed", { n: batch?.failed ?? 0 })}
+                      </span>
+                    )}
+                  </div>
+                  <Progress
+                    className="mt-1 h-1"
+                    value={(finishedInBatch / Math.max(1, batch?.total ?? 1)) * 100}
+                  />
+                </div>
               </div>
             ) : (
               <Button
-                className="h-12 w-full text-base disabled:opacity-100"
+                size="sm"
+                className="h-8 w-auto px-4 text-xs disabled:opacity-100"
                 onClick={() => void handleProcess()}
                 disabled={queuedClips.length === 0}
               >
                 {paused && queuedClips.length > 0 ? (
                   <>
-                    <Play className="mr-2 size-5" /> {t("Resume processing")} ({queuedClips.length})
+                    <Play className="mr-1 size-3" /> {t("Resume processing")} ({queuedClips.length})
                   </>
                 ) : (
                   <>
-                    <Play className="mr-2 size-5" />{" "}
+                    <Play className="mr-1 size-3" />{" "}
                     {t("Process {n} video(s)", { n: queuedClips.length })}
                   </>
                 )}
