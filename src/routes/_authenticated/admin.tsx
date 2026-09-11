@@ -492,7 +492,7 @@ function AdminPage() {
       setLinks(b.external_links);
       setReferralOn(b.referral_enabled);
       setReferralCredits(b.referral_reward_credits);
-      setLanding(b.landing_content);
+      setLanding(normalizeLandingContent(b.landing_content));
     });
   }, []);
 
