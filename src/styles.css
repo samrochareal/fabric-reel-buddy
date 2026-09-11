@@ -162,3 +162,10 @@
     transform: translateX(-50%);
   }
 }
+
+/* placeholder for the click-to-edit landing page fields */
+[data-editable]:empty::before {
+  content: attr(data-placeholder);
+  opacity: 0.45;
+  font-style: italic;
+}
