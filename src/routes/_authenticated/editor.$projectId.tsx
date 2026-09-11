@@ -1357,7 +1357,7 @@ function EditorPage() {
             )}
 
             {tab === "title" && toolEnabled(account, "text") && (
-              <div className="scrollbar-hidden max-h-[60vh] space-y-5 overflow-y-auto overscroll-contain">
+              <div className="scrollbar-hidden space-y-5 overscroll-contain xl:max-h-[60vh] xl:overflow-y-auto">
                 <div>
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-bold">{t("Video title")}</p>
@@ -1391,7 +1391,7 @@ function EditorPage() {
             )}
 
             {tab === "overlay" && toolEnabled(account, "overlay") && (
-              <div className="scrollbar-hidden max-h-[60vh] overflow-y-auto overscroll-contain">
+              <div className="scrollbar-hidden overscroll-contain xl:max-h-[60vh] xl:overflow-y-auto">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-bold">{t("Background overlay")}</p>
                   <Switch
