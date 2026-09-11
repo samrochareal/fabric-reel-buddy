@@ -40,41 +40,52 @@ function EditableText({
   as = "span",
   className,
   placeholder = "Texto",
+  hidden = false,
+  onToggleHidden,
 }: {
   value: string;
   onChange?: ((next: string) => void) | undefined;
   as?: "span" | "p" | "h1" | "h2" | "h3" | "li" | "div";
   className?: string | undefined;
   placeholder?: string | undefined;
+  hidden?: boolean | undefined;
+  onToggleHidden?: (() => void) | undefined;
 }) {
   const Tag = as as React.ElementType;
 
   if (!onChange) {
-    if (!shown(value)) return null;
+    if (hidden || !shown(value)) return null;
     return <Tag className={className}>{value}</Tag>;
   }
 
   return (
-    <Tag
-      data-editable=""
-      contentEditable
-      suppressContentEditableWarning
-      spellCheck={false}
-      data-placeholder={placeholder}
-      onBlur={(e: React.FocusEvent<HTMLElement>) => onChange(e.currentTarget.textContent ?? "")}
-      onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          e.currentTarget.blur();
-        }
-      }}
-      className={cn(
-        "cursor-text rounded outline-none ring-1 ring-dashed ring-primary/40 transition hover:ring-primary focus:ring-2 focus:ring-primary",
-        className,
+    <span className={cn("relative inline-flex items-center gap-1", hidden && "opacity-35")}>
+      <Tag
+        data-editable=""
+        contentEditable
+        suppressContentEditableWarning
+        spellCheck={false}
+        data-placeholder={placeholder}
+        onBlur={(e: React.FocusEvent<HTMLElement>) => onChange(e.currentTarget.textContent ?? "")}
+        onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            e.currentTarget.blur();
+          }
+        }}
+        className={cn(
+          "cursor-text rounded outline-none ring-1 ring-dashed ring-primary/40 transition hover:ring-primary focus:ring-2 focus:ring-primary",
+          className,
+        )}
+      >
+        {value}
+      </Tag>
+      {onToggleHidden && (
+        <span role="button" tabIndex={0} onClick={onToggleHidden} onKeyDown={(e) => e.key === "Enter" && onToggleHidden()} className="inline-flex cursor-pointer p-1 text-muted-foreground hover:text-foreground" title={hidden ? "Mostrar elemento" : "Ocultar elemento"}>
+          {hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+        </span>
       )}
-    >
-      {value}
-    </Tag>
+    </span>
   );
 }
 
@@ -343,6 +354,7 @@ export function LandingView({
   const isHidden = (key: string) => Boolean(content.hidden?.[key]);
   const toggleHidden = (key: string) =>
     edit?.update((c) => ({ ...c, hidden: { ...c.hidden, [key]: !c.hidden?.[key] } }));
+  const visibility = (key: string) => ({ hidden: isHidden(key), onToggleHidden: edit ? () => toggleHidden(key) : undefined });
 
   const moveSection = (section: LandingSection, delta: number) =>
     edit?.update((c) => {
