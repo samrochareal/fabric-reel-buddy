@@ -1015,6 +1015,110 @@ function AdminPage() {
             {t("1 credit = 1 processed video")}
           </p>
 
+          {/* one setting applied to every ordinary account at once */}
+          <div className="mt-4 rounded-xl border border-border bg-background/60 p-4">
+            <h3 className="text-sm font-bold">{t("System defaults for all users")}</h3>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {t("These values replace the current settings of every ordinary account.")}
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">
+                  {t("Available credits")}
+                </label>
+                <Input
+                  className="mt-1 h-9"
+                  type="number"
+                  min={0}
+                  value={defCredits}
+                  onChange={(e) => setDefCredits(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">
+                  {t("Credits per refill")}
+                </label>
+                <Input
+                  className="mt-1 h-9"
+                  type="number"
+                  min={0}
+                  value={defRefillAmount}
+                  onChange={(e) => setDefRefillAmount(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">
+                  {t("Refill every (hours)")}
+                </label>
+                <Input
+                  className="mt-1 h-9"
+                  type="number"
+                  min={1}
+                  value={defRefillHours}
+                  onChange={(e) => setDefRefillHours(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">
+                  {t("Access for (days)")}
+                </label>
+                <Input
+                  className="mt-1 h-9"
+                  type="number"
+                  min={0}
+                  placeholder={t("unlimited")}
+                  value={defDays}
+                  onChange={(e) => setDefDays(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-4">
+              <label className="flex items-center gap-2 text-xs font-semibold">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={defPremium}
+                  onChange={(e) => setDefPremium(e.target.checked)}
+                />
+                {t("Premium")}
+              </label>
+              <label className="flex items-center gap-2 text-xs font-semibold">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={defBlocked}
+                  onChange={(e) => setDefBlocked(e.target.checked)}
+                />
+                {t("Blocked")}
+              </label>
+            </div>
+
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {TOOL_KEYS.map((key) => (
+                <label key={key} className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-primary"
+                    checked={defTools[key] !== false}
+                    onChange={(e) => setDefTools((prev) => ({ ...prev, [key]: e.target.checked }))}
+                  />
+                  <span>{t(TOOL_LABELS[key])}</span>
+                </label>
+              ))}
+            </div>
+
+            <Button
+              className="mt-4"
+              size="sm"
+              onClick={() => void onApplyDefaults()}
+              disabled={applyingDefaults}
+            >
+              {applyingDefaults ? t("Applying…") : t("Apply to all users")}
+            </Button>
+          </div>
+
+
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="text-muted-foreground">
