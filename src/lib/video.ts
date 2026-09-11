@@ -549,10 +549,16 @@ async function renderOnce(
       "-tune",
       turbo ? "zerolatency" : "fastdecode",
       "-crf",
-      turbo ? "30" : "20",
-      "-x264-params",
-      "ref=1:bframes=0:subme=1:me=dia:trellis=0:mixed-refs=0:8x8dct=0:" +
-        "weightp=0:rc-lookahead=10:scenecut=0:aq-mode=1:fast-pskip=1",
+      turbo ? "32" : "20",
+      // Turbo: ultrafast's own defaults are the fastest x264 path; the custom
+      // parameter set below would only slow it down.
+      ...(turbo
+        ? []
+        : [
+            "-x264-params",
+            "ref=1:bframes=0:subme=1:me=dia:trellis=0:mixed-refs=0:8x8dct=0:" +
+              "weightp=0:rc-lookahead=10:scenecut=0:aq-mode=1:fast-pskip=1",
+          ]),
       "-maxrate",
       `${Math.round(videoBitrate * 1.08)}k`,
       "-bufsize",
