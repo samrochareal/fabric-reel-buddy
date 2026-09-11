@@ -380,12 +380,10 @@ function AdminPage() {
   const [links, setLinks] = useState<ExternalLink[]>([]);
   const [saving, setSaving] = useState(false);
   const [savingLinks, setSavingLinks] = useState(false);
-  const [landing, setLanding] = useState<LandingContent>(defaultLandingContent);
-  const [savingLanding, setSavingLanding] = useState(false);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<PlatformUser | null>(null);
   const [tab, setTab] = useState<
-    "overview" | "people" | "notifications" | "referral" | "menu" | "identity" | "landing"
+    "overview" | "people" | "notifications" | "referral" | "menu" | "identity"
   >("overview");
   const [notifTitle, setNotifTitle] = useState("");
   const [notifBody, setNotifBody] = useState("");
