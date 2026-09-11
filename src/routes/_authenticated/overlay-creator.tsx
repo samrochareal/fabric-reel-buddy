@@ -364,9 +364,9 @@ function OverlayCreator() {
         <div className="flex items-center gap-2"><LanguageToggle /></div>
       </header>
 
-      <div className="scrollbar-hidden grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:overflow-hidden lg:grid-cols-[300px_minmax(0,1fr)_320px]">
+      <div className="scrollbar-hidden grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-[300px_minmax(0,1fr)_320px]">
         {/* Elementos */}
-        <section className="scrollbar-hidden space-y-4 rounded-xl border border-border bg-card p-4 lg:h-full lg:overflow-y-auto lg:overscroll-contain">
+        <section className="scrollbar-hidden space-y-4 rounded-xl border border-border bg-card p-4">
           <div>
             <p className="text-sm font-bold">{t("Elements")}</p>
             <p className="mt-1 text-[11px] text-muted-foreground">
@@ -685,7 +685,7 @@ function OverlayCreator() {
         </section>
 
         {/* Pré-definições */}
-        <section className="scrollbar-hidden rounded-xl border border-border bg-card p-4 lg:h-full lg:overflow-y-auto lg:overscroll-contain">
+        <section className="scrollbar-hidden rounded-xl border border-border bg-card p-4">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-bold">{t("Presets")}</p>
@@ -721,7 +721,7 @@ function OverlayCreator() {
             </p>
           </div>
 
-          <div className="mt-4 max-h-[70vh] space-y-3 overflow-y-auto pr-1">
+          <div className="mt-4 space-y-3 pr-1">
             {Array.from({ length: OVERLAY_SLOTS }, (_, i) => i + 1).map((slot) => {
               const preset = presets.find((p) => p.slot === slot);
               const active = editingSlot === slot;
