@@ -366,7 +366,7 @@ function OverlayCreator() {
 
       <div className="scrollbar-hidden grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-[300px_minmax(0,1fr)_320px]">
         {/* Elementos */}
-        <section className="scrollbar-hidden space-y-4 rounded-xl border border-border bg-card p-4 lg:h-full lg:overflow-y-auto lg:overscroll-contain">
+        <section className="scrollbar-hidden space-y-4 rounded-xl border border-border bg-card p-4">
           <div>
             <p className="text-sm font-bold">{t("Elements")}</p>
             <p className="mt-1 text-[11px] text-muted-foreground">
