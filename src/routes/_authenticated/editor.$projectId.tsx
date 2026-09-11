@@ -803,7 +803,18 @@ function EditorPage() {
       </header>
 
       <div className="flex items-end justify-between gap-4 px-4 pt-5">
-        <h1 className="font-display text-xl font-bold tracking-tight">{t("Batch editor")}</h1>
+        <div className="min-w-0">
+          <Link
+            to="/"
+            className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="size-3.5" /> {t("Back to my projects")}
+          </Link>
+          <h1 className="truncate font-display text-xl font-bold tracking-tight">
+            {projectName || t("Batch editor")}
+          </h1>
+        </div>
+
         <p className="text-xs text-muted-foreground">
           {t("Up to {max} videos per batch · {mb}MB max · {s}s each", {
             max: MAX_CLIPS,
@@ -813,7 +824,7 @@ function EditorPage() {
         </p>
       </div>
 
-      <main className="scrollbar-hidden grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain px-4 pb-24 pt-4 xl:overflow-hidden xl:pb-4 xl:grid-cols-[260px_minmax(0,1fr)_280px_300px]">
+      <main className="scrollbar-hidden grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain px-4 pb-24 pt-4 xl:overflow-hidden xl:pb-4 xl:grid-cols-[260px_minmax(0,1fr)_340px]">
         {/* ---------- Column 1: upload + queue ---------- */}
         <section className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4">
           <div
