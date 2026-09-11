@@ -1455,13 +1455,16 @@ function EditorPage() {
                     reader.readAsDataURL(file);
                   }}
                 />
-                <Button
-                  variant="outline"
-                  className="mt-4 w-full"
-                  onClick={() => logoInputRef.current?.click()}
-                >
-                  <Plus className="mr-1.5 size-4" /> {t("Upload background image")}
-                </Button>
+                {toolEnabled(account, "backgrounds") && (
+                  <Button
+                    variant="outline"
+                    className="mt-4 w-full"
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    <Plus className="mr-1.5 size-4" /> {t("Upload background image")}
+                  </Button>
+                )}
+
 
                 {view.bgImage.src && (
                   <div className="mt-3 space-y-3 rounded-lg border border-border bg-background/60 p-3">
@@ -1505,7 +1508,9 @@ function EditorPage() {
                 )}
 
                 {/* the user's own background images, saved with a name */}
+                {toolEnabled(account, "backgrounds") && (
                 <div className="mt-4 rounded-lg border border-border bg-background/60 p-3">
+
                   <p className="text-xs font-bold">{t("Saved background images")}</p>
                   {backgrounds.length === 0 ? (
                     <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
@@ -1558,6 +1563,8 @@ function EditorPage() {
                     </div>
                   )}
                 </div>
+                )}
+
 
                 <div className="mt-4 rounded-lg border border-border bg-background/60 p-3">
                   <div className="flex items-center justify-between">
@@ -1599,11 +1606,14 @@ function EditorPage() {
                       ))}
                     </div>
                   )}
-                  <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
-                    <a href="/overlay-creator" target="_blank" rel="noreferrer">
-                      {t("Open the Overlay creator")}
-                    </a>
-                  </Button>
+                  {toolEnabled(account, "overlay_creator") && (
+                    <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
+                      <a href="/overlay-creator" target="_blank" rel="noreferrer">
+                        {t("Open the Overlay creator")}
+                      </a>
+                    </Button>
+                  )}
+
                 </div>
               </div>
             )}
