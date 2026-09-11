@@ -177,6 +177,7 @@ function EditorPage() {
     done: number;
     failed: number;
     startedAt: number;
+    lastTickAt: number;
   } | null>(null);
   const [now, setNow] = useState(Date.now());
   const usedNames = useRef<Set<string>>(new Set());
@@ -256,15 +257,15 @@ function EditorPage() {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  /** countdown in hours, minutes and seconds: h:mm:ss (or m:ss under an hour) */
+  /** countdown spelled out in hours, minutes and seconds, in the current language */
   const fmtCountdown = (s: number) => {
-    if (!Number.isFinite(s) || s <= 0) return "0:00";
+    if (!Number.isFinite(s) || s <= 0) return t("{s} seconds", { s: 0 });
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     const sec = Math.floor(s % 60);
-    return h > 0
-      ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
-      : `${m}:${String(sec).padStart(2, "0")}`;
+    if (h > 0) return t("{h} hours, {m} minutes and {s} seconds", { h, m, s: sec });
+    if (m > 0) return t("{m} minutes and {s} seconds", { m, s: sec });
+    return t("{s} seconds", { s: sec });
   };
 
 
@@ -465,7 +466,13 @@ function EditorPage() {
     setRunning(true);
     setPaused(false);
     cancelledRef.current = false;
-    setBatch({ total: queuedClips.length, done: 0, failed: 0, startedAt: Date.now() });
+    setBatch({
+      total: queuedClips.length,
+      done: 0,
+      failed: 0,
+      startedAt: Date.now(),
+      lastTickAt: Date.now(),
+    });
     setNow(Date.now());
 
     const firstQueued = queuedClips[0];
@@ -529,7 +536,7 @@ function EditorPage() {
           );
           rendered += 1;
           renderedBytes += blob.size;
-          setBatch((b) => (b ? { ...b, done: b.done + 1 } : b));
+          setBatch((b) => (b ? { ...b, done: b.done + 1, lastTickAt: Date.now() } : b));
 
         } catch (err) {
 
@@ -544,7 +551,7 @@ function EditorPage() {
                 : c,
             ),
           );
-          setBatch((b) => (b ? { ...b, failed: b.failed + 1 } : b));
+          setBatch((b) => (b ? { ...b, failed: b.failed + 1, lastTickAt: Date.now() } : b));
         }
       }
 
@@ -683,11 +690,12 @@ function EditorPage() {
   /** seconds left in the running batch, from the average time already measured */
   const finishedInBatch = (batch?.done ?? 0) + (batch?.failed ?? 0);
   const pendingInBatch = Math.max(0, (batch?.total ?? 0) - finishedInBatch);
+  const avgPerVideo =
+    finishedInBatch > 0 ? (batch!.lastTickAt - batch!.startedAt) / finishedInBatch : 25_000;
   const etaSeconds = batch
-    ? Math.round(
-        ((finishedInBatch > 0 ? (now - batch.startedAt) / finishedInBatch : 25_000) *
-          pendingInBatch) /
-          1000,
+    ? Math.max(
+        0,
+        Math.round((pendingInBatch * avgPerVideo - (now - batch.lastTickAt)) / 1000),
       )
     : 0;
 
@@ -1080,7 +1088,7 @@ function EditorPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
                     <span className="tabular-nums">
-                      {t("Est. {t} left", { t: fmtCountdown(etaSeconds) })}
+                      {t("About {t} left", { t: fmtCountdown(etaSeconds) })}
                     </span>
                     <span className="font-bold tabular-nums text-foreground">
                       {String(batch?.done ?? 0).padStart(3, "0")}/
