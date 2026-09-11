@@ -281,10 +281,11 @@ function probeSource(file: File): Promise<SourceInfo> {
  */
 function encodeSize(info: SourceInfo, turbo = false): { w: number; h: number } {
   const sourceLong = Math.max(info.width, info.height);
-  // Turbo renders at 720x1280, which is far less pixel work per frame.
-  const cap = turbo ? 1280 : ENCODE_SIZE.h;
-  if (!sourceLong) return turbo ? { w: 720, h: 1280 } : ENCODE_SIZE;
-  const h = Math.min(cap, Math.max(turbo ? 854 : 1280, sourceLong));
+  // Turbo always renders at 720x1280: the smallest 9:16 frame that still
+  // looks right on short-form feeds, and far less pixel work per frame.
+  if (turbo) return { w: 720, h: 1280 };
+  if (!sourceLong) return ENCODE_SIZE;
+  const h = Math.min(ENCODE_SIZE.h, Math.max(1280, sourceLong));
   const even = (n: number) => Math.round(n / 2) * 2;
   return { w: even((h * 9) / 16), h: even(h) };
 }
