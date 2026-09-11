@@ -1220,7 +1220,7 @@ function EditorPage() {
             aria-disabled={running}
           >
             {tab === "adjust" && toolEnabled(account, "finetune") && (
-              <div className="scrollbar-hidden max-h-[60vh] overflow-y-auto overscroll-contain">
+              <div className="scrollbar-hidden overscroll-contain xl:max-h-[60vh] xl:overflow-y-auto">
                 <div>
                   <p className="text-xs text-muted-foreground">{t("Framing")}</p>
                   <div className="mt-2 grid grid-cols-2 gap-1 rounded-lg border border-border p-1">
