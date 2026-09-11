@@ -12,6 +12,8 @@ export type OverlayConfig = {
   nameColor: string;
   handleColor: string;
   bgColor: string;
+  /** when true the background is left transparent instead of filled with bgColor */
+  bgTransparent: boolean;
   align: TextAlign;
   verified: boolean;
   /** 0..1 anchors inside the 1080x1920 frame */
@@ -51,6 +53,7 @@ export const defaultOverlayConfig = (): OverlayConfig => ({
   nameColor: "#000000",
   handleColor: "#ffffff",
   bgColor: "#ffffff",
+  bgTransparent: false,
   align: "center",
   verified: false,
   textX: 0.5,

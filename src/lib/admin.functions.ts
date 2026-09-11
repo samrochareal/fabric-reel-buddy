@@ -46,6 +46,77 @@ export const listUsers = createServerFn({ method: "GET" })
     return data;
   });
 
+/** Turns the master's form values into arguments for admin_update_user. */
+function updateArgs(data: {
+  userId: string;
+  credits?: number;
+  creditRefillAmount?: number;
+  creditRefillHours?: number;
+  premium?: boolean;
+  accessDays?: number | null;
+  blocked?: boolean;
+  allowedTools?: Record<string, boolean>;
+}): Record<string, unknown> {
+  const clearExpiry = data.accessDays === null;
+  const expiresAt =
+    typeof data.accessDays === "number" && data.accessDays > 0
+      ? new Date(Date.now() + data.accessDays * 86_400_000).toISOString()
+      : null;
+
+  const args: Record<string, unknown> = {
+    _user_id: data.userId,
+    _clear_expiry: clearExpiry,
+  };
+  if (typeof data.credits === "number") args["_credits"] = data.credits;
+  if (typeof data.creditRefillAmount === "number")
+    args["_credit_refill_amount"] = data.creditRefillAmount;
+  if (typeof data.creditRefillHours === "number")
+    args["_credit_refill_hours"] = data.creditRefillHours;
+  if (typeof data.premium === "boolean") args["_premium"] = data.premium;
+  if (typeof data.blocked === "boolean") args["_blocked"] = data.blocked;
+  if (expiresAt) args["_access_expires_at"] = expiresAt;
+  if (data.allowedTools) args["_allowed_tools"] = data.allowedTools;
+  return args;
+}
+
+/** Master-only: applies the same settings to every non-master account at once. */
+export const updateAllUsers = createServerFn({ method: "POST" })
+  .inputValidator(
+    (input: {
+      credits?: number;
+      creditRefillAmount?: number;
+      creditRefillHours?: number;
+      premium?: boolean;
+      accessDays?: number | null;
+      blocked?: boolean;
+      allowedTools?: Record<string, boolean>;
+    }) => input,
+  )
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [{ data: profiles, error }, { data: admins }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id"),
+      supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin"),
+    ]);
+    if (error) throw error;
+
+    const adminIds = new Set((admins ?? []).map((r) => r.user_id));
+    const targets = (profiles ?? []).map((p) => p.id).filter((id) => !adminIds.has(id));
+
+    let updated = 0;
+    for (const id of targets) {
+      const { error: rpcError } = await supabaseAdmin.rpc(
+        "admin_update_user",
+        updateArgs({ ...data, userId: id }) as never,
+      );
+      if (!rpcError) updated += 1;
+    }
+    return { updated, total: targets.length };
+  });
+
 /** Master-only changes to one account: credits, premium, access window, tools. */
 export const updateUser = createServerFn({ method: "POST" })
   .inputValidator(

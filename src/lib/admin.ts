@@ -121,6 +121,21 @@ export async function savePlatformUser(input: {
   await updateUser({ data: input });
 }
 
+/** Master-only: applies the same settings to every ordinary account at once. */
+export async function savePlatformDefaults(input: {
+  credits?: number;
+  creditRefillAmount?: number;
+  creditRefillHours?: number;
+  premium?: boolean;
+  accessDays?: number | null;
+  blocked?: boolean;
+  allowedTools?: Record<string, boolean>;
+}): Promise<{ updated: number; total: number }> {
+  const { updateAllUsers } = await import("@/lib/admin.functions");
+  const result = await updateAllUsers({ data: input });
+  return result as { updated: number; total: number };
+}
+
 /** Master-only: deletes an account for good. */
 export async function deletePlatformUser(userId: string): Promise<void> {
   const { deleteUser } = await import("@/lib/admin.functions");

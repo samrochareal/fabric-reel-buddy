@@ -34,6 +34,7 @@ import {
   fetchPlatformUsers,
   resetPlatformUserPassword,
   savePlatformUser,
+  savePlatformDefaults,
   useIsAdmin,
   type PlatformUser,
 } from "@/lib/admin";
@@ -385,11 +386,21 @@ function AdminPage() {
   const [notifBody, setNotifBody] = useState("");
   const [notifLinkUrl, setNotifLinkUrl] = useState("");
   const [notifLinkLabel, setNotifLinkLabel] = useState("");
-  const [notifTarget, setNotifTarget] = useState("all");
+  const [notifAll, setNotifAll] = useState(true);
+  const [notifIds, setNotifIds] = useState<string[]>([]);
+  const [notifSearch, setNotifSearch] = useState("");
   const [sending, setSending] = useState(false);
   const [referralOn, setReferralOn] = useState(false);
   const [referralCredits, setReferralCredits] = useState(5);
   const [savingReferral, setSavingReferral] = useState(false);
+  const [defCredits, setDefCredits] = useState(5);
+  const [defRefillAmount, setDefRefillAmount] = useState(5);
+  const [defRefillHours, setDefRefillHours] = useState(12);
+  const [defPremium, setDefPremium] = useState(false);
+  const [defBlocked, setDefBlocked] = useState(false);
+  const [defDays, setDefDays] = useState("");
+  const [defTools, setDefTools] = useState<Record<string, boolean>>({});
+  const [applyingDefaults, setApplyingDefaults] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -444,25 +455,67 @@ function AdminPage() {
     enabled: isAdmin,
   });
 
+  /** applies one set of settings to every ordinary account in one go */
+  const onApplyDefaults = async () => {
+    if (!window.confirm(t("Apply these settings to every account?"))) return;
+    setApplyingDefaults(true);
+    try {
+      const parsed = Number(defDays);
+      const accessDays =
+        defDays.trim() === ""
+          ? undefined
+          : Number.isFinite(parsed) && parsed > 0
+            ? parsed
+            : null;
+      const result = await savePlatformDefaults({
+        credits: defCredits,
+        creditRefillAmount: defRefillAmount,
+        creditRefillHours: defRefillHours,
+        premium: defPremium,
+        blocked: defBlocked,
+        allowedTools: defTools,
+        ...(accessDays === undefined ? {} : { accessDays }),
+      });
+      await users.refetch();
+      toast.success(t("{n} account(s) updated.", { n: result.updated }));
+    } catch {
+      toast.error(t("We couldn't update these accounts."));
+    } finally {
+      setApplyingDefaults(false);
+    }
+  };
+
   const onSendNotification = async () => {
     if (!notifTitle.trim()) {
       toast.error(t("Give the notification a title."));
       return;
     }
+    if (!notifAll && notifIds.length === 0) {
+      toast.error(t("Pick who receives it."));
+      return;
+    }
     setSending(true);
     try {
-      await adminSendNotification({
+      const payload = {
         title: notifTitle,
         body: notifBody,
         linkUrl: notifLinkUrl,
         linkLabel: notifLinkLabel,
-        targetUserId: notifTarget === "all" ? null : notifTarget,
-      });
+      };
+      if (notifAll) {
+        await adminSendNotification({ ...payload, targetUserId: null });
+      } else {
+        for (const id of notifIds) {
+          await adminSendNotification({ ...payload, targetUserId: id });
+        }
+      }
       setNotifTitle("");
       setNotifBody("");
       setNotifLinkUrl("");
       setNotifLinkLabel("");
-      setNotifTarget("all");
+      setNotifIds([]);
+      setNotifAll(true);
+      setNotifSearch("");
       void notifications.refetch();
       toast.success(t("Notification sent."));
     } catch {
@@ -733,19 +786,66 @@ function AdminPage() {
 
           <div className="mt-5 space-y-3">
             <div>
-              <label className="text-xs font-semibold text-muted-foreground">{t("Who receives it")}</label>
-              <select
-                value={notifTarget}
-                onChange={(e) => setNotifTarget(e.target.value)}
-                className="mt-1 h-10 w-full rounded-md border border-border bg-background px-2 text-sm"
-              >
-                <option value="all">{t("Everyone")}</option>
-                {(users.data ?? []).map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.email ?? u.full_name ?? u.id}
-                  </option>
-                ))}
-              </select>
+              <label className="text-xs font-semibold text-muted-foreground">
+                {t("Who receives it")}
+              </label>
+              <label className="mt-1.5 flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={notifAll}
+                  onChange={(e) => setNotifAll(e.target.checked)}
+                />
+                {t("Everyone")}
+              </label>
+
+              {!notifAll && (
+                <>
+                  <Input
+                    className="mt-2 h-9"
+                    placeholder={t("Search by name or e-mail")}
+                    value={notifSearch}
+                    onChange={(e) => setNotifSearch(e.target.value)}
+                  />
+                  <div className="mt-2 max-h-56 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
+                    {(users.data ?? [])
+                      .filter((u) => {
+                        const q = notifSearch.trim().toLowerCase();
+                        if (!q) return true;
+                        return (
+                          (u.email ?? "").toLowerCase().includes(q) ||
+                          (u.full_name ?? "").toLowerCase().includes(q)
+                        );
+                      })
+                      .map((u) => (
+                        <label
+                          key={u.id}
+                          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent"
+                        >
+                          <input
+                            type="checkbox"
+                            className="size-4 accent-primary"
+                            checked={notifIds.includes(u.id)}
+                            onChange={(e) =>
+                              setNotifIds((prev) =>
+                                e.target.checked
+                                  ? [...prev, u.id]
+                                  : prev.filter((id) => id !== u.id),
+                              )
+                            }
+                          />
+                          <span className="min-w-0 flex-1 truncate">
+                            <span className="font-semibold">{u.full_name || t("no name")}</span>{" "}
+                            <span className="text-muted-foreground">{u.email}</span>
+                          </span>
+                        </label>
+                      ))}
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {t("{n} account(s) selected", { n: notifIds.length })}
+                  </p>
+                </>
+              )}
             </div>
             <div>
               <label className="text-xs font-semibold text-muted-foreground">{t("Title")}</label>
@@ -914,6 +1014,110 @@ function AdminPage() {
           <p className="mt-2 text-[11px] text-muted-foreground">
             {t("1 credit = 1 processed video")}
           </p>
+
+          {/* one setting applied to every ordinary account at once */}
+          <div className="mt-4 rounded-xl border border-border bg-background/60 p-4">
+            <h3 className="text-sm font-bold">{t("System defaults for all users")}</h3>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {t("These values replace the current settings of every ordinary account.")}
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">
+                  {t("Available credits")}
+                </label>
+                <Input
+                  className="mt-1 h-9"
+                  type="number"
+                  min={0}
+                  value={defCredits}
+                  onChange={(e) => setDefCredits(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">
+                  {t("Credits per refill")}
+                </label>
+                <Input
+                  className="mt-1 h-9"
+                  type="number"
+                  min={0}
+                  value={defRefillAmount}
+                  onChange={(e) => setDefRefillAmount(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">
+                  {t("Refill every (hours)")}
+                </label>
+                <Input
+                  className="mt-1 h-9"
+                  type="number"
+                  min={1}
+                  value={defRefillHours}
+                  onChange={(e) => setDefRefillHours(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">
+                  {t("Access for (days)")}
+                </label>
+                <Input
+                  className="mt-1 h-9"
+                  type="number"
+                  min={0}
+                  placeholder={t("unlimited")}
+                  value={defDays}
+                  onChange={(e) => setDefDays(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-4">
+              <label className="flex items-center gap-2 text-xs font-semibold">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={defPremium}
+                  onChange={(e) => setDefPremium(e.target.checked)}
+                />
+                {t("Premium")}
+              </label>
+              <label className="flex items-center gap-2 text-xs font-semibold">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={defBlocked}
+                  onChange={(e) => setDefBlocked(e.target.checked)}
+                />
+                {t("Blocked")}
+              </label>
+            </div>
+
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {TOOL_KEYS.map((key) => (
+                <label key={key} className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-primary"
+                    checked={defTools[key] !== false}
+                    onChange={(e) => setDefTools((prev) => ({ ...prev, [key]: e.target.checked }))}
+                  />
+                  <span>{t(TOOL_LABELS[key])}</span>
+                </label>
+              ))}
+            </div>
+
+            <Button
+              className="mt-4"
+              size="sm"
+              onClick={() => void onApplyDefaults()}
+              disabled={applyingDefaults}
+            >
+              {applyingDefaults ? t("Applying…") : t("Apply to all users")}
+            </Button>
+          </div>
+
 
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-xs">

@@ -120,8 +120,10 @@ function OverlayCreator() {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = cfg.bgColor;
-    ctx.fillRect(0, 0, W, H);
+    if (!cfg.bgTransparent) {
+      ctx.fillStyle = cfg.bgColor;
+      ctx.fillRect(0, 0, W, H);
+    }
 
     const bg = bgImgRef.current;
     const drawUploadedImage = () => {
@@ -334,7 +336,7 @@ function OverlayCreator() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
       <header className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
         <div>
         <h1 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight">
@@ -347,9 +349,9 @@ function OverlayCreator() {
         <div className="flex items-center gap-2"><LanguageToggle /></div>
       </header>
 
-      <div className="grid gap-4 p-4 lg:grid-cols-[300px_minmax(0,1fr)_320px]">
+      <div className="scrollbar-hidden grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:overflow-hidden lg:grid-cols-[300px_minmax(0,1fr)_320px]">
         {/* Elementos */}
-        <section className="space-y-4 rounded-xl border border-border bg-card p-4">
+        <section className="scrollbar-hidden space-y-4 rounded-xl border border-border bg-card p-4 lg:h-full lg:overflow-y-auto lg:overscroll-contain">
           <div>
             <p className="text-sm font-bold">{t("Elements")}</p>
             <p className="mt-1 text-[11px] text-muted-foreground">
@@ -388,6 +390,21 @@ function OverlayCreator() {
                 reader.readAsDataURL(file);
               }}
             />
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">{t("Photo size")}</span>
+                <span className="font-bold">{Math.round(cfg.photoSize * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min={5}
+                max={100}
+                step={1}
+                value={Math.round(cfg.photoSize * 100)}
+                onChange={(e) => patch({ photoSize: Number(e.target.value) / 100 })}
+                className="mt-2 w-full accent-primary"
+              />
+            </div>
           </div>
 
           <div className="space-y-3 border-t border-border/60 pt-3">
@@ -555,6 +572,16 @@ function OverlayCreator() {
             ))}
           </div>
 
+          <label className="flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={cfg.bgTransparent}
+              onChange={(e) => patch({ bgTransparent: e.target.checked })}
+              className="size-4 accent-primary"
+            />
+            {t("Transparent background")}
+          </label>
+
           <div>
             <p className="text-xs font-semibold">{t("Text alignment")}</p>
             <div className="mt-1.5 grid grid-cols-3 gap-2">
@@ -602,26 +629,11 @@ function OverlayCreator() {
                 className="mt-2 w-full accent-primary"
               />
             </div>
-            <div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">{t("Photo size")}</span>
-                <span className="font-bold">{Math.round(cfg.photoSize * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min={5}
-                max={100}
-                step={1}
-                value={Math.round(cfg.photoSize * 100)}
-                onChange={(e) => patch({ photoSize: Number(e.target.value) / 100 })}
-                className="mt-2 w-full accent-primary"
-              />
-            </div>
           </div>
         </section>
 
         {/* Preview */}
-        <section className="rounded-xl border border-border bg-card p-4">
+        <section className="h-fit rounded-xl border border-border bg-card p-4 lg:sticky lg:top-0">
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold">{t("Preview")}</p>
             <p className="text-[11px] text-muted-foreground">
@@ -658,7 +670,7 @@ function OverlayCreator() {
         </section>
 
         {/* Pré-definições */}
-        <section className="rounded-xl border border-border bg-card p-4">
+        <section className="scrollbar-hidden rounded-xl border border-border bg-card p-4 lg:h-full lg:overflow-y-auto lg:overscroll-contain">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-bold">{t("Presets")}</p>
@@ -733,35 +745,26 @@ function OverlayCreator() {
                     )}
                   </div>
 
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-2 space-y-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => void persist(slot)}
+                    >
+                      <Save className="mr-1.5 size-3.5" />
+                      {preset ? "Salvar" : "Salvar aqui"}
+                    </Button>
                     {preset && (
-                      <img
-                        src={preset.dataUrl}
-                        alt=""
-                        className="h-14 w-8 rounded border border-border object-cover"
-                      />
-                    )}
-                    <div className="flex-1 space-y-2">
                       <Button
-                        variant="secondary"
+                        variant="ghost"
                         size="sm"
                         className="w-full"
-                        onClick={() => void persist(slot)}
+                        onClick={() => loadPreset(preset)}
                       >
-                        <Save className="mr-1.5 size-3.5" />
-                        {preset ? "Salvar" : "Salvar aqui"}
+                        <Check className="mr-1.5 size-3.5" /> Carregar
                       </Button>
-                      {preset && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full"
-                          onClick={() => loadPreset(preset)}
-                        >
-                          <Check className="mr-1.5 size-3.5" /> Carregar
-                        </Button>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               );

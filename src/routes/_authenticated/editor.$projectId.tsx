@@ -19,7 +19,6 @@ import { listOverlays, type OverlayPreset } from "@/lib/overlays";
 import {
   Scissors,
   UploadCloud,
-  Loader2,
   Download,
   Trash2,
   Zap,
@@ -171,6 +170,22 @@ function EditorPage() {
   const [paused, setPaused] = useState(false);
 
   const [engineReady, setEngineReady] = useState(false);
+
+  /** live numbers of the running batch, used by the time estimate panel */
+  const [batch, setBatch] = useState<{
+    total: number;
+    done: number;
+    failed: number;
+    startedAt: number;
+  } | null>(null);
+  const [now, setNow] = useState(Date.now());
+  const usedNames = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [running]);
 
   // load this project's own edit settings
   const settingsLoaded = useRef(false);
@@ -401,6 +416,25 @@ function EditorPage() {
   };
 
 
+  /** project name turned into a safe file prefix */
+  const projectSlug = () =>
+    (projectName || "video")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "video";
+
+  /** project name plus 8 random digits that never repeat in this session */
+  function makeOutputName() {
+    let suffix = "";
+    do {
+      suffix = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join("");
+    } while (usedNames.current.has(suffix));
+    usedNames.current.add(suffix);
+    return `${projectSlug()}_${suffix}.mp4`;
+  }
+
   async function handleProcess() {
     if (queuedClips.length === 0) {
       toast.error(t("Add videos to process."));
@@ -420,6 +454,8 @@ function EditorPage() {
     setRunning(true);
     setPaused(false);
     cancelledRef.current = false;
+    setBatch({ total: queuedClips.length, done: 0, failed: 0, startedAt: Date.now() });
+    setNow(Date.now());
 
     const firstQueued = queuedClips[0];
     if (firstQueued) {
@@ -475,13 +511,14 @@ function EditorPage() {
                     progress: 1,
                     resultBlob: blob,
                     resultUrl: URL.createObjectURL(blob),
-                    resultName: videoLib.outputName(clip.file.name, settings.aspect),
+                    resultName: makeOutputName(),
                   }
                 : c,
             ),
           );
           rendered += 1;
           renderedBytes += blob.size;
+          setBatch((b) => (b ? { ...b, done: b.done + 1 } : b));
 
         } catch (err) {
 
@@ -496,6 +533,7 @@ function EditorPage() {
                 : c,
             ),
           );
+          setBatch((b) => (b ? { ...b, failed: b.failed + 1 } : b));
         }
       }
 
@@ -630,6 +668,17 @@ function EditorPage() {
       ))}
     </div>
   );
+
+  /** seconds left in the running batch, from the average time already measured */
+  const finishedInBatch = (batch?.done ?? 0) + (batch?.failed ?? 0);
+  const pendingInBatch = Math.max(0, (batch?.total ?? 0) - finishedInBatch);
+  const etaSeconds = batch
+    ? Math.round(
+        ((finishedInBatch > 0 ? (now - batch.startedAt) / finishedInBatch : 25_000) *
+          pendingInBatch) /
+          1000,
+      )
+    : 0;
 
   const previewClip = selected;
   const { w: outW, h: outH } = ASPECTS[opts.aspect];
@@ -1000,18 +1049,64 @@ function EditorPage() {
               </button>
             </div>
 
+          </div>
 
-            {doneClips.length > 0 && (
-              <div className="mt-4 flex justify-end border-t border-border/60 pt-3">
-                <Button variant="outline" size="sm" onClick={() => setDownloadOpen(true)}>
-                  <Download className="mr-1.5 size-4" /> {t("Download all")} ({doneClips.length})
+          {/* processing controls / time estimate — always visible under the preview */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 space-y-2 border-t border-border bg-background p-4 xl:sticky xl:bottom-0 xl:z-auto xl:border-t-0 xl:bg-transparent xl:p-0">
+            {running ? (
+              <div className="rounded-xl border border-border bg-card p-3">
+                <p className="text-xs font-bold">{t("Processing time estimate")}</p>
+                <p className="mt-1 font-display text-2xl font-bold tabular-nums">
+                  {fmtTime(etaSeconds)}
+                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                  <span className="font-bold tabular-nums text-foreground">
+                    {String(batch?.done ?? 0).padStart(3, "0")}/
+                    {String(batch?.total ?? 0).padStart(3, "0")}
+                  </span>
+                  <span>{t("{n} pending", { n: pendingInBatch })}</span>
+                  {(batch?.failed ?? 0) > 0 && (
+                    <span className="font-bold text-destructive">
+                      {t("{n} failed", { n: batch?.failed ?? 0 })}
+                    </span>
+                  )}
+                </div>
+                <Progress
+                  className="mt-2 h-1.5"
+                  value={(finishedInBatch / Math.max(1, batch?.total ?? 1)) * 100}
+                />
+                <Button
+                  variant="outline"
+                  className="mt-3 w-full"
+                  onClick={() => {
+                    cancelledRef.current = true;
+                    toast.info(t("Processing will pause after the current video."));
+                  }}
+                >
+                  <Pause className="mr-2 size-4" /> {t("Pause processing")}
                 </Button>
               </div>
+            ) : (
+              <Button
+                className="h-12 w-full text-base disabled:opacity-100"
+                onClick={() => void handleProcess()}
+                disabled={queuedClips.length === 0}
+              >
+                {paused && queuedClips.length > 0 ? (
+                  <>
+                    <Play className="mr-2 size-5" /> {t("Resume processing")} ({queuedClips.length})
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 size-5" />{" "}
+                    {t("Process {n} video(s)", { n: queuedClips.length })}
+                  </>
+                )}
+              </Button>
             )}
-
-
           </div>
         </section>
+
 
         {/* ---------- Column 3: edit tabs + process ---------- */}
         <section className="scrollbar-hidden space-y-3 xl:h-full xl:overflow-y-auto xl:overscroll-contain xl:pb-4">
@@ -1514,42 +1609,8 @@ function EditorPage() {
           >
             <RotateCcw className="mr-1.5 size-4" /> {t("Reset all edits")}
           </Button>
-
-          <div className="fixed bottom-0 left-0 right-0 z-50 space-y-2 border-t border-border bg-background p-4 xl:sticky xl:bottom-0 xl:z-auto xl:border-t-0 xl:bg-transparent xl:p-0">
-            <Button
-              className="h-12 w-full text-base disabled:opacity-100"
-              onClick={() => void handleProcess()}
-              disabled={running || queuedClips.length === 0}
-            >
-              {running ? (
-                <>
-                  <Loader2 className="mr-2 size-5 animate-spin" /> {t("Processing…")}
-                </>
-              ) : paused && queuedClips.length > 0 ? (
-                <>
-                  <Play className="mr-2 size-5" /> {t("Resume processing")} ({queuedClips.length})
-                </>
-              ) : (
-                <>
-                  <Play className="mr-2 size-5" />{" "}
-                  {t("Process {n} video(s)", { n: queuedClips.length })}
-                </>
-              )}
-            </Button>
-            {running && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  cancelledRef.current = true;
-                  toast.info(t("Processing will pause after the current video."));
-                }}
-              >
-                <Pause className="mr-2 size-4" /> {t("Pause processing")}
-              </Button>
-            )}
-          </div>
         </section>
+
 
 
       </main>
