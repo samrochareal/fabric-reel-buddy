@@ -256,15 +256,15 @@ function EditorPage() {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  /** countdown in hours, minutes and seconds: h:mm:ss (or m:ss under an hour) */
+  /** countdown spelled out in hours, minutes and seconds, in the current language */
   const fmtCountdown = (s: number) => {
-    if (!Number.isFinite(s) || s <= 0) return "0:00";
+    if (!Number.isFinite(s) || s <= 0) return t("{s} seconds", { s: 0 });
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     const sec = Math.floor(s % 60);
-    return h > 0
-      ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
-      : `${m}:${String(sec).padStart(2, "0")}`;
+    if (h > 0) return t("{h} hours, {m} minutes and {s} seconds", { h, m, s: sec });
+    if (m > 0) return t("{m} minutes and {s} seconds", { m, s: sec });
+    return t("{s} seconds", { s: sec });
   };
 
 
