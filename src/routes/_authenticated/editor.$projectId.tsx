@@ -1610,42 +1610,8 @@ function EditorPage() {
           >
             <RotateCcw className="mr-1.5 size-4" /> {t("Reset all edits")}
           </Button>
-
-          <div className="fixed bottom-0 left-0 right-0 z-50 space-y-2 border-t border-border bg-background p-4 xl:sticky xl:bottom-0 xl:z-auto xl:border-t-0 xl:bg-transparent xl:p-0">
-            <Button
-              className="h-12 w-full text-base disabled:opacity-100"
-              onClick={() => void handleProcess()}
-              disabled={running || queuedClips.length === 0}
-            >
-              {running ? (
-                <>
-                  <Loader2 className="mr-2 size-5 animate-spin" /> {t("Processing…")}
-                </>
-              ) : paused && queuedClips.length > 0 ? (
-                <>
-                  <Play className="mr-2 size-5" /> {t("Resume processing")} ({queuedClips.length})
-                </>
-              ) : (
-                <>
-                  <Play className="mr-2 size-5" />{" "}
-                  {t("Process {n} video(s)", { n: queuedClips.length })}
-                </>
-              )}
-            </Button>
-            {running && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  cancelledRef.current = true;
-                  toast.info(t("Processing will pause after the current video."));
-                }}
-              >
-                <Pause className="mr-2 size-4" /> {t("Pause processing")}
-              </Button>
-            )}
-          </div>
         </section>
+
 
 
       </main>
