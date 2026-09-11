@@ -745,35 +745,26 @@ function OverlayCreator() {
                     )}
                   </div>
 
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-2 space-y-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => void persist(slot)}
+                    >
+                      <Save className="mr-1.5 size-3.5" />
+                      {preset ? "Salvar" : "Salvar aqui"}
+                    </Button>
                     {preset && (
-                      <img
-                        src={preset.dataUrl}
-                        alt=""
-                        className="h-14 w-8 rounded border border-border object-cover"
-                      />
-                    )}
-                    <div className="flex-1 space-y-2">
                       <Button
-                        variant="secondary"
+                        variant="ghost"
                         size="sm"
                         className="w-full"
-                        onClick={() => void persist(slot)}
+                        onClick={() => loadPreset(preset)}
                       >
-                        <Save className="mr-1.5 size-3.5" />
-                        {preset ? "Salvar" : "Salvar aqui"}
+                        <Check className="mr-1.5 size-3.5" /> Carregar
                       </Button>
-                      {preset && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full"
-                          onClick={() => loadPreset(preset)}
-                        >
-                          <Check className="mr-1.5 size-3.5" /> Carregar
-                        </Button>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               );
