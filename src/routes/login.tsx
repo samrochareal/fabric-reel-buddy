@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Mail, RefreshCw, Scissors } from "lucide-react";
+import { Loader2, Mail, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,12 +146,9 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2">
-          {branding.ready &&
-            (branding.logo_url ? (
-              <img src={branding.logo_url} alt={branding.system_name} className="h-7 w-auto" />
-            ) : (
-              <Scissors className="size-5 text-primary" />
-            ))}
+          {branding.ready && branding.logo_url && (
+            <img src={branding.logo_url} alt={branding.system_name} className="h-7 w-auto" />
+          )}
           <span className="font-display text-lg font-bold tracking-tight">
             {branding.ready ? branding.system_name : ""}
           </span>

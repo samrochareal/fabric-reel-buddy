@@ -34,8 +34,8 @@ function LandingPage() {
   return (
     <LandingView
       content={content}
-      systemName={branding.system_name}
-      brandImage={branding.logo_url || branding.icon_url}
+      systemName={branding.ready ? branding.system_name : ""}
+      brandImage={branding.ready ? branding.logo_url || branding.icon_url : null}
       device={isMobile ? "mobile" : "desktop"}
     />
   );

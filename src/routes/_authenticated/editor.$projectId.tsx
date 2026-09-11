@@ -17,7 +17,6 @@ import { listOverlays, type OverlayPreset } from "@/lib/overlays";
 
 
 import {
-  Scissors,
   UploadCloud,
   Download,
   Trash2,
@@ -878,12 +877,9 @@ function EditorPage() {
           <SideMenu />
 
           <span className="flex min-w-0 items-center justify-center gap-2">
-            {branding.ready &&
-              (branding.logo_url ? (
-                <img src={branding.logo_url} alt={branding.system_name} className="h-7 w-auto" />
-              ) : (
-                <Scissors className="size-4 text-primary" />
-              ))}
+            {branding.ready && branding.logo_url && (
+              <img src={branding.logo_url} alt={branding.system_name} className="h-7 w-auto" />
+            )}
             <span className="truncate font-display text-base font-bold tracking-tight">
               {branding.ready ? branding.system_name : ""}
             </span>
