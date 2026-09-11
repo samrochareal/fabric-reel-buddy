@@ -489,6 +489,47 @@ function AdminPage() {
     }
   };
 
+  /** applies the same settings only to the accounts picked in the popup */
+  const onApplyToSelected = async () => {
+    if (specIds.length === 0) {
+      toast.error(t("Pick at least one account."));
+      return;
+    }
+    setApplyingSpec(true);
+    try {
+      const parsed = Number(defDays);
+      const accessDays =
+        defDays.trim() === ""
+          ? undefined
+          : Number.isFinite(parsed) && parsed > 0
+            ? parsed
+            : null;
+      const payload = {
+        credits: defCredits,
+        creditRefillAmount: defRefillAmount,
+        creditRefillHours: defRefillHours,
+        premium: defPremium,
+        blocked: defBlocked,
+        allowedTools: defTools,
+        ...(accessDays === undefined ? {} : { accessDays }),
+      };
+      let updated = 0;
+      for (const userId of specIds) {
+        await savePlatformUser({ userId, ...payload });
+        updated += 1;
+      }
+      await users.refetch();
+      toast.success(t("{n} account(s) updated.", { n: updated }));
+      setSpecOpen(false);
+      setSpecIds([]);
+      setSpecSearch("");
+    } catch {
+      toast.error(t("We couldn't update these accounts."));
+    } finally {
+      setApplyingSpec(false);
+    }
+  };
+
   const onSendNotification = async () => {
     if (!notifTitle.trim()) {
       toast.error(t("Give the notification a title."));
