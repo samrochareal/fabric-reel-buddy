@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Film, Loader2, Pencil, Plus, Scissors, Trash2 } from "lucide-react";
+import { Film, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { SideMenu } from "@/components/side-menu";
 import { CreditMeter } from "@/components/credit-meter";
@@ -137,12 +137,9 @@ function ProjectsPage() {
         <div className="grid h-14 grid-cols-[auto_1fr_auto] items-center gap-3 px-4">
           <SideMenu />
           <span className="flex min-w-0 items-center justify-center gap-2">
-            {branding.ready &&
-              (branding.logo_url ? (
-                <img src={branding.logo_url} alt={branding.system_name} className="h-7 w-auto" />
-              ) : (
-                <Scissors className="size-4 text-primary" />
-              ))}
+            {branding.ready && branding.logo_url && (
+              <img src={branding.logo_url} alt={branding.system_name} className="h-7 w-auto" />
+            )}
             <span className="truncate font-display text-base font-bold tracking-tight">
               {branding.ready ? branding.system_name : ""}
             </span>

@@ -82,13 +82,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no",
       },
-      { title: "Fábrica de Reels — Edite vídeos em massa" },
+      { title: "Editor de vídeos em massa" },
       {
         name: "description",
         content:
           "Suba até 50 clipes de uma vez, ajuste o enquadramento em segundos e baixe tudo pronto para Reels, TikTok e Shorts.",
       },
-      { property: "og:title", content: "Fábrica de Reels — Edite vídeos em massa" },
+      { property: "og:title", content: "Editor de vídeos em massa" },
       {
         property: "og:description",
         content:

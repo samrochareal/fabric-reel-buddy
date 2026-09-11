@@ -24,7 +24,8 @@ export type Branding = {
 };
 
 export const defaultBranding: Branding = {
-  system_name: "Fábrica de Reels",
+  // Identity stays blank until the master's saved branding has loaded.
+  system_name: "",
   tagline: null,
   palette: { primary: "#f97316", background: "#0b0b0d", accent: "#27272a" },
   logo_url: null,
