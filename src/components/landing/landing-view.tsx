@@ -6,6 +6,8 @@ import {
   ChevronDown,
   ChevronUp,
   Crop,
+  Eye,
+  EyeOff,
   Frame,
   Gauge,
   GripVertical,
@@ -14,7 +16,6 @@ import {
   LogIn,
   Plus,
   Rocket,
-  Scissors,
   ShieldCheck,
   Sparkles,
   Trash2,
@@ -90,6 +91,9 @@ function EditList<T>({
   render,
   className,
   addLabel = "Adicionar item",
+  hiddenKey,
+  isHidden,
+  onToggleHidden,
 }: {
   editing: boolean;
   items: T[];
@@ -99,12 +103,15 @@ function EditList<T>({
   render: (item: T, index: number, setItem: (next: T) => void) => React.ReactNode;
   className?: string | undefined;
   addLabel?: string | undefined;
+  hiddenKey?: string | undefined;
+  isHidden?: ((key: string) => boolean) | undefined;
+  onToggleHidden?: ((key: string) => void) | undefined;
 }) {
   const dragFrom = useRef<number | null>(null);
   const noop = () => {};
 
   if (!editing || !onChange) {
-    const visible = items.filter(keep);
+    const visible = items.filter((item, index) => keep(item) && !(hiddenKey && isHidden?.(`${hiddenKey}.${index}`)));
     if (!visible.length) return null;
     return <div className={className}>{visible.map((item, i) => render(item, i, noop))}</div>;
   }
@@ -139,6 +146,16 @@ function EditList<T>({
               <span className="cursor-grab p-1 text-muted-foreground" title="Arraste para reordenar">
                 <GripVertical className="size-3.5" />
               </span>
+              {hiddenKey && onToggleHidden && (
+                <button
+                  type="button"
+                  className="p-1 text-muted-foreground hover:text-foreground"
+                  onClick={() => onToggleHidden(`${hiddenKey}.${i}`)}
+                  title={isHidden?.(`${hiddenKey}.${i}`) ? "Mostrar elemento" : "Ocultar elemento"}
+                >
+                  {isHidden?.(`${hiddenKey}.${i}`) ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                </button>
+              )}
               <button type="button" className="p-1 text-muted-foreground hover:text-foreground" onClick={() => move(i, i - 1)} title="Subir">
                 <ChevronUp className="size-3.5" />
               </button>
@@ -154,7 +171,9 @@ function EditList<T>({
                 <Trash2 className="size-3.5" />
               </button>
             </div>
-            {render(item, i, (next) => onChange(items.map((it, j) => (j === i ? next : it))))}
+            <div className={cn(isHidden?.(`${hiddenKey}.${i}`) && "opacity-35")}>
+              {render(item, i, (next) => onChange(items.map((it, j) => (j === i ? next : it))))}
+            </div>
           </div>
         ))}
       </div>
@@ -227,6 +246,8 @@ function SectionShell({
   section,
   label,
   onMove,
+  hidden,
+  onToggleHidden,
   children,
 }: {
   edit?: LandingEdit | undefined;
@@ -234,9 +255,11 @@ function SectionShell({
   section: LandingSection;
   label: string;
   onMove: (section: LandingSection, delta: number) => void;
+  hidden: boolean;
+  onToggleHidden: () => void;
   children: React.ReactNode;
 }) {
-  if (!edit) return <>{children}</>;
+  if (!edit) return hidden ? null : <>{children}</>;
   const index = order.indexOf(section);
   return (
     <div
@@ -249,11 +272,14 @@ function SectionShell({
         if (!from || from === section) return;
         onMove(from, order.indexOf(section) - order.indexOf(from));
       }}
-      className="relative border-y-2 border-dashed border-transparent hover:border-primary/40"
+      className={cn("relative border-y-2 border-dashed border-transparent hover:border-primary/40", hidden && "opacity-35")}
     >
       <div className="pointer-events-auto absolute left-2 top-2 z-30 flex items-center gap-1 rounded-md bg-background/90 px-1.5 py-1 text-[11px] font-bold shadow">
         <GripVertical className="size-3.5 cursor-grab text-muted-foreground" />
         {label}
+        <button type="button" className="px-1 text-muted-foreground hover:text-foreground" onClick={onToggleHidden} title={hidden ? "Mostrar seção" : "Ocultar seção"}>
+          {hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+        </button>
         <button type="button" className="px-1 text-muted-foreground hover:text-foreground" onClick={() => onMove(section, -1)} title="Subir seção">
           <ChevronUp className="size-3.5" />
         </button>
@@ -314,6 +340,9 @@ export function LandingView({
     edit ? (v: string) => patch(group, { [field]: v }) : undefined;
   const list = <T,>(group: Group, field: string) =>
     edit ? (next: T[]) => patch(group, { [field]: next }) : undefined;
+  const isHidden = (key: string) => Boolean(content.hidden?.[key]);
+  const toggleHidden = (key: string) =>
+    edit?.update((c) => ({ ...c, hidden: { ...c.hidden, [key]: !c.hidden?.[key] } }));
 
   const moveSection = (section: LandingSection, delta: number) =>
     edit?.update((c) => {
@@ -405,6 +434,9 @@ export function LandingView({
               onChange={list<string>("hero", "badges")}
               blank={() => "Novo selo"}
               addLabel="Adicionar selo"
+              hiddenKey="hero.badges"
+              isHidden={isHidden}
+              onToggleHidden={toggleHidden}
               className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-muted-foreground"
               render={(badge, i, setItem) => {
                 const Icon = [Rocket, Zap, Sparkles][i % 3] ?? Sparkles;
@@ -419,18 +451,19 @@ export function LandingView({
           </div>
 
           <div className="relative rounded-2xl border border-border bg-card p-3 shadow-2xl">
-            {content.hero.image ? (
+            {content.hero.image && !isHidden("hero.image") ? (
               <img src={content.hero.image} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" />
             ) : (
               <EditorMock />
             )}
             {edit && (
-              <ImageSlot
-                className="mt-3"
-                label="Imagem da abertura"
-                value={content.hero.image}
-                onChange={(image) => patch("hero", { image })}
-              />
+              <div className="mt-3">
+                <Button type="button" size="sm" variant="outline" onClick={() => toggleHidden("hero.image")}>
+                  {isHidden("hero.image") ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  {isHidden("hero.image") ? "Mostrar imagem" : "Ocultar imagem"}
+                </Button>
+                <ImageSlot className="mt-2" label="Imagem da abertura" value={content.hero.image} onChange={(image) => patch("hero", { image })} />
+              </div>
             )}
           </div>
         </div>
@@ -467,6 +500,9 @@ export function LandingView({
             onChange={list<{ title: string; text: string }>("features", "items")}
             blank={() => ({ title: "Novo recurso", text: "Descrição do recurso." })}
             addLabel="Adicionar recurso"
+            hiddenKey="features.items"
+            isHidden={isHidden}
+            onToggleHidden={toggleHidden}
             className={cn("mt-10 grid gap-4", mobile ? "grid-cols-1" : "sm:grid-cols-2 lg:grid-cols-3")}
             render={(f, i, setItem) => {
               const Icon = featureIcons[i % featureIcons.length] ?? Layers;
@@ -498,6 +534,9 @@ export function LandingView({
               onChange={list<string>("benefits", "items")}
               blank={() => "Novo benefício"}
               addLabel="Adicionar benefício"
+              hiddenKey="benefits.items"
+              isHidden={isHidden}
+              onToggleHidden={toggleHidden}
               className="mt-7 space-y-3"
               render={(item, i, setItem) => (
                 <div key={i} className="flex items-start gap-3 text-sm font-semibold">
@@ -517,6 +556,9 @@ export function LandingView({
             onChange={list<{ title: string; text: string }>("benefits", "stats")}
             blank={() => ({ title: "0", text: "novo número" })}
             addLabel="Adicionar número"
+            hiddenKey="benefits.stats"
+            isHidden={isHidden}
+            onToggleHidden={toggleHidden}
             className={cn("grid gap-4", !mobile && "sm:grid-cols-2")}
             render={(s, i, setItem) => (
               <div key={i} className="h-full rounded-xl border border-border bg-card p-6">
@@ -541,6 +583,9 @@ export function LandingView({
             onChange={list<{ title: string; text: string }>("steps", "items")}
             blank={() => ({ title: "Novo passo", text: "Descrição do passo." })}
             addLabel="Adicionar passo"
+            hiddenKey="steps.items"
+            isHidden={isHidden}
+            onToggleHidden={toggleHidden}
             className={cn("mt-10 grid gap-4", !mobile && "sm:grid-cols-2 lg:grid-cols-4")}
             render={(s, i, setItem) => (
               <div key={i} className="h-full rounded-xl border border-border bg-card p-5">
@@ -566,6 +611,9 @@ export function LandingView({
             onChange={list<{ title: string; text: string }>("audience", "items")}
             blank={() => ({ title: "Novo público", text: "Descrição." })}
             addLabel="Adicionar público"
+            hiddenKey="audience.items"
+            isHidden={isHidden}
+            onToggleHidden={toggleHidden}
             className={cn("mt-10 grid gap-4", !mobile && "sm:grid-cols-2 lg:grid-cols-4")}
             render={(a, i, setItem) => (
               <div key={i} className="h-full rounded-xl border border-border bg-card p-5">
@@ -593,6 +641,9 @@ export function LandingView({
             onChange={list<{ q: string; a: string }>("faq", "items")}
             blank={() => ({ q: "Nova pergunta?", a: "Resposta." })}
             addLabel="Adicionar pergunta"
+            hiddenKey="faq.items"
+            isHidden={isHidden}
+            onToggleHidden={toggleHidden}
             className="divide-y divide-border rounded-xl border border-border bg-card"
             render={(item, i, setItem) =>
               editing ? (
@@ -628,7 +679,7 @@ export function LandingView({
           <div
             className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card px-6 py-14 text-center"
             style={
-              content.cta.image
+              content.cta.image && !isHidden("cta.image")
                 ? {
                     backgroundImage: `linear-gradient(rgb(0 0 0 / .68), rgb(0 0 0 / .68)), url(${content.cta.image})`,
                     backgroundSize: "cover",
@@ -670,12 +721,13 @@ export function LandingView({
               )}
             </div>
             {edit && (
-              <ImageSlot
-                className="relative mt-6 text-left"
-                label="Imagem de fundo da chamada final"
-                value={content.cta.image}
-                onChange={(image) => patch("cta", { image })}
-              />
+              <div className="relative mt-6 text-left">
+                <Button type="button" size="sm" variant="outline" onClick={() => toggleHidden("cta.image")}>
+                  {isHidden("cta.image") ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  {isHidden("cta.image") ? "Mostrar imagem" : "Ocultar imagem"}
+                </Button>
+                <ImageSlot className="mt-2" label="Imagem de fundo da chamada final" value={content.cta.image} onChange={(image) => patch("cta", { image })} />
+              </div>
             )}
           </div>
         </div>
@@ -691,14 +743,15 @@ export function LandingView({
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
           <div className="flex min-w-0 items-center gap-2">
-            {brandImage ? (
+            {brandImage && !isHidden("header.brand") ? (
               <img src={brandImage} alt="" className="size-9 shrink-0 object-contain" />
-            ) : (
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Scissors className="size-4" />
-              </span>
+            ) : null}
+            {!isHidden("header.brand") && <span className="truncate font-display text-lg font-bold">{systemName}</span>}
+            {edit && (
+              <button type="button" onClick={() => toggleHidden("header.brand")} className="p-1 text-muted-foreground" title={isHidden("header.brand") ? "Mostrar identidade" : "Ocultar identidade"}>
+                {isHidden("header.brand") ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
             )}
-            <span className="truncate font-display text-lg font-bold">{systemName}</span>
           </div>
 
           {!mobile && (
@@ -710,21 +763,23 @@ export function LandingView({
                 ["faq", "#faq"],
               ] as const).map(([field, href]) => {
                 const value = content.nav[field];
-                if (!editing && !shown(value)) return null;
+                if (!editing && (!shown(value) || isHidden(`nav.${field}`))) return null;
                 return (
                   <a key={field} href={editing ? undefined : href} className="transition-colors hover:text-foreground">
                     <EditableText value={value} onChange={on("nav", field)} placeholder="Link" />
+                    {editing && <button type="button" onClick={() => toggleHidden(`nav.${field}`)} className="ml-1 p-1" title={isHidden(`nav.${field}`) ? "Mostrar link" : "Ocultar link"}>{isHidden(`nav.${field}`) ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}</button>}
                   </a>
                 );
               })}
             </nav>
           )}
 
-          {(shown(content.nav.login) || editing) && (
+          {((shown(content.nav.login) && !isHidden("nav.login")) || editing) && (
             <LandingCta editing={editing}>
               <Button size="sm" className="font-bold">
                 <LogIn className="size-4" />
                 <EditableText value={content.nav.login} onChange={on("nav", "login")} placeholder="Entrar" />
+                {editing && <span onClick={() => toggleHidden("nav.login")} title={isHidden("nav.login") ? "Mostrar botão" : "Ocultar botão"}>{isHidden("nav.login") ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</span>}
               </Button>
             </LandingCta>
           )}
@@ -732,7 +787,7 @@ export function LandingView({
       </header>
 
       {visibleSections.map((section) => (
-        <SectionShell key={section} edit={edit} order={content.sections} section={section} label={SECTION_LABELS[section]} onMove={moveSection}>
+        <SectionShell key={section} edit={edit} order={content.sections} section={section} label={SECTION_LABELS[section]} onMove={moveSection} hidden={isHidden(`section.${section}`)} onToggleHidden={() => toggleHidden(`section.${section}`)}>
           {sections[section]}
         </SectionShell>
       ))}
@@ -742,11 +797,7 @@ export function LandingView({
           <div className="flex min-w-0 items-center gap-2">
             {brandImage ? (
               <img src={brandImage} alt="" className="size-8 shrink-0 object-contain" />
-            ) : (
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Scissors className="size-3.5" />
-              </span>
-            )}
+            ) : null}
             <span className="truncate font-display font-bold text-foreground">{systemName}</span>
           </div>
           <EditableText as="p" value={content.footer.text} onChange={on("footer", "text")} className="text-xs" placeholder="Texto do rodapé" />

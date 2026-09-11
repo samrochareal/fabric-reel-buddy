@@ -10,6 +10,7 @@ export type LandingSection = (typeof LANDING_SECTIONS)[number];
 
 export type LandingContent = {
   sections: LandingSection[];
+  hidden: Record<string, boolean>;
   colors: { primary: string; background: string; accent: string };
   nav: { features: string; how: string; audience: string; faq: string; login: string };
   hero: {
@@ -34,6 +35,7 @@ export type LandingContent = {
 
 export const defaultLandingContent: LandingContent = {
   sections: [...LANDING_SECTIONS],
+  hidden: {},
   colors: { primary: "#f97316", background: "#0b0b0d", accent: "#27272a" },
   nav: { features: "Recursos", how: "Como funciona", audience: "Para quem é", faq: "FAQ", login: "Entrar" },
   hero: {
