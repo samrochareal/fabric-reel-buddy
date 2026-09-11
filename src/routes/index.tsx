@@ -44,91 +44,6 @@ export const Route = createFileRoute("/")({
   component: LandingPage,
 });
 
-const FEATURES = [
-  {
-    icon: Layers,
-    title: "Processamento em massa",
-    text: "Envie até 100 vídeos por lote e aplique as mesmas configurações em todos com um clique.",
-  },
-  {
-    icon: Crop,
-    title: "Enquadramento preciso",
-    text: "Zoom de 50% a 500% e posição X/Y livres, sempre no formato 9:16, sem cortar a duração.",
-  },
-  {
-    icon: Frame,
-    title: "Bordas inteligentes",
-    text: "Corte as laterais, o topo ou a base do vídeo para tirar marcas e logos indesejados.",
-  },
-  {
-    icon: Images,
-    title: "Overlays e criador próprio",
-    text: "Monte suas molduras no criador de overlay, salve perfis com nome e reutilize quando quiser.",
-  },
-  {
-    icon: TypeIcon,
-    title: "Títulos que chamam atenção",
-    text: "Fontes de impacto, cores, contorno e posição livre — aplicados no lote ou só em um vídeo.",
-  },
-  {
-    icon: Wand2,
-    title: "Modo anti-duplicidade",
-    text: "Pequenos ajustes automáticos de velocidade e metadados para cada cópia sair única.",
-  },
-  {
-    icon: Zap,
-    title: "Processamento turbo",
-    text: "Renderiza o lote no menor tempo possível e entrega arquivos bem mais leves.",
-  },
-  {
-    icon: Gauge,
-    title: "Fila com controle total",
-    text: "Prévia, pausa que respeita o vídeo atual e tempo estimado que diminui em tempo real.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Seus vídeos não saem do navegador",
-    text: "Toda a edição acontece no seu dispositivo. Nada é enviado para servidores externos.",
-  },
-];
-
-const STEPS = [
-  { n: "01", title: "Crie um projeto", text: "Cada projeto guarda suas configurações, overlays, títulos e imagens de fundo." },
-  { n: "02", title: "Suba o lote", text: "Arraste seus clipes e veja a prévia do resultado antes de processar." },
-  { n: "03", title: "Ajuste uma vez", text: "Enquadramento, bordas, overlay e título valem para todos os vídeos." },
-  { n: "04", title: "Baixe tudo pronto", text: "Os arquivos saem nomeados pelo projeto, prontos para publicar." },
-];
-
-const FOR_WHO = [
-  { title: "Criadores de conteúdo", text: "Produza semanas de posts em uma única sessão." },
-  { title: "Social media e agências", text: "Entregue vários clientes com o mesmo padrão visual." },
-  { title: "Lojas e infoprodutos", text: "Teste dezenas de variações do mesmo anúncio." },
-  { title: "Equipes de edição", text: "Perfis salvos mantêm a identidade em todo o time." },
-];
-
-const FAQ = [
-  {
-    q: "Preciso instalar algum programa?",
-    a: "Não. O Speed Flow roda direto no navegador, no computador ou no celular.",
-  },
-  {
-    q: "Quantos vídeos posso processar de uma vez?",
-    a: "Até 100 vídeos por lote, com até 100 MB e 3 minutos cada.",
-  },
-  {
-    q: "Meus vídeos ficam seguros?",
-    a: "Sim. A edição acontece no seu próprio dispositivo, então os arquivos não são enviados para fora.",
-  },
-  {
-    q: "Consigo aplicar um ajuste em apenas um vídeo do lote?",
-    a: "Sim. A opção “somente este vídeo” altera apenas o vídeo aberto na prévia.",
-  },
-  {
-    q: "Posso salvar minhas molduras e títulos?",
-    a: "Sim. Overlays, títulos e imagens de fundo ficam salvos dentro de cada projeto.",
-  },
-];
-
 function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const branding = useBranding();
@@ -291,9 +206,8 @@ function LandingPage() {
             <h2 className="max-w-xl font-display text-3xl font-bold tracking-tight sm:text-4xl">
               <span className="md:hidden">{content.mobile.featuresTitle}</span><span className="hidden md:inline">{content.features.title} <span className="text-primary">{content.features.highlight}</span></span>
             </h2>
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground md:mt-0">
-              Cada recurso existe para tirar trabalho repetitivo do seu dia e devolver tempo
-              para criar.
+            <p className="mt-4 hidden max-w-sm text-sm leading-relaxed text-muted-foreground md:mt-0 md:block">
+              {content.features.intro}
             </p>
           </div>
 
@@ -301,7 +215,7 @@ function LandingPage() {
             {features.map((f) => (
               <div
                 key={f.title}
-                className="group rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/60"
+                className="group rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/60 [&:nth-child(n+5)]:hidden md:[&:nth-child(n+5)]:block"
               >
                 <span className="flex size-10 items-center justify-center rounded-lg bg-primary/15 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                   <f.icon className="size-5" />
@@ -315,7 +229,7 @@ function LandingPage() {
       </section>
 
       {/* differentials */}
-      <section className="py-16 md:py-24">
+      <section className="hidden py-16 md:block md:py-24">
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 lg:grid-cols-2">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
@@ -325,14 +239,7 @@ function LandingPage() {
               {content.benefits.title} <span className="text-primary">{content.benefits.highlight}</span>
             </h2>
             <ul className="mt-7 space-y-3">
-              {[
-                "Projetos separados, cada um com suas próprias configurações",
-                "Prévia em tempo real antes de processar o lote",
-                "Overlays salvos com nome e imagens de fundo reutilizáveis",
-                "Ajuste individual com “somente este vídeo”",
-                "Créditos, indicações e notificações no mesmo painel",
-                "Português e inglês, tema claro e escuro",
-              ].map((item) => (
+              {content.benefits.items.map((item) => (
                 <li key={item} className="flex items-start gap-3 text-sm font-semibold">
                   <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <Check className="size-3" />
@@ -344,12 +251,7 @@ function LandingPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              { k: "100", v: "vídeos por lote" },
-              { k: "9:16", v: "formato garantido" },
-              { k: "0", v: "programas para instalar" },
-              { k: "1 clique", v: "para aplicar em todos" },
-            ].map((s) => (
+            {content.benefits.stats.map((s) => (
               <div key={s.title} className="rounded-xl border border-border bg-card p-6">
                 <p className="font-display text-3xl font-bold text-primary">{s.title}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{s.text}</p>
@@ -383,7 +285,7 @@ function LandingPage() {
       <section id="para-quem" className="hidden py-16 md:block md:py-24">
         <div className="mx-auto max-w-6xl px-4">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-            Para criadores, marcas e equipes
+            {content.audience.eyebrow}
           </p>
           <h2 className="mt-3 max-w-xl font-display text-3xl font-bold tracking-tight sm:text-4xl">
             {content.audience.title} <span className="text-primary">{content.audience.highlight}</span>
@@ -447,23 +349,23 @@ function LandingPage() {
               aria-hidden
             />
             <h2 className="relative font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              Menos tempo editando.
+              {content.cta.title}
               <br />
-              <span className="text-primary">Mais vídeos no ar.</span>
+              <span className="text-primary">{content.cta.highlight}</span>
             </h2>
             <p className="relative mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-              Entre agora e veja como é rápido transformar um lote de clipes em conteúdo pronto
-              para publicar.
+              <span className="md:hidden">{content.mobile.ctaText}</span>
+              <span className="hidden md:inline">{content.cta.text}</span>
             </p>
             <div className="relative mt-8 flex flex-wrap justify-center gap-3">
               <Link to="/login">
                 <Button size="lg" className="font-bold">
-                  {content.hero.primaryCta} <ArrowRight className="size-4" />
+                  {content.cta.primary} <ArrowRight className="size-4" />
                 </Button>
               </Link>
               <a href="#recursos">
                 <Button size="lg" variant="outline" className="font-bold">
-                  Ver recursos
+                  {content.cta.secondary}
                 </Button>
               </a>
             </div>
@@ -491,7 +393,7 @@ function LandingPage() {
           </div>
           <p className="text-xs">{content.footer.text}</p>
           <Link to="/login" className="text-xs font-bold text-primary hover:underline">
-            Entrar na plataforma
+            {content.footer.login}
           </Link>
         </div>
       </footer>
