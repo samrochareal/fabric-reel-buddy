@@ -670,6 +670,17 @@ function EditorPage() {
     </div>
   );
 
+  /** seconds left in the running batch, from the average time already measured */
+  const finishedInBatch = (batch?.done ?? 0) + (batch?.failed ?? 0);
+  const pendingInBatch = Math.max(0, (batch?.total ?? 0) - finishedInBatch);
+  const etaSeconds = batch
+    ? Math.round(
+        ((finishedInBatch > 0 ? (now - batch.startedAt) / finishedInBatch : 25_000) *
+          pendingInBatch) /
+          1000,
+      )
+    : 0;
+
   const previewClip = selected;
   const { w: outW, h: outH } = ASPECTS[opts.aspect];
 
