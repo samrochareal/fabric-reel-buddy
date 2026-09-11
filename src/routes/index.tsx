@@ -24,13 +24,13 @@ import { useBranding } from "@/lib/branding";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Speed Flow — edite e publique dezenas de vídeos em minutos" },
+      { title: "Edição de vídeos em massa" },
       {
         name: "description",
         content:
           "Suba até 100 vídeos, ajuste enquadramento, bordas, overlays e títulos em lote e baixe tudo pronto para Reels, TikTok e Shorts. Tudo direto no navegador.",
       },
-      { property: "og:title", content: "Speed Flow — edição de vídeos em massa" },
+      { property: "og:title", content: "Edição de vídeos em massa" },
       {
         property: "og:description",
         content:
@@ -419,7 +419,7 @@ function LandingPage() {
                 </button>
                 {openFaq === i && (
                   <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">
-                    {item.a}
+                    {item.a.replace("Speed Flow", branding.system_name)}
                   </p>
                 )}
               </div>
