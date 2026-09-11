@@ -14,7 +14,7 @@ import { applyTheme } from "@/lib/theme";
 import { rememberInviteCode } from "@/lib/referral";
 
 
-export const Route = createFileRoute("/auth")({
+export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Sign in — batch video editor" },
@@ -68,13 +68,13 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) void navigate({ to: "/", replace: true });
+      if (data.session) void navigate({ to: "/dashboard", replace: true });
     });
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        void navigate({ to: "/", replace: true });
+        void navigate({ to: "/dashboard", replace: true });
       }
     });
     return () => subscription.unsubscribe();

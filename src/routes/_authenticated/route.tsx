@@ -14,10 +14,10 @@ export const Route = createFileRoute("/_authenticated")({
     // user opted out of "continuar conectado" and the browser was closed
     if (shouldDiscardSession()) {
       await supabase.auth.signOut();
-      throw redirect({ to: "/auth" });
+      throw redirect({ to: "/login" });
     }
     const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
+    if (error || !data.user) throw redirect({ to: "/login" });
     // password was reset by the master: force a new one before anything else
     const meta = (data.user.user_metadata ?? {}) as { must_change_password?: boolean };
     if (meta.must_change_password === true && location.pathname !== "/new-password") {

@@ -32,7 +32,7 @@ export function AccountBadge() {
     queryClient.clear();
     if (guest) exitGuestMode();
     else await supabase.auth.signOut();
-    void navigate({ to: "/auth", replace: true });
+    void navigate({ to: "/login", replace: true });
   };
 
   return (

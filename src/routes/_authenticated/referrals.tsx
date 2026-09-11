@@ -53,7 +53,7 @@ function ReferralsPage() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 px-4 backdrop-blur-xl">
         <div className="flex h-14 items-center gap-3">
           <Link
-            to="/"
+            to="/dashboard"
             className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold transition-colors hover:border-primary/60"
           >
             <ArrowLeft className="size-3.5" /> {t("Editor")}
