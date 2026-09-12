@@ -82,6 +82,18 @@ function CheckoutPage() {
     void navigate({ to: "/login", search: { next: back }, replace: true });
   }, [loading, signedIn, sessionId, planId, navigate]);
 
+  // Safety net: confirm the payment and release the credits right away, even if
+  // the provider's notification is delayed. Granting twice is impossible.
+  useEffect(() => {
+    if (!sessionId || !signedIn) return;
+    void (async () => {
+      const result = await claimCheckoutCredits({
+        data: { sessionId, environment: getStripeEnvironment() },
+      });
+      if ("credits" in result) setGranted(result.credits);
+    })();
+  }, [sessionId, signedIn]);
+
   const options = useMemo(() => {
     if (!plan || !signedIn) return null;
     return {
