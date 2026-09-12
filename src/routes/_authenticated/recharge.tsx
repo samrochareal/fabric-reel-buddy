@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useBranding } from "@/lib/branding";
 import { useMyAccount } from "@/lib/account";
-import { formatPrice, getBuyerCurrency, type BuyerCurrency } from "@/lib/geo.functions";
+import { planPriceLabel } from "@/lib/landing-content";
+import { useBuyerCurrency } from "@/lib/locale";
 
 export const Route = createFileRoute("/_authenticated/recharge")({
   head: () => ({
