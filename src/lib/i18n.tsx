@@ -355,6 +355,17 @@ const PT: Record<string, string> = {
     "Informe o e-mail e uma senha com pelo menos 6 caracteres.",
   "Check your e-mail to confirm your account.": "Confira seu e-mail para confirmar a conta.",
   "Wrong e-mail or password.": "E-mail ou senha incorretos.",
+  "Forgot your password?": "Esqueceu sua senha?",
+  "Recover your password": "Recuperar sua senha",
+  "Enter your e-mail and we'll send you a link to set a new password.":
+    "Informe seu e-mail e enviaremos um link para definir uma nova senha.",
+  "Send recovery e-mail": "Enviar e-mail de recuperação",
+  "Enter a valid e-mail.": "Informe um e-mail válido.",
+  "We sent recovery instructions to": "Enviamos as instruções de recuperação para",
+  "Open the e-mail and follow the link to choose a new password.":
+    "Abra o e-mail e siga o link para escolher uma nova senha.",
+  "We couldn't send the recovery e-mail.": "Não conseguimos enviar o e-mail de recuperação.",
+  "Back to sign in": "Voltar para o login",
 
   // side menu & admin sections
   "Menu": "Menu",
