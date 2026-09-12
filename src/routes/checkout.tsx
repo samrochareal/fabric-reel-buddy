@@ -69,7 +69,7 @@ function CheckoutPage() {
         fetchBranding().then((b) => normalizeLandingContent(b.landing_content)),
       ]);
       setSignedIn(Boolean(data.session));
-      setPlan(
+      setSourcePlan(
         content.plans.items.find((item) => item.id === planId && item.active && !item.free) ?? null,
       );
       setLoading(false);
