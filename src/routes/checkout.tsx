@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { getStripe, getStripeEnvironment } from "@/lib/stripe";
-import { createPlanCheckoutSession } from "@/lib/payments.functions";
+import { claimCheckoutCredits, createPlanCheckoutSession } from "@/lib/payments.functions";
 import { useBuyerCurrency } from "@/lib/locale";
 import { fetchBranding, useBranding } from "@/lib/branding";
 import { normalizeLandingContent, planPriceLabel, type LandingPlan } from "@/lib/landing-content";
@@ -117,9 +117,11 @@ function CheckoutPage() {
           <div className="mt-8 rounded-2xl border border-primary/40 bg-card p-8 text-center">
             <h1 className="font-display text-2xl font-bold">{t("Payment complete!")}</h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              {t(
-                "Your credits land in your account in a moment. You can go back to your projects and start creating.",
-              )}
+              {granted && granted > 0
+                ? t("{n} credits are already in your account.", { n: granted })
+                : t(
+                    "Your credits land in your account in a moment. You can go back to your projects and start creating.",
+                  )}
             </p>
             <Button asChild className="mt-6 font-bold">
               <Link to="/dashboard">{t("Go to my projects")}</Link>
