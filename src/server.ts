@@ -70,7 +70,7 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return withVideoProcessingHeaders(await normalizeCatastrophicSsrResponse(response));
+      return withVideoProcessingHeaders(request, await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
