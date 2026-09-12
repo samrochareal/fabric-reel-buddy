@@ -1775,3 +1775,105 @@ function EditorPage() {
   );
 }
 
+
+/**
+ * Turbo details: the person sees what will happen to the file and can change
+ * the compression, the frame size and how much quality may be lost.
+ */
+function TurboPanel({
+  settings,
+  onChange,
+}: {
+  settings: ReturnType<typeof turboSettingsOf>;
+  onChange: (next: ReturnType<typeof turboSettingsOf>) => void;
+}) {
+  const t = useT();
+
+  const qualities: Array<{ id: TurboQuality; label: string }> = [
+    { id: "low", label: t("Low quality loss") },
+    { id: "medium", label: t("Medium quality loss") },
+    { id: "high", label: t("High quality loss") },
+  ];
+  const widths: TurboWidth[] = [480, 720, 1080];
+  const compressions: Array<{ id: TurboCompression; label: string }> = [
+    { id: "ultrafast", label: t("Fastest") },
+    { id: "superfast", label: t("Balanced") },
+    { id: "veryfast", label: t("Smallest file") },
+  ];
+
+  const height = Math.round((settings.width * 16) / 9);
+  const expected =
+    settings.quality === "low"
+      ? t("Sharper image, larger file, a bit slower.")
+      : settings.quality === "medium"
+        ? t("Good balance between speed, sharpness and file size.")
+        : t("Very light files and the fastest render, visibly softer image.");
+
+  const Row = ({
+    label,
+    children,
+  }: {
+    label: string;
+    children: React.ReactNode;
+  }) => (
+    <div>
+      <p className="text-[11px] font-bold text-muted-foreground">{label}</p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">{children}</div>
+    </div>
+  );
+
+  const chip = (active: boolean) =>
+    `rounded-md border px-2 py-1 text-[11px] font-bold transition ${
+      active
+        ? "border-primary bg-primary text-primary-foreground"
+        : "border-border text-muted-foreground hover:border-primary/50"
+    }`;
+
+  return (
+    <div className="mt-3 space-y-3 border-t border-border pt-3">
+      <Row label={t("Quality loss")}>
+        {qualities.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={chip(settings.quality === item.id)}
+            onClick={() => onChange({ ...settings, quality: item.id })}
+          >
+            {item.label}
+          </button>
+        ))}
+      </Row>
+
+      <Row label={t("Output size")}>
+        {widths.map((width) => (
+          <button
+            key={width}
+            type="button"
+            className={chip(settings.width === width)}
+            onClick={() => onChange({ ...settings, width })}
+          >
+            {width}p
+          </button>
+        ))}
+      </Row>
+
+      <Row label={t("Compression")}>
+        {compressions.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={chip(settings.compression === item.id)}
+            onClick={() => onChange({ ...settings, compression: item.id })}
+          >
+            {item.label}
+          </button>
+        ))}
+      </Row>
+
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
+        {t("Each video comes out at {size} pixels.", { size: `${settings.width}x${height}` })}{" "}
+        {expected}
+      </p>
+    </div>
+  );
+}
