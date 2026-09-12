@@ -132,22 +132,22 @@ export const defaultLandingContent: LandingContent = {
         active: true, highlight: false, free: true, cta: "Começar grátis",
       },
       {
-        id: "credits_150", priceId: "credits_150", name: "150 créditos", price: "R$ 29", priceUsd: "$29", period: "pagamento único", amountCents: 2900, amountCentsUsd: 2900, credits: 150,
+        id: "credits_150", priceId: "credits_150", name: "150 créditos", price: "R$ 29", priceUsd: "$15", period: "pagamento único", amountCents: 2900, amountCentsUsd: 1500, credits: 150,
         description: "Para quem posta toda semana",
         features: ["150 vídeos processados", "Todos os formatos", "Créditos não expiram"],
         active: true, highlight: false, free: false, cta: "Comprar 150 créditos",
       },
       {
-        id: "credits_500", priceId: "credits_500", name: "500 créditos", price: "R$ 79", priceUsd: "$79", period: "pagamento único", amountCents: 7900, amountCentsUsd: 7900, credits: 500,
+        id: "credits_500", priceId: "credits_500", name: "500 créditos", price: "R$ 79", priceUsd: "$25", period: "pagamento único", amountCents: 7900, amountCentsUsd: 2500, credits: 500,
         description: "Para criadores e social media",
-        features: ["500 vídeos processados", "Todos os formatos", "Suporte prioritário"],
+        features: ["500 vídeos processados", "Todas as ferramentas liberadas no editor", "Suporte prioritário"],
         active: true, highlight: true, free: false, cta: "Comprar 500 créditos",
       },
       {
-        id: "credits_1200", priceId: "credits_1200", name: "1200 créditos", price: "R$ 189", priceUsd: "$189", period: "pagamento único", amountCents: 18900, amountCentsUsd: 18900, credits: 1200,
+        id: "credits_1200", priceId: "credits_1200", name: "1300 créditos", price: "R$ 189", priceUsd: "$49", period: "pagamento único", amountCents: 18900, amountCentsUsd: 4900, credits: 1300,
         description: "Para agências e alto volume",
-        features: ["1200 vídeos processados", "Todos os formatos", "Suporte prioritário"],
-        active: true, highlight: false, free: false, cta: "Comprar 1200 créditos",
+        features: ["1300 vídeos processados", "Todas as ferramentas liberadas no editor", "Suporte prioritário", "Grupo de network no whatsapp"],
+        active: true, highlight: false, free: false, cta: "Comprar 1300 créditos",
       },
     ],
   },
@@ -171,7 +171,9 @@ function merge<T>(base: T, saved: unknown): T {
 
 /** Older saved plans had no amount or free flag: fill them in so nothing breaks. */
 function normalizePlans(items: unknown): LandingPlan[] {
-  if (!Array.isArray(items) || items.length === 0) return defaultLandingContent.plans.items;
+  // Never resurrect the original packs: when the master deleted every pack,
+  // the page must stay without plans instead of flashing old ones back.
+  if (!Array.isArray(items) || items.length === 0) return [];
   return items.map((raw, index) => {
     const plan = (raw ?? {}) as Partial<LandingPlan>;
     const digits = String(plan.price ?? "").replace(/[^\d]/g, "");
