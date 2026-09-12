@@ -6,19 +6,19 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-// The payment page embeds a frame from the payment provider, which
-// cross-origin isolation blocks. Keep isolation off for that page in dev too.
-const dropIsolationOnCheckout = {
-  name: "drop-isolation-on-checkout",
+// Only the video editor needs cross-origin isolation. Applying it to every page
+// also blocks the payment frame on any page the visitor reaches without a reload.
+const isolateVideoEditor = {
+  name: "isolate-video-editor",
   configureServer(server: {
     middlewares: { use: (fn: (req: unknown, res: unknown, next: () => void) => void) => void };
   }) {
     server.middlewares.use((req, res, next) => {
       const url = (req as { url?: string }).url ?? "";
-      if (url.startsWith("/checkout")) {
-        const response = res as { removeHeader: (name: string) => void };
-        response.removeHeader("Cross-Origin-Opener-Policy");
-        response.removeHeader("Cross-Origin-Embedder-Policy");
+      if (url.startsWith("/editor")) {
+        const response = res as { setHeader: (name: string, value: string) => void };
+        response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+        response.setHeader("Cross-Origin-Embedder-Policy", "credentialless");
       }
       next();
     });
@@ -27,13 +27,7 @@ const dropIsolationOnCheckout = {
 
 export default defineConfig({
   vite: {
-    plugins: [dropIsolationOnCheckout],
-    server: {
-      headers: {
-        "Cross-Origin-Opener-Policy": "same-origin",
-        "Cross-Origin-Embedder-Policy": "credentialless",
-      },
-    },
+    plugins: [isolateVideoEditor],
   },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
