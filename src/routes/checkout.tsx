@@ -51,6 +51,7 @@ function CheckoutPage() {
   const currency = useBuyerCurrency();
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [granted, setGranted] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const branding = useBranding();
