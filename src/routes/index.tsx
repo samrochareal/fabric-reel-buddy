@@ -7,17 +7,17 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Edição de vídeos em massa" },
+      { title: "Batch video editor — Reels, TikTok and Shorts" },
       {
         name: "description",
         content:
-          "Suba até 100 vídeos, ajuste enquadramento, bordas, overlays e títulos em lote e baixe tudo pronto para Reels, TikTok e Shorts. Tudo direto no navegador.",
+          "Upload up to 100 videos, batch-adjust framing, borders, overlays and titles, and download everything ready for Reels, TikTok and Shorts. All in your browser.",
       },
-      { property: "og:title", content: "Edição de vídeos em massa" },
+      { property: "og:title", content: "Batch video editor — Reels, TikTok and Shorts" },
       {
         property: "og:description",
         content:
-          "Edição em lote de até 100 vídeos com enquadramento, bordas, overlays, títulos e modo turbo. Sem instalar nada.",
+          "Batch editing of up to 100 videos with framing, borders, overlays, titles and turbo mode. Nothing to install.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

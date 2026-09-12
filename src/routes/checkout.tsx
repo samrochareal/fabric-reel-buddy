@@ -21,12 +21,12 @@ export const Route = createFileRoute("/checkout")({
       {
         name: "description",
         content:
-          "Escolha seu pacote de créditos, pague com segurança e receba os créditos na sua conta na hora.",
+          "Choose your credit pack, pay securely and receive the credits in your account instantly.",
       },
       { property: "og:title", content: "Speed Flow" },
       {
         property: "og:description",
-        content: "Pagamento seguro e créditos liberados automaticamente na sua conta.",
+        content: "Secure payment and credits automatically delivered to your account.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

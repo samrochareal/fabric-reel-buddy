@@ -13,15 +13,15 @@ import { useLandingPlans } from "@/lib/landing-i18n";
 export const Route = createFileRoute("/_authenticated/recharge")({
   head: () => ({
     meta: [
-      { title: "Adicionar créditos de vídeo" },
+      { title: "Add video credits" },
       {
         name: "description",
-        content: "Escolha um pacote de créditos, pague uma única vez e continue processando vídeos.",
+        content: "Pick a credit pack, pay once and keep processing videos.",
       },
-      { property: "og:title", content: "Adicionar créditos de vídeo" },
+      { property: "og:title", content: "Add video credits" },
       {
         property: "og:description",
-        content: "Pacotes de créditos com pagamento único e liberação imediata.",
+        content: "Credit packs with one-time payment and instant delivery.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

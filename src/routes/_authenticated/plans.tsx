@@ -35,15 +35,15 @@ import {
 export const Route = createFileRoute("/_authenticated/plans")({
   head: () => ({
     meta: [
-      { title: "Planos e créditos — painel do master" },
+      { title: "Plans and credits — master panel" },
       {
         name: "description",
-        content: "Defina o valor, os créditos e a disponibilidade de cada pacote de créditos.",
+        content: "Set the price, credits and availability of each credit pack.",
       },
-      { property: "og:title", content: "Planos e créditos — painel do master" },
+      { property: "og:title", content: "Plans and credits — master panel" },
       {
         property: "og:description",
-        content: "Edite valores, créditos entregues e o plano gratuito diário.",
+        content: "Edit prices, delivered credits and the daily free plan.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
