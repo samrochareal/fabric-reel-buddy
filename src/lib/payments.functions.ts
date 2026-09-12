@@ -264,7 +264,6 @@ export const syncPlanCatalog = createServerFn({ method: "POST" })
       let archived = 0;
 
       for (const plan of payable) {
-        const key = lookupKeyFor(plan.id);
         const label = `${plan.credits} créditos de vídeo`;
         const name = plan.name || label;
 
