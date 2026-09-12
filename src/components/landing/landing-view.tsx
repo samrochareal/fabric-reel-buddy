@@ -66,6 +66,7 @@ function EditableText({
   placeholder = "Texto",
   hidden = false,
   onToggleHidden,
+  onDelete,
   elementKey,
   label,
 }: {
@@ -76,6 +77,7 @@ function EditableText({
   placeholder?: string | undefined;
   hidden?: boolean | undefined;
   onToggleHidden?: (() => void) | undefined;
+  onDelete?: (() => void) | undefined;
   elementKey?: string | undefined;
   label?: string | undefined;
 }) {
@@ -93,6 +95,7 @@ function EditableText({
       onChange,
       hidden,
       onToggleHidden: onToggleHidden ?? (() => {}),
+      onDelete: onDelete ?? (() => onChange("")),
     });
   };
 
@@ -121,6 +124,7 @@ function EditableText({
     </span>
   );
 }
+
 
 /* ------------------------------------------------------------------ */
 /* drag-and-drop list                                                  */
