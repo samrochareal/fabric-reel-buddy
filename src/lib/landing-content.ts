@@ -19,9 +19,13 @@ export type LandingPlan = {
   priceId: string;
   name: string;
   price: string;
+  /** Price text shown to buyers outside Brazil (dollar). */
+  priceUsd: string;
   period: string;
   /** What the person pays, in cents. The master edits this in the plans panel. */
   amountCents: number;
+  /** What buyers outside Brazil pay, in cents of dollar. */
+  amountCentsUsd: number;
   credits: number;
   description: string;
   features: string[];
@@ -31,6 +35,22 @@ export type LandingPlan = {
   free: boolean;
   cta: string;
 };
+
+/** Amount charged for this pack in the buyer's currency, in cents. */
+export function planAmountCents(
+  plan: Pick<LandingPlan, "amountCents" | "amountCentsUsd">,
+  currency: "brl" | "usd",
+): number {
+  if (currency === "brl") return plan.amountCents;
+  return plan.amountCentsUsd > 0 ? plan.amountCentsUsd : plan.amountCents;
+}
+
+/** Price text shown on the page in the buyer's currency. */
+export function planPriceLabel(plan: LandingPlan, currency: "brl" | "usd"): string {
+  const cents = planAmountCents(plan, currency);
+  if (currency === "brl") return plan.price || `R$ ${cents / 100}`;
+  return plan.priceUsd || `$${cents / 100}`;
+}
 
 export const LANDING_SECTIONS = ["hero", "features", "benefits", "steps", "plans", "audience", "faq", "cta"] as const;
 export type LandingSection = (typeof LANDING_SECTIONS)[number];
