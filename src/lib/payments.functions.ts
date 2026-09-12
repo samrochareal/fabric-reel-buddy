@@ -5,6 +5,11 @@ import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib
 
 type CheckoutSessionResult = { clientSecret: string } | { error: string };
 
+/** Stable key that ties one saved pack to its entry in the payment catalogue. */
+function lookupKeyFor(planId: string): string {
+  return `pack_${planId}`;
+}
+
 async function resolveOrCreateCustomer(
   stripe: ReturnType<typeof createStripeClient>,
   options: { email?: string | undefined; userId?: string | undefined },
@@ -73,17 +78,29 @@ export const createPlanCheckoutSession = createServerFn({ method: "POST" })
       });
 
       const label = `${plan.credits} créditos de vídeo`;
+
+      // Prefer the real catalogue entry kept in sync with the master's plans.
+      // Falls back to an inline amount if the catalogue has not synced yet.
+      let lineItem: Record<string, unknown> = {
+        quantity: 1,
+        price_data: {
+          currency: "brl",
+          unit_amount: plan.amountCents,
+          product_data: { name: plan.name || label, description: label },
+        },
+      };
+      const catalogue = await stripe.prices.list({
+        lookup_keys: [lookupKeyFor(plan.id)],
+        active: true,
+        limit: 1,
+      });
+      const catalogued = catalogue.data[0];
+      if (catalogued && catalogued.unit_amount === plan.amountCents && !catalogued.recurring) {
+        lineItem = { quantity: 1, price: catalogued.id };
+      }
+
       const session = await stripe.checkout.sessions.create({
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: "brl",
-              unit_amount: plan.amountCents,
-              product_data: { name: plan.name || label, description: label },
-            },
-          },
-        ],
+        line_items: [lineItem as never],
         mode: "payment",
         ui_mode: "embedded_page",
         return_url: data.returnUrl,
@@ -193,6 +210,99 @@ export const createBillingPortalSession = createServerFn({ method: "POST" })
         return_url: data.returnUrl,
       });
       return { url: portal.url };
+    } catch (error) {
+      return { error: getStripeErrorMessage(error) };
+    }
+  });
+
+type SyncResult = { synced: number; archived: number } | { error: string };
+
+/**
+ * Master-only: makes the payment provider's catalogue match the saved packs.
+ * Every pack becomes a one-time charge (never a monthly subscription).
+ */
+export const syncPlanCatalog = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { environment: StripeEnv }) => data)
+  .handler(async ({ data, context }): Promise<SyncResult> => {
+    try {
+      const { data: isAdmin } = await context.supabase.rpc("has_role", {
+        _user_id: context.userId,
+        _role: "admin",
+      });
+      if (!isAdmin) return { error: "Área restrita ao usuário master." };
+
+      const { data: settings } = await context.supabase
+        .from("platform_settings")
+        .select("landing_content")
+        .eq("id", true)
+        .maybeSingle();
+      const items = normalizeLandingContent(settings?.landing_content).plans.items;
+      const payable = items.filter((item) => !item.free && item.amountCents >= 100 && item.credits > 0);
+      const wantedKeys = new Set(payable.map((item) => lookupKeyFor(item.id)));
+
+      const stripe = createStripeClient(data.environment);
+      let synced = 0;
+      let archived = 0;
+
+      for (const plan of payable) {
+        const key = lookupKeyFor(plan.id);
+        const label = `${plan.credits} créditos de vídeo`;
+        const name = plan.name || label;
+
+        // One product per pack, found again by our own id in its metadata.
+        const found = await stripe.products.search({
+          query: `metadata['lovable_plan_id']:'${plan.id}'`,
+          limit: 1,
+        });
+        const product = found.data[0]
+          ? await stripe.products.update(found.data[0].id, {
+              name,
+              description: plan.description || label,
+              active: plan.active,
+              metadata: { lovable_plan_id: plan.id, credits: String(plan.credits) },
+            })
+          : await stripe.products.create({
+              name,
+              description: plan.description || label,
+              metadata: { lovable_plan_id: plan.id, credits: String(plan.credits) },
+            });
+
+        const existing = await stripe.prices.list({ lookup_keys: [key], active: true, limit: 1 });
+        const current = existing.data[0];
+        const matches =
+          current && !current.recurring && current.unit_amount === plan.amountCents && current.currency === "brl";
+
+        if (!matches) {
+          if (current) {
+            await stripe.prices.update(current.id, { active: false });
+            archived += 1;
+          }
+          await stripe.prices.create({
+            currency: "brl",
+            unit_amount: plan.amountCents,
+            product: product.id,
+            lookup_key: key,
+            transfer_lookup_key: true,
+            nickname: name,
+            metadata: { lovable_plan_id: plan.id, credits: String(plan.credits) },
+          });
+        }
+        synced += 1;
+      }
+
+      // Packs the master removed or turned off stop being sellable.
+      const allPrices = await stripe.prices.list({ active: true, limit: 100 });
+      for (const price of allPrices.data) {
+        const planId = price.metadata?.["lovable_plan_id"];
+        if (!planId) continue;
+        if (!wantedKeys.has(price.lookup_key ?? lookupKeyFor(planId))) {
+          await stripe.prices.update(price.id, { active: false });
+          archived += 1;
+        }
+      }
+
+      return { synced, archived };
     } catch (error) {
       return { error: getStripeErrorMessage(error) };
     }
