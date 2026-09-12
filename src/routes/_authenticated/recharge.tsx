@@ -6,6 +6,9 @@ import { useBranding } from "@/lib/branding";
 import { useMyAccount } from "@/lib/account";
 import { planPriceLabel } from "@/lib/landing-content";
 import { useBuyerCurrency } from "@/lib/locale";
+import { useT } from "@/lib/i18n";
+import { useLandingPlans } from "@/lib/landing-i18n";
+
 
 export const Route = createFileRoute("/_authenticated/recharge")({
   head: () => ({
