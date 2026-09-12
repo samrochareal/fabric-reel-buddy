@@ -116,8 +116,10 @@ function PlansAdminPage() {
                   priceId: "",
                   name: "Novo pacote",
                   price: "R$ 0",
+                  priceUsd: "$0",
                   period: "pagamento único",
                   amountCents: 0,
+                  amountCentsUsd: 0,
                   credits: 0,
                   description: "",
                   features: [],
@@ -313,8 +315,10 @@ function PlansAdminPage() {
                 <div className="min-w-0">
                   <p className="font-display text-lg font-bold">{plan.name || "Sem nome"}</p>
                   <p className="text-xs text-muted-foreground">
-                    {plan.free ? "Plano gratuito" : `R$ ${(plan.amountCents / 100).toFixed(2)}`} ·{" "}
-                    {plan.credits} créditos
+                    {plan.free
+                      ? "Plano gratuito"
+                      : `R$ ${(plan.amountCents / 100).toFixed(2)} · $${(plan.amountCentsUsd / 100).toFixed(2)}`}{" "}
+                    · {plan.credits} créditos
                   </p>
                 </div>
                 <Button
