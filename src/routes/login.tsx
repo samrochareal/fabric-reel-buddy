@@ -387,9 +387,10 @@ function AuthPage() {
             </div>
           )}
 
-          <button
+          <Button
             type="button"
-            className="mt-4 w-full text-xs text-muted-foreground transition-colors hover:text-foreground"
+            variant="outline"
+            className="mt-4 h-11 w-full"
             onClick={() => {
               setMode((m) => (m === "signin" ? "signup" : "signin"));
               setSent(false);
@@ -398,7 +399,7 @@ function AuthPage() {
             {mode === "signin"
               ? t("No account yet? Create one now")
               : t("Already have an account? Sign in")}
-          </button>
+          </Button>
         </div>
 
       </div>
