@@ -14,7 +14,21 @@ export type LandingElementStyle = {
   textAlign?: "left" | "center" | "right";
 };
 
-export const LANDING_SECTIONS = ["hero", "features", "benefits", "steps", "audience", "faq", "cta"] as const;
+export type LandingPlan = {
+  id: string;
+  priceId: string;
+  name: string;
+  price: string;
+  period: string;
+  credits: number;
+  description: string;
+  features: string[];
+  active: boolean;
+  highlight: boolean;
+  cta: string;
+};
+
+export const LANDING_SECTIONS = ["hero", "features", "benefits", "steps", "plans", "audience", "faq", "cta"] as const;
 export type LandingSection = (typeof LANDING_SECTIONS)[number];
 
 export type LandingContent = {
