@@ -5,8 +5,6 @@ import {
   Check,
   ChevronDown,
   Crop,
-  Eye,
-  EyeOff,
   Frame,
   Gauge,
   Images,
@@ -196,52 +194,6 @@ function EditList<T>({
 }
 
 /* ------------------------------------------------------------------ */
-/* image slot                                                          */
-/* ------------------------------------------------------------------ */
-
-function ImageSlot({
-  value,
-  onChange,
-  className,
-  label,
-}: {
-  value: string | null;
-  onChange: (next: string | null) => void;
-  className?: string | undefined;
-  label: string;
-}) {
-  return (
-    <div className={cn("rounded-xl border border-dashed border-primary/50 bg-background/80 p-3 text-xs", className)}>
-      <p className="font-bold">{label}</p>
-      <div className="mt-2 flex items-center gap-3">
-        {value && <img src={value} alt="" className="size-14 rounded-md object-cover" />}
-        <input
-          type="file"
-          accept="image/*"
-          className="text-xs"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            if (file.size > 400_000) {
-              alert("Escolha uma imagem de até 400KB.");
-              return;
-            }
-            const reader = new FileReader();
-            reader.onload = () => onChange(String(reader.result));
-            reader.readAsDataURL(file);
-          }}
-        />
-        {value && (
-          <button type="button" className="font-bold text-muted-foreground hover:text-destructive" onClick={() => onChange(null)}>
-            Remover
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* section shell (reorderable in edit mode)                            */
 /* ------------------------------------------------------------------ */
 
@@ -338,6 +290,9 @@ export function LandingView({
   const toggleHidden = (key: string) =>
     edit?.update((c) => ({ ...c, hidden: { ...c.hidden, [key]: !c.hidden?.[key] } }));
   const visibility = (key: string, label?: string) => ({ elementKey: key, label, hidden: isHidden(key), onToggleHidden: edit ? () => toggleHidden(key) : undefined });
+  const selectImage = (key: string, label: string, value: string | null, onChange: (value: string) => void) => {
+    edit?.onSelect?.({ key, label, kind: "image", value: value ?? "", onChange, hidden: isHidden(key), onToggleHidden: () => toggleHidden(key) });
+  };
 
   const moveSection = (section: LandingSection, delta: number) =>
     edit?.update((c) => {
@@ -408,7 +363,7 @@ export function LandingView({
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               {((shown(content.hero.primaryCta) && !isHidden("hero.primaryCta")) || editing) && (
-                <LandingCta editing={editing}>
+                <LandingCta editing={editing} href={content.links["hero.primaryCta"]}>
                   <Button size="lg" className="font-bold">
                     <EditableText value={content.hero.primaryCta} onChange={on("hero", "primaryCta")} placeholder="Botão" {...visibility("hero.primaryCta")} />
                     <ArrowRight className="size-4" />
@@ -416,7 +371,7 @@ export function LandingView({
                 </LandingCta>
               )}
               {((shown(content.hero.secondaryCta) && !isHidden("hero.secondaryCta")) || editing) && (
-                <a href={editing ? undefined : "#como-funciona"}>
+                <a href={editing ? undefined : content.links["hero.secondaryCta"] || "#como-funciona"}>
                   <Button size="lg" variant="outline" className="font-bold">
                     <EditableText value={content.hero.secondaryCta} onChange={on("hero", "secondaryCta")} placeholder="Botão" {...visibility("hero.secondaryCta")} />
                   </Button>
@@ -447,20 +402,14 @@ export function LandingView({
             />
           </div>
 
-          <div className="relative rounded-2xl border border-border bg-card p-3 shadow-2xl">
+          <div
+            className={cn("relative rounded-2xl border border-border bg-card p-3 shadow-2xl", editing && "cursor-pointer hover:ring-2 hover:ring-primary/60", isHidden("hero.image") && editing && "opacity-35")}
+            onClick={() => selectImage("hero.image", "Imagem da abertura", content.hero.image, (image) => patch("hero", { image: image || null }))}
+          >
             {content.hero.image && !isHidden("hero.image") ? (
               <img src={content.hero.image} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" />
             ) : (
               <EditorMock />
-            )}
-            {edit && (
-              <div className="mt-3">
-                <Button type="button" size="sm" variant="outline" onClick={() => toggleHidden("hero.image")}>
-                  {isHidden("hero.image") ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                  {isHidden("hero.image") ? "Mostrar imagem" : "Ocultar imagem"}
-                </Button>
-                <ImageSlot className="mt-2" label="Imagem da abertura" value={content.hero.image} onChange={(image) => patch("hero", { image })} />
-              </div>
             )}
           </div>
         </div>
@@ -675,7 +624,7 @@ export function LandingView({
       <section className="py-16 md:py-24">
         <div className="mx-auto max-w-6xl px-4">
           <div
-            className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card px-6 py-14 text-center"
+            className={cn("relative overflow-hidden rounded-2xl border border-primary/40 bg-card px-6 py-14 text-center", editing && "hover:ring-2 hover:ring-primary/60")}
             style={
               content.cta.image && !isHidden("cta.image")
                 ? {
@@ -685,6 +634,10 @@ export function LandingView({
                   }
                 : undefined
             }
+            onClick={(event) => {
+              if (!editing || event.target !== event.currentTarget) return;
+              selectImage("cta.image", "Imagem da chamada final", content.cta.image, (image) => patch("cta", { image: image || null }));
+            }}
           >
             <div
               className="pointer-events-none absolute inset-x-0 -bottom-24 h-64 opacity-30 blur-3xl"
@@ -703,7 +656,7 @@ export function LandingView({
             )}
             <div className="relative mt-8 flex flex-wrap justify-center gap-3">
               {((shown(content.cta.primary) && !isHidden("cta.primary")) || editing) && (
-                <LandingCta editing={editing}>
+                <LandingCta editing={editing} href={content.links["cta.primary"]}>
                   <Button size="lg" className="font-bold">
                     <EditableText value={content.cta.primary} onChange={on("cta", "primary")} placeholder="Botão" {...visibility("cta.primary")} />
                     <ArrowRight className="size-4" />
@@ -711,22 +664,13 @@ export function LandingView({
                 </LandingCta>
               )}
               {((shown(content.cta.secondary) && !isHidden("cta.secondary")) || editing) && (
-                <a href={editing ? undefined : "#recursos"}>
+                <a href={editing ? undefined : content.links["cta.secondary"] || "#recursos"}>
                   <Button size="lg" variant="outline" className="font-bold">
                     <EditableText value={content.cta.secondary} onChange={on("cta", "secondary")} placeholder="Botão" {...visibility("cta.secondary")} />
                   </Button>
                 </a>
               )}
             </div>
-            {edit && (
-              <div className="relative mt-6 text-left">
-                <Button type="button" size="sm" variant="outline" onClick={() => toggleHidden("cta.image")}>
-                  {isHidden("cta.image") ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                  {isHidden("cta.image") ? "Mostrar imagem" : "Ocultar imagem"}
-                </Button>
-                <ImageSlot className="mt-2" label="Imagem de fundo da chamada final" value={content.cta.image} onChange={(image) => patch("cta", { image })} />
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -793,7 +737,7 @@ export function LandingView({
           </div>
           <EditableText as="p" value={content.footer.text} onChange={on("footer", "text")} className="text-xs" placeholder="Texto do rodapé" {...visibility("footer.text")} />
           {((shown(content.footer.login) && !isHidden("footer.login")) || editing) && (
-            <LandingCta editing={editing}>
+            <LandingCta editing={editing} href={content.links["footer.login"]}>
               <span className="text-xs font-bold text-primary hover:underline">
                 <EditableText value={content.footer.login} onChange={on("footer", "login")} placeholder="Link de login" {...visibility("footer.login")} />
               </span>
