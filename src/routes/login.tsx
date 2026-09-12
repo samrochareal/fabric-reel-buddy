@@ -32,11 +32,16 @@ export const Route = createFileRoute("/login")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const next = typeof search["next"] === "string" ? search["next"] : "";
+    return { next: next.startsWith("/") ? next : "" };
+  },
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const branding = useBranding();
   const t = useT();
   const [fullName, setFullName] = useState("");
@@ -67,18 +72,23 @@ function AuthPage() {
 
 
   useEffect(() => {
+    const go = () => {
+      if (next) {
+        window.location.replace(next);
+        return;
+      }
+      void navigate({ to: "/dashboard", replace: true });
+    };
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) void navigate({ to: "/dashboard", replace: true });
+      if (data.session) go();
     });
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        void navigate({ to: "/dashboard", replace: true });
-      }
+      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) go();
     });
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, next]);
 
   const withEmail = async () => {
     const address = email.trim();
