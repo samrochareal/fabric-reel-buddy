@@ -732,7 +732,7 @@ export function LandingView({
             <EditableText as="p" value={content.plans.intro} onChange={on("plans", "intro")} className="mt-4 text-sm text-muted-foreground" placeholder="Descrição" {...visibility("plans.intro")} />
           </div>
 
-          <div className={cn("mt-10 grid gap-5", mobile ? "grid-cols-1" : "sm:grid-cols-2 lg:grid-cols-3")}>
+          <div className={cn("mt-10 grid gap-5", mobile ? "grid-cols-1" : "grid-cols-2")}>
             {content.plans.items.map((plan, i) => {
               if (!editing && (!plan.active || isHidden(`plans.item.${i}`))) return null;
               const setPlan = (values: Partial<typeof plan>) =>
