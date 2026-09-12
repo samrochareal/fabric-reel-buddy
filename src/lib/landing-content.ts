@@ -132,7 +132,7 @@ export const defaultLandingContent: LandingContent = {
         active: true, highlight: false, free: true, cta: "Começar grátis",
       },
       {
-        id: "credits_150", priceId: "credits_150", name: "150 créditos", price: "R$ 29", priceUsd: "$29", period: "pagamento único", amountCents: 2900, amountCentsUsd: 2900, credits: 150,
+        id: "credits_150", priceId: "credits_150", name: "150 créditos", price: "R$ 29", priceUsd: "$15", period: "pagamento único", amountCents: 2900, amountCentsUsd: 1500, credits: 150,
         description: "Para quem posta toda semana",
         features: ["150 vídeos processados", "Todos os formatos", "Créditos não expiram"],
         active: true, highlight: false, free: false, cta: "Comprar 150 créditos",
