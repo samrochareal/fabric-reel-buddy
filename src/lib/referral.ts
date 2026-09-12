@@ -9,7 +9,10 @@ export type ReferralSummary = {
   joins: { id: string; credits: number; at: string }[];
   enabled: boolean;
   creditsPerSignup: number;
+  rewardMode: "fixed" | "percent";
+  percentPerRecharge: number;
 };
+
 
 /** Remembers the invite code found in the address (?ref=CODE). */
 export function rememberInviteCode() {
