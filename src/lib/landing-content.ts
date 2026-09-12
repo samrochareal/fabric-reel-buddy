@@ -149,6 +149,37 @@ function merge<T>(base: T, saved: unknown): T {
   return out as T;
 }
 
+/** Older saved plans had no amount or free flag: fill them in so nothing breaks. */
+function normalizePlans(items: unknown): LandingPlan[] {
+  if (!Array.isArray(items) || items.length === 0) return defaultLandingContent.plans.items;
+  return items.map((raw, index) => {
+    const plan = (raw ?? {}) as Partial<LandingPlan>;
+    const digits = String(plan.price ?? "").replace(/[^\d]/g, "");
+    const amount =
+      typeof plan.amountCents === "number" && plan.amountCents >= 0
+        ? Math.round(plan.amountCents)
+        : digits
+          ? Number(digits) * 100
+          : 0;
+    const credits = Math.max(0, Math.round(Number(plan.credits ?? 0)));
+    return {
+      id: String(plan.id ?? `plan_${index}`),
+      priceId: String(plan.priceId ?? ""),
+      name: String(plan.name ?? ""),
+      price: String(plan.price ?? ""),
+      period: String(plan.period ?? ""),
+      amountCents: amount,
+      credits,
+      description: String(plan.description ?? ""),
+      features: Array.isArray(plan.features) ? plan.features.map((f) => String(f)) : [],
+      active: plan.active !== false,
+      highlight: Boolean(plan.highlight),
+      free: typeof plan.free === "boolean" ? plan.free : amount === 0,
+      cta: String(plan.cta ?? ""),
+    };
+  });
+}
+
 export function normalizeLandingContent(value: unknown) {
   const merged = merge(defaultLandingContent, value);
   const saved = Array.isArray(merged.sections) ? merged.sections : [];
@@ -157,7 +188,12 @@ export function normalizeLandingContent(value: unknown) {
   const base = order.length ? order : [...LANDING_SECTIONS];
   // Newly shipped sections join the page unless the master deleted them.
   const complete = [...base, ...LANDING_SECTIONS.filter((s) => !base.includes(s) && !removed.includes(s))];
-  return { ...merged, sections: complete, removedSections: removed };
+  return {
+    ...merged,
+    sections: complete,
+    removedSections: removed,
+    plans: { ...merged.plans, items: normalizePlans(merged.plans?.items) },
+  };
 }
 
 
