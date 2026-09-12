@@ -8,8 +8,8 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 type CheckoutSessionResult = { clientSecret: string } | { error: string };
 
 /** Stable key that ties one saved pack to its entry in the payment catalogue. */
-function lookupKeyFor(planId: string): string {
-  return `pack_${planId}`;
+function lookupKeyFor(planId: string, currency: "brl" | "usd" = "brl"): string {
+  return currency === "brl" ? `pack_${planId}` : `pack_${planId}_${currency}`;
 }
 
 async function resolveOrCreateCustomer(
@@ -254,7 +254,10 @@ export const syncPlanCatalog = createServerFn({ method: "POST" })
         .maybeSingle();
       const items = normalizeLandingContent(settings?.landing_content).plans.items;
       const payable = items.filter((item) => !item.free && item.amountCents >= 100 && item.credits > 0);
-      const wantedKeys = new Set(payable.map((item) => lookupKeyFor(item.id)));
+      const currencies = ["brl", "usd"] as const;
+      const wantedKeys = new Set(
+        payable.flatMap((item) => currencies.map((c) => lookupKeyFor(item.id, c))),
+      );
 
       const stripe = createStripeClient(data.environment);
       let synced = 0;
