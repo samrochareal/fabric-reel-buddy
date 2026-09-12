@@ -878,11 +878,30 @@ export function LandingView({
   );
 }
 
-/** Links go to /login on the public page and stay inert while editing. */
+/**
+ * Links go to /login on the public page and stay inert while editing.
+ * Someone already signed in skips the sign-in screen and lands in the editor.
+ */
 function LandingCta({ editing, children, href = "/login" }: { editing: boolean; children: React.ReactNode; href?: string | undefined }) {
+  const signedIn = useSignedIn();
   if (editing) return <span className="inline-flex">{children}</span>;
-  if (href === "/login") return <Link to="/login">{children}</Link>;
+  if (href === "/login") return <Link to={signedIn ? "/dashboard" : "/login"}>{children}</Link>;
   return <a href={href}>{children}</a>;
+}
+
+/** True once the browser confirms there is an active session. */
+function useSignedIn() {
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (active) setSignedIn(Boolean(data.session));
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  return signedIn;
 }
 
 function EditorMock() {
