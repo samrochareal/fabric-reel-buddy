@@ -49,6 +49,7 @@ import {
   saveBranding,
   saveExternalLinks,
   saveReferralSettings,
+  type ReferralRewardMode,
   useBranding,
   useRefreshBranding,
   type ExternalLink,
@@ -397,6 +398,8 @@ function AdminPage() {
   const [sending, setSending] = useState(false);
   const [referralOn, setReferralOn] = useState(false);
   const [referralCredits, setReferralCredits] = useState(5);
+  const [referralMode, setReferralMode] = useState<ReferralRewardMode>("fixed");
+  const [referralPercent, setReferralPercent] = useState(10);
   const [savingReferral, setSavingReferral] = useState(false);
   const [defCredits, setDefCredits] = useState(5);
   const [defRefillAmount, setDefRefillAmount] = useState(5);
@@ -428,6 +431,8 @@ function AdminPage() {
       setLinks(b.external_links);
       setReferralOn(b.referral_enabled);
       setReferralCredits(b.referral_reward_credits);
+      setReferralMode(b.referral_reward_mode);
+      setReferralPercent(b.referral_reward_percent);
     });
   }, []);
 
@@ -448,7 +453,12 @@ function AdminPage() {
   const onSaveReferral = async () => {
     setSavingReferral(true);
     try {
-      await saveReferralSettings({ enabled: referralOn, credits: referralCredits });
+      await saveReferralSettings({
+        enabled: referralOn,
+        credits: referralCredits,
+        mode: referralMode,
+        percent: referralPercent,
+      });
       refreshBranding();
       void stats.refetch();
       toast.success(t("Referral settings updated."));
