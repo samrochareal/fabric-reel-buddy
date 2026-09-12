@@ -371,7 +371,7 @@ export const claimCheckoutCredits = createServerFn({ method: "POST" })
         _user_id: context.userId,
         _credits: Math.round(credits),
         _event_key: `session:${session.id}`,
-        _price_id: planId ?? undefined,
+        ...(planId ? { _price_id: planId } : {}),
       });
       if (error) return { error: getStripeErrorMessage(error) };
       return { credits: Math.round(credits) };
