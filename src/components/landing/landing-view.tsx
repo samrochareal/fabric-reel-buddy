@@ -771,6 +771,10 @@ export function LandingView({
                     <Button className="mt-6 w-full font-bold" variant={plan.highlight ? "default" : "outline"}>
                       <EditableText value={plan.cta} onChange={(v) => setPlan({ cta: v })} placeholder="Botão" {...visibility(`plans.item.${i}.cta`, "Botão do plano")} />
                     </Button>
+                  ) : plan.free ? (
+                    <Link to="/login" className="mt-6">
+                      <Button className="w-full font-bold" variant={plan.highlight ? "default" : "outline"}>{plan.cta}</Button>
+                    </Link>
                   ) : (
                     <Link to="/checkout" search={{ plan: plan.id, session_id: "" }} className="mt-6">
                       <Button className="w-full font-bold" variant={plan.highlight ? "default" : "outline"}>{plan.cta}</Button>

@@ -256,11 +256,14 @@ function LandingEditorPage() {
                     <Button variant={plan.highlight ? "default" : "outline"} size="sm" className="w-full" onClick={() => setPlan({ highlight: !plan.highlight })}>
                       {plan.highlight ? "Em destaque" : "Sem destaque"}
                     </Button>
+                    <Button variant={plan.free ? "default" : "outline"} size="sm" className="w-full" onClick={() => setPlan({ free: !plan.free })}>
+                      {plan.free ? "Plano gratuito" : "Plano pago"}
+                    </Button>
                     <label className="block text-xs font-bold">Créditos entregues
                       <input type="number" min="0" className="mt-2 h-9 w-full border border-border bg-background px-2 text-sm font-normal outline-none focus:border-primary" value={plan.credits} onChange={(event) => setPlan({ credits: Number(event.target.value) })} />
                     </label>
-                    <label className="block text-xs font-bold">Identificador de cobrança
-                      <input className="mt-2 h-9 w-full border border-border bg-background px-2 text-sm font-normal outline-none focus:border-primary" value={plan.priceId} onChange={(event) => setPlan({ priceId: event.target.value })} />
+                    <label className="block text-xs font-bold">Valor cobrado (R$)
+                      <input type="number" min="0" step="0.01" className="mt-2 h-9 w-full border border-border bg-background px-2 text-sm font-normal outline-none focus:border-primary" value={(plan.amountCents / 100).toFixed(2)} onChange={(event) => setPlan({ amountCents: Math.max(0, Math.round(Number(event.target.value) * 100)) })} />
                     </label>
                     <label className="block text-xs font-bold">Novo benefício
                       <input className="mt-2 h-9 w-full border border-border bg-background px-2 text-sm font-normal outline-none focus:border-primary" placeholder="Escreva e pressione Enter" onKeyDown={(event) => { if (event.key !== "Enter") return; const value = event.currentTarget.value.trim(); if (!value) return; setPlan({ features: [...plan.features, value] }); event.currentTarget.value = ""; }} />
