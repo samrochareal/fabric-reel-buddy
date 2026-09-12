@@ -1,12 +1,30 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useIsAdmin } from "@/lib/admin";
 import { fetchPlatformDefaults, savePlatformDefaults } from "@/lib/admin";
 import { fetchBranding, useRefreshBranding } from "@/lib/branding";
+import { getPlanSales } from "@/lib/payments.functions";
+import { getStripeEnvironment, paymentsConfigured } from "@/lib/stripe";
+
+type SalesSummary = {
+  salesCount: number;
+  creditsGranted: number;
+  totals: Array<{ currency: string; amount: number }>;
+};
+
+function providerDashboardUrl(): string {
+  try {
+    return getStripeEnvironment() === "live"
+      ? "https://dashboard.stripe.com/dashboard"
+      : "https://dashboard.stripe.com/test/dashboard";
+  } catch {
+    return "https://dashboard.stripe.com/";
+  }
+}
 import {
   normalizeLandingContent,
   saveLandingContent,
