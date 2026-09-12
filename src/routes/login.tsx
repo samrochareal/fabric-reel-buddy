@@ -372,6 +372,18 @@ function AuthPage() {
                 {busy && <Loader2 className="mr-2 size-4 animate-spin" />}
                 {mode === "signin" ? t("Sign in") : t("Create account")}
               </Button>
+              {mode === "signin" && (
+                <button
+                  type="button"
+                  className="w-full text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => {
+                    setRecover(true);
+                    setRecoverSent(false);
+                  }}
+                >
+                  {t("Forgot your password?")}
+                </button>
+              )}
             </div>
           )}
 
