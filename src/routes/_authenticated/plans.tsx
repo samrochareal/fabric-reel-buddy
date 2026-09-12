@@ -419,6 +419,54 @@ function PlansAdminPage() {
                 </label>
               </div>
 
+              <div className="mt-5">
+                <p className="text-xs font-bold">Benefícios do pacote</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Aparecem na página inicial e na compra de créditos. São traduzidos
+                  automaticamente para o idioma do visitante.
+                </p>
+                <div className="mt-3 space-y-2">
+                  {plan.features.map((feature, featureIndex) => (
+                    <div key={featureIndex} className="flex items-center gap-2">
+                      <Input
+                        value={feature}
+                        placeholder="Ex.: Créditos não expiram"
+                        onChange={(event) =>
+                          setPlan(index, {
+                            features: plan.features.map((item, i) =>
+                              i === featureIndex ? event.target.value : item,
+                            ),
+                          })
+                        }
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remover benefício"
+                        onClick={() =>
+                          setPlan(index, {
+                            features: plan.features.filter((_, i) => i !== featureIndex),
+                          })
+                        }
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {plan.features.length === 0 && (
+                    <p className="text-xs text-muted-foreground">Nenhum benefício ainda.</p>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-3 font-bold"
+                  onClick={() => setPlan(index, { features: [...plan.features, ""] })}
+                >
+                  <Plus className="size-4" /> Adicionar benefício
+                </Button>
+              </div>
+
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button
                   size="sm"
