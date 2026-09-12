@@ -101,6 +101,21 @@ function LandingEditorPage() {
     });
   };
 
+  const chooseImage = (file: File | undefined) => {
+    if (!file || !selection?.onChange) return;
+    if (file.size > 400_000) {
+      toast.error("Escolha uma imagem de até 400KB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const value = String(reader.result);
+      selection.onChange?.(value);
+      setSelection((current) => current ? { ...current, value } : current);
+    };
+    reader.readAsDataURL(file);
+  };
+
   if (loading || !isAdmin) return null;
 
   return (
@@ -195,26 +210,35 @@ function LandingEditorPage() {
 
           {selection ? (
             <div className="space-y-5 p-4">
-              {selection.onChange && (
+              {selection.onChange && selection.kind !== "image" && (
                 <label className="block text-xs font-bold">Conteúdo
                   <textarea className="mt-2 min-h-24 w-full resize-y border border-border bg-background p-3 text-sm font-normal outline-none focus:border-primary" value={selection.value ?? ""} onChange={(event) => { selection.onChange?.(event.target.value); setSelection({ ...selection, value: event.target.value }); }} />
                 </label>
               )}
-              <label className="block text-xs font-bold">Link clicável
-                <div className="mt-2 flex items-center border border-border px-2 focus-within:border-primary"><Link2 className="size-4 text-muted-foreground" /><input className="h-10 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none" placeholder="/login ou https://..." value={content.links[selection.key] ?? ""} onChange={(event) => setContent((current) => ({ ...current, links: { ...current.links, [selection.key]: event.target.value } }))} /></div>
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="text-xs font-bold">Cor do texto<input type="color" className="mt-2 h-9 w-full" value={content.styles[selection.key]?.color ?? "#ffffff"} onChange={(event) => patchSelectionStyle({ color: event.target.value })} /></label>
-                <label className="text-xs font-bold">Cor do fundo<input type="color" className="mt-2 h-9 w-full" value={content.styles[selection.key]?.backgroundColor ?? content.colors.background} onChange={(event) => patchSelectionStyle({ backgroundColor: event.target.value })} /></label>
-              </div>
-              <label className="block text-xs font-bold">Tamanho: {content.styles[selection.key]?.fontSize ?? 16}px<input type="range" min="10" max="96" className="mt-2 w-full accent-primary" value={content.styles[selection.key]?.fontSize ?? 16} onChange={(event) => patchSelectionStyle({ fontSize: Number(event.target.value) })} /></label>
-              <label className="block text-xs font-bold">Largura: {content.styles[selection.key]?.width ?? 100}%<input type="range" min="20" max="100" className="mt-2 w-full accent-primary" value={content.styles[selection.key]?.width ?? 100} onChange={(event) => patchSelectionStyle({ width: Number(event.target.value) })} /></label>
-              <div>
-                <p className="mb-2 text-xs font-bold">Alinhamento</p>
-                <div className="grid grid-cols-3 gap-1">{(["left", "center", "right"] as const).map((align) => <Button key={align} size="sm" variant={content.styles[selection.key]?.textAlign === align ? "default" : "outline"} onClick={() => patchSelectionStyle({ textAlign: align })}>{align === "left" ? "Esq." : align === "center" ? "Centro" : "Dir."}</Button>)}</div>
-              </div>
-              <Button variant="outline" className="w-full" onClick={() => selection.onToggleHidden()}>{selection.hidden ? <Eye className="size-4" /> : <EyeOff className="size-4" />}{selection.hidden ? "Mostrar elemento" : "Ocultar elemento"}</Button>
-              <Button variant="ghost" className="w-full" onClick={() => setContent((current) => { const styles = { ...current.styles }; const links = { ...current.links }; delete styles[selection.key]; delete links[selection.key]; return { ...current, styles, links }; })}>Restaurar aparência</Button>
+              {selection.kind === "image" && (
+                <div className="space-y-3">
+                  {selection.value && <img src={selection.value} alt="" className="aspect-video w-full border border-border object-cover" />}
+                  <label className="block cursor-pointer border border-dashed border-primary p-4 text-center text-xs font-bold">Escolher imagem<input type="file" accept="image/*" className="hidden" onChange={(event) => chooseImage(event.target.files?.[0])} /></label>
+                  {selection.value && <Button variant="ghost" className="w-full" onClick={() => { selection.onChange?.(""); setSelection({ ...selection, value: "" }); }}>Remover imagem</Button>}
+                </div>
+              )}
+              {selection.kind !== "section" && selection.kind !== "image" && <>
+                <label className="block text-xs font-bold">Link clicável
+                  <div className="mt-2 flex items-center border border-border px-2 focus-within:border-primary"><Link2 className="size-4 text-muted-foreground" /><input className="h-10 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none" placeholder="/login ou https://..." value={content.links[selection.key] ?? ""} onChange={(event) => setContent((current) => ({ ...current, links: { ...current.links, [selection.key]: event.target.value } }))} /></div>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="text-xs font-bold">Cor do texto<input type="color" className="mt-2 h-9 w-full" value={content.styles[selection.key]?.color ?? "#ffffff"} onChange={(event) => patchSelectionStyle({ color: event.target.value })} /></label>
+                  <label className="text-xs font-bold">Cor do fundo<input type="color" className="mt-2 h-9 w-full" value={content.styles[selection.key]?.backgroundColor ?? content.colors.background} onChange={(event) => patchSelectionStyle({ backgroundColor: event.target.value })} /></label>
+                </div>
+                <label className="block text-xs font-bold">Tamanho: {content.styles[selection.key]?.fontSize ?? 16}px<input type="range" min="10" max="96" className="mt-2 w-full accent-primary" value={content.styles[selection.key]?.fontSize ?? 16} onChange={(event) => patchSelectionStyle({ fontSize: Number(event.target.value) })} /></label>
+                <label className="block text-xs font-bold">Largura: {content.styles[selection.key]?.width ?? 100}%<input type="range" min="20" max="100" className="mt-2 w-full accent-primary" value={content.styles[selection.key]?.width ?? 100} onChange={(event) => patchSelectionStyle({ width: Number(event.target.value) })} /></label>
+                <div>
+                  <p className="mb-2 text-xs font-bold">Alinhamento</p>
+                  <div className="grid grid-cols-3 gap-1">{(["left", "center", "right"] as const).map((align) => <Button key={align} size="sm" variant={content.styles[selection.key]?.textAlign === align ? "default" : "outline"} onClick={() => patchSelectionStyle({ textAlign: align })}>{align === "left" ? "Esq." : align === "center" ? "Centro" : "Dir."}</Button>)}</div>
+                </div>
+              </>}
+              <Button variant="outline" className="w-full" onClick={() => { selection.onToggleHidden(); setSelection({ ...selection, hidden: !selection.hidden }); }}>{selection.hidden ? <Eye className="size-4" /> : <EyeOff className="size-4" />}{selection.hidden ? "Mostrar elemento" : "Ocultar elemento"}</Button>
+              {selection.kind !== "section" && selection.kind !== "image" && <Button variant="ghost" className="w-full" onClick={() => setContent((current) => { const styles = { ...current.styles }; const links = { ...current.links }; delete styles[selection.key]; delete links[selection.key]; return { ...current, styles, links }; })}>Restaurar aparência</Button>}
             </div>
           ) : (
             <div className="p-4">
