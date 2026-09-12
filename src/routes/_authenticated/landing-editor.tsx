@@ -97,7 +97,7 @@ function LandingEditorPage() {
       if (kind === "step") return { ...current, steps: { ...current.steps, items: [...current.steps.items, { title: "Novo passo", text: "Descrição do passo." }] } };
       if (kind === "audience") return { ...current, audience: { ...current.audience, items: [...current.audience.items, { title: "Novo público", text: "Descrição." }] } };
       if (kind === "faq") return { ...current, faq: { ...current.faq, items: [...current.faq.items, { q: "Nova pergunta?", a: "Resposta." }] } };
-      if (kind === "plan") return { ...current, plans: { ...current.plans, items: [...current.plans.items, { id: `plan_${Date.now()}`, priceId: "", name: "Novo plano", price: "R$ 0", period: "/mês", credits: 0, description: "Descrição do plano", features: ["Benefício"], active: false, highlight: false, cta: "Assinar" }] } };
+      if (kind === "plan") return { ...current, plans: { ...current.plans, items: [...current.plans.items, { id: `plan_${Date.now()}`, priceId: "", name: "Novo plano", price: "R$ 0", period: "pagamento único", amountCents: 0, credits: 0, description: "Descrição do plano", features: ["Benefício"], active: false, highlight: false, free: false, cta: "Comprar créditos" }] } };
       return { ...current, hero: { ...current.hero, badges: [...current.hero.badges, "Novo selo"] } };
 
     });
