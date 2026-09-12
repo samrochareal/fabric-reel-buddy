@@ -21,6 +21,7 @@ import { Route as AuthenticatedNewPasswordRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOverlayCreatorRouteImport } from './routes/_authenticated/overlay-creator'
 import { Route as AuthenticatedReferralsRouteImport } from './routes/_authenticated/referrals'
 import { Route as AuthenticatedEditorProjectIdRouteImport } from './routes/_authenticated/editor.$projectId'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -85,6 +86,12 @@ const AuthenticatedEditorProjectIdRoute =
     path: '/editor/$projectId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicPaymentsWebhookRoute =
+  ApiPublicPaymentsWebhookRouteImport.update({
+    id: '/api/public/payments/webhook',
+    path: '/api/public/payments/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
   '/referrals': typeof AuthenticatedReferralsRoute
   '/editor/$projectId': typeof AuthenticatedEditorProjectIdRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -111,6 +119,7 @@ export interface FileRoutesByTo {
   '/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
   '/referrals': typeof AuthenticatedReferralsRoute
   '/editor/$projectId': typeof AuthenticatedEditorProjectIdRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -126,6 +135,7 @@ export interface FileRoutesById {
   '/_authenticated/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
   '/_authenticated/referrals': typeof AuthenticatedReferralsRoute
   '/_authenticated/editor/$projectId': typeof AuthenticatedEditorProjectIdRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/overlay-creator'
     | '/referrals'
     | '/editor/$projectId'
+    | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/overlay-creator'
     | '/referrals'
     | '/editor/$projectId'
+    | '/api/public/payments/webhook'
   id:
     | '__root__'
     | '/'
@@ -168,6 +180,7 @@ export interface FileRouteTypes {
     | '/_authenticated/overlay-creator'
     | '/_authenticated/referrals'
     | '/_authenticated/editor/$projectId'
+    | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -176,6 +189,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRoute
   LoginRoute: typeof LoginRoute
+  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -264,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEditorProjectIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -296,6 +317,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRoute,
   AuthRoute: AuthRoute,
   LoginRoute: LoginRoute,
+  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

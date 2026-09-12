@@ -24,11 +24,13 @@ export type LandingDevice = "desktop" | "mobile";
 export type LandingSelection = {
   key: string;
   label: string;
-  kind: "text" | "button" | "image" | "item" | "section";
+  kind: "text" | "button" | "image" | "item" | "section" | "plan";
   value?: string;
   onChange?: (value: string) => void;
   hidden: boolean;
   onToggleHidden: () => void;
+  onDelete?: (() => void) | undefined;
+  planIndex?: number | undefined;
 };
 export type LandingEdit = {
   update: (fn: (c: LandingContent) => LandingContent) => void;
