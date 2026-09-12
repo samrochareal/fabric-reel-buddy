@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { getStripe, getStripeEnvironment } from "@/lib/stripe";
 import { createPlanCheckoutSession } from "@/lib/payments.functions";
+import { formatPrice, getBuyerCurrency, type BuyerCurrency } from "@/lib/geo.functions";
 import { fetchBranding } from "@/lib/branding";
 import { normalizeLandingContent, type LandingPlan } from "@/lib/landing-content";
 
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/checkout")({
 function CheckoutPage() {
   const { plan: planId, session_id: sessionId } = Route.useSearch();
   const [plan, setPlan] = useState<LandingPlan | null>(null);
+  const [currency, setCurrency] = useState<BuyerCurrency>("brl");
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,8 +42,13 @@ function CheckoutPage() {
 
   useEffect(() => {
     void (async () => {
-      const [{ data }, branding] = await Promise.all([supabase.auth.getSession(), fetchBranding()]);
+      const [{ data }, branding, geo] = await Promise.all([
+        supabase.auth.getSession(),
+        fetchBranding(),
+        getBuyerCurrency().catch(() => ({ currency: "brl" as const })),
+      ]);
       setSignedIn(Boolean(data.session));
+      setCurrency(geo.currency);
       const content = normalizeLandingContent(branding.landing_content);
       setPlan(
         content.plans.items.find((item) => item.id === planId && item.active && !item.free) ?? null,
@@ -109,7 +116,7 @@ function CheckoutPage() {
           <>
             <header className="mt-6">
               <h1 className="font-display text-2xl font-bold">
-                Plano {plan.name} · {plan.price}
+                Plano {plan.name} · {formatPrice(plan.amountCents / 100, currency)}
                 <span className="text-sm font-semibold text-muted-foreground">{plan.period}</span>
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">{plan.credits} créditos de vídeo a cada cobrança.</p>

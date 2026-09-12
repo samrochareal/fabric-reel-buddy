@@ -2,12 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { normalizeLandingContent } from "@/lib/landing-content";
 import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib/stripe.server";
+import { currencyForCountry } from "@/lib/geo.functions";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 type CheckoutSessionResult = { clientSecret: string } | { error: string };
 
 /** Stable key that ties one saved pack to its entry in the payment catalogue. */
-function lookupKeyFor(planId: string): string {
-  return `pack_${planId}`;
+function lookupKeyFor(planId: string, currency: "brl" | "usd" = "brl"): string {
+  return currency === "brl" ? `pack_${planId}` : `pack_${planId}_${currency}`;
 }
 
 async function resolveOrCreateCustomer(
@@ -67,6 +69,14 @@ export const createPlanCheckoutSession = createServerFn({ method: "POST" })
         return { error: "Este plano ainda não tem valor e créditos definidos." };
       }
 
+      // Currency follows the buyer's country: BRL in Brazil, USD elsewhere
+      // (same number, no conversion — R$29 becomes $29).
+      const country =
+        getRequestHeader("cf-ipcountry") ??
+        getRequestHeader("x-vercel-ip-country") ??
+        getRequestHeader("x-country-code");
+      const currency = currencyForCountry(country);
+
       const stripe = createStripeClient(data.environment);
       const {
         data: { user },
@@ -84,18 +94,23 @@ export const createPlanCheckoutSession = createServerFn({ method: "POST" })
       let lineItem: Record<string, unknown> = {
         quantity: 1,
         price_data: {
-          currency: "brl",
+          currency,
           unit_amount: plan.amountCents,
           product_data: { name: plan.name || label, description: label },
         },
       };
       const catalogue = await stripe.prices.list({
-        lookup_keys: [lookupKeyFor(plan.id)],
+        lookup_keys: [lookupKeyFor(plan.id, currency)],
         active: true,
         limit: 1,
       });
       const catalogued = catalogue.data[0];
-      if (catalogued && catalogued.unit_amount === plan.amountCents && !catalogued.recurring) {
+      if (
+        catalogued &&
+        catalogued.unit_amount === plan.amountCents &&
+        catalogued.currency === currency &&
+        !catalogued.recurring
+      ) {
         lineItem = { quantity: 1, price: catalogued.id };
       }
 
@@ -239,14 +254,16 @@ export const syncPlanCatalog = createServerFn({ method: "POST" })
         .maybeSingle();
       const items = normalizeLandingContent(settings?.landing_content).plans.items;
       const payable = items.filter((item) => !item.free && item.amountCents >= 100 && item.credits > 0);
-      const wantedKeys = new Set(payable.map((item) => lookupKeyFor(item.id)));
+      const currencies = ["brl", "usd"] as const;
+      const wantedKeys = new Set(
+        payable.flatMap((item) => currencies.map((c) => lookupKeyFor(item.id, c))),
+      );
 
       const stripe = createStripeClient(data.environment);
       let synced = 0;
       let archived = 0;
 
       for (const plan of payable) {
-        const key = lookupKeyFor(plan.id);
         const label = `${plan.credits} créditos de vídeo`;
         const name = plan.name || label;
 
@@ -268,25 +285,28 @@ export const syncPlanCatalog = createServerFn({ method: "POST" })
               metadata: { lovable_plan_id: plan.id, credits: String(plan.credits) },
             });
 
-        const existing = await stripe.prices.list({ lookup_keys: [key], active: true, limit: 1 });
-        const current = existing.data[0];
-        const matches =
-          current && !current.recurring && current.unit_amount === plan.amountCents && current.currency === "brl";
+        for (const currency of ["brl", "usd"] as const) {
+          const key = lookupKeyFor(plan.id, currency);
+          const existing = await stripe.prices.list({ lookup_keys: [key], active: true, limit: 1 });
+          const current = existing.data[0];
+          const matches =
+            current && !current.recurring && current.unit_amount === plan.amountCents && current.currency === currency;
 
-        if (!matches) {
-          if (current) {
-            await stripe.prices.update(current.id, { active: false });
-            archived += 1;
+          if (!matches) {
+            if (current) {
+              await stripe.prices.update(current.id, { active: false });
+              archived += 1;
+            }
+            await stripe.prices.create({
+              currency,
+              unit_amount: plan.amountCents,
+              product: product.id,
+              lookup_key: key,
+              transfer_lookup_key: true,
+              nickname: name,
+              metadata: { lovable_plan_id: plan.id, credits: String(plan.credits) },
+            });
           }
-          await stripe.prices.create({
-            currency: "brl",
-            unit_amount: plan.amountCents,
-            product: product.id,
-            lookup_key: key,
-            transfer_lookup_key: true,
-            nickname: name,
-            metadata: { lovable_plan_id: plan.id, credits: String(plan.credits) },
-          });
         }
         synced += 1;
       }
