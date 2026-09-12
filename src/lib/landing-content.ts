@@ -234,3 +234,21 @@ export async function saveLandingContent(content: LandingContent) {
   const { error } = await supabase.from("platform_settings").update({ landing_content: content as never }).eq("id", true);
   if (error) throw error;
 }
+/** Everything blank: used before the master's saved page arrives, so no original text flashes. */
+function blank<T>(value: T): T {
+  if (typeof value === "string") return "" as unknown as T;
+  if (Array.isArray(value)) return [] as unknown as T;
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) out[k] = blank(v);
+    return out as T;
+  }
+  return value;
+}
+
+export const blankLandingContent: LandingContent = {
+  ...blank(defaultLandingContent),
+  sections: [],
+  removedSections: [],
+  colors: { ...defaultLandingContent.colors },
+};
