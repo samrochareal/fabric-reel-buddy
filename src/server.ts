@@ -7,7 +7,17 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
-function withVideoProcessingHeaders(response: Response): Response {
+/**
+ * The video editor needs cross-origin isolation, but the payment form is
+ * shown inside a frame from the payment provider, which isolation blocks.
+ * So the payment page is served without those headers.
+ */
+export function isPaymentPath(pathname: string): boolean {
+  return pathname === "/checkout" || pathname.startsWith("/checkout/");
+}
+
+function withVideoProcessingHeaders(request: Request, response: Response): Response {
+  if (isPaymentPath(new URL(request.url).pathname)) return response;
   const headers = new Headers(response.headers);
   headers.set("Cross-Origin-Opener-Policy", "same-origin");
   headers.set("Cross-Origin-Embedder-Policy", "credentialless");
