@@ -128,6 +128,7 @@ const PT: Record<string, string> = {
   "Pause": "Pausar",
   "Unmute": "Ativar som",
   "Mute": "Silenciar",
+  "{n} credits are already in your account.": "{n} créditos já estão na sua conta.",
   "Turbo processing": "Processamento turbo",
   "Renders the batch as fast as possible and keeps files light. The final image loses a little quality because of the stronger compression.":
     "Processa o lote o mais rápido possível e deixa os arquivos leves. A imagem final perde um pouco de qualidade por causa da compressão mais forte.",
