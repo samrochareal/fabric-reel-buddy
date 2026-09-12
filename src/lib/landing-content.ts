@@ -126,25 +126,25 @@ export const defaultLandingContent: LandingContent = {
     intro: "Cada crédito equivale a um vídeo processado. Pagamento único: os créditos entram na sua conta assim que o pagamento é confirmado e não expiram.",
     items: [
       {
-        id: "free", priceId: "", name: "Grátis", price: "R$ 0", period: "para sempre", amountCents: 0, credits: 0,
+        id: "free", priceId: "", name: "Grátis", price: "R$ 0", priceUsd: "$0", period: "para sempre", amountCents: 0, amountCentsUsd: 0, credits: 0,
         description: "Créditos liberados automaticamente todos os dias",
         features: ["Créditos gratuitos renovados automaticamente", "Todos os formatos", "Sem cartão de crédito"],
         active: true, highlight: false, free: true, cta: "Começar grátis",
       },
       {
-        id: "credits_150", priceId: "credits_150", name: "150 créditos", price: "R$ 29", period: "pagamento único", amountCents: 2900, credits: 150,
+        id: "credits_150", priceId: "credits_150", name: "150 créditos", price: "R$ 29", priceUsd: "$29", period: "pagamento único", amountCents: 2900, amountCentsUsd: 2900, credits: 150,
         description: "Para quem posta toda semana",
         features: ["150 vídeos processados", "Todos os formatos", "Créditos não expiram"],
         active: true, highlight: false, free: false, cta: "Comprar 150 créditos",
       },
       {
-        id: "credits_500", priceId: "credits_500", name: "500 créditos", price: "R$ 79", period: "pagamento único", amountCents: 7900, credits: 500,
+        id: "credits_500", priceId: "credits_500", name: "500 créditos", price: "R$ 79", priceUsd: "$79", period: "pagamento único", amountCents: 7900, amountCentsUsd: 7900, credits: 500,
         description: "Para criadores e social media",
         features: ["500 vídeos processados", "Todos os formatos", "Suporte prioritário"],
         active: true, highlight: true, free: false, cta: "Comprar 500 créditos",
       },
       {
-        id: "credits_1200", priceId: "credits_1200", name: "1200 créditos", price: "R$ 189", period: "pagamento único", amountCents: 18900, credits: 1200,
+        id: "credits_1200", priceId: "credits_1200", name: "1200 créditos", price: "R$ 189", priceUsd: "$189", period: "pagamento único", amountCents: 18900, amountCentsUsd: 18900, credits: 1200,
         description: "Para agências e alto volume",
         features: ["1200 vídeos processados", "Todos os formatos", "Suporte prioritário"],
         active: true, highlight: false, free: false, cta: "Comprar 1200 créditos",
