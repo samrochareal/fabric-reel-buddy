@@ -37,47 +37,62 @@ async function resolveOrCreateCustomer(
   return created.id;
 }
 
-/** Opens the payment form for one plan; credits are granted by the webhook. */
+/**
+ * Opens the payment form for one credit pack. The price and the number of
+ * credits always come from the saved plans, never from the browser.
+ */
 export const createPlanCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { priceId: string; returnUrl: string; environment: StripeEnv }) => {
-    if (!/^[a-zA-Z0-9_-]+$/.test(data.priceId)) throw new Error("Invalid priceId");
+  .inputValidator((data: { planId: string; returnUrl: string; environment: StripeEnv }) => {
+    if (!/^[a-zA-Z0-9_-]+$/.test(data.planId)) throw new Error("Invalid planId");
     return data;
   })
   .handler(async ({ data, context }): Promise<CheckoutSessionResult> => {
     try {
+      const { data: settings } = await context.supabase
+        .from("platform_settings")
+        .select("landing_content")
+        .eq("id", true)
+        .maybeSingle();
+      const items = normalizeLandingContent(settings?.landing_content).plans.items;
+      const plan = items.find((item) => item.id === data.planId && item.active && !item.free);
+      if (!plan) return { error: "Este plano não está disponível." };
+      if (plan.amountCents < 100 || plan.credits <= 0) {
+        return { error: "Este plano ainda não tem valor e créditos definidos." };
+      }
+
       const stripe = createStripeClient(data.environment);
       const {
         data: { user },
       } = await context.supabase.auth.getUser();
-
-      const prices = await stripe.prices.list({ lookup_keys: [data.priceId] });
-      const stripePrice = prices.data[0];
-      if (!stripePrice) throw new Error("Price not found");
-      const isRecurring = stripePrice.type === "recurring";
 
       const customerId = await resolveOrCreateCustomer(stripe, {
         email: user?.email,
         userId: context.userId,
       });
 
-      let productDescription: string | undefined;
-      if (!isRecurring) {
-        const productId =
-          typeof stripePrice.product === "string" ? stripePrice.product : stripePrice.product.id;
-        const product = await stripe.products.retrieve(productId);
-        productDescription = product.name;
-      }
-
+      const label = `${plan.credits} créditos de vídeo`;
       const session = await stripe.checkout.sessions.create({
-        line_items: [{ price: stripePrice.id, quantity: 1 }],
-        mode: isRecurring ? "subscription" : "payment",
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: "brl",
+              unit_amount: plan.amountCents,
+              product_data: { name: plan.name || label, description: label },
+            },
+          },
+        ],
+        mode: "payment",
         ui_mode: "embedded_page",
         return_url: data.returnUrl,
         customer: customerId,
-        ...(!isRecurring && productDescription ? { payment_intent_data: { description: productDescription } } : {}),
-        metadata: { userId: context.userId },
-        ...(isRecurring && { subscription_data: { metadata: { userId: context.userId } } }),
+        payment_intent_data: { description: label },
+        metadata: {
+          userId: context.userId,
+          planId: plan.id,
+          credits: String(plan.credits),
+        },
       });
 
       return { clientSecret: session.client_secret ?? "" };
