@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -36,6 +36,7 @@ function CheckoutPage() {
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     void (async () => {
@@ -48,6 +49,13 @@ function CheckoutPage() {
       setLoading(false);
     })();
   }, [planId]);
+
+  // Buying requires an account: send visitors to sign in and bring them back here.
+  useEffect(() => {
+    if (loading || signedIn !== false || sessionId) return;
+    const back = `/checkout?plan=${encodeURIComponent(planId)}`;
+    void navigate({ to: "/login", search: { next: back }, replace: true });
+  }, [loading, signedIn, sessionId, planId, navigate]);
 
   const options = useMemo(() => {
     if (!plan || !signedIn) return null;
@@ -96,13 +104,7 @@ function CheckoutPage() {
             <Button asChild className="mt-6 font-bold"><Link to="/">Ver planos</Link></Button>
           </div>
         ) : !signedIn ? (
-          <div className="mt-8 rounded-2xl border border-border bg-card p-8 text-center">
-            <h1 className="font-display text-2xl font-bold">Entre para assinar o plano {plan.name}</h1>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Os créditos são adicionados à sua conta, por isso é preciso entrar antes de pagar.
-            </p>
-            <Button asChild className="mt-6 font-bold"><Link to="/login">Entrar</Link></Button>
-          </div>
+          <div className="mt-16 flex justify-center"><Loader2 className="size-6 animate-spin text-primary" /></div>
         ) : (
           <>
             <header className="mt-6">
