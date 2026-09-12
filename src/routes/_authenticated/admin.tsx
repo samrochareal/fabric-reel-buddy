@@ -484,7 +484,12 @@ function AdminPage() {
     setApplyingDefaults(true);
     try {
       const parsed = Number(defDays);
-      const accessDays = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+      const accessDays =
+        defDays.trim() === ""
+          ? undefined
+          : Number.isFinite(parsed) && parsed > 0
+            ? parsed
+            : null;
       const result = await savePlatformDefaults({
         credits: defCredits,
         creditRefillAmount: defRefillAmount,
@@ -492,7 +497,7 @@ function AdminPage() {
         premium: defPremium,
         blocked: defBlocked,
         allowedTools: defTools,
-        accessDays,
+        ...(accessDays === undefined ? {} : { accessDays }),
       });
       await users.refetch();
       toast.success(t("{n} account(s) updated.", { n: result.updated }));
@@ -1406,14 +1411,16 @@ function AdminPage() {
                 >
                   {link.hidden ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </Button>
-                <button
+                <Button
                   type="button"
+                  size="icon"
+                  variant="ghost"
                   onClick={() => setLinks((prev) => prev.filter((_, j) => j !== i))}
-                  className="text-muted-foreground transition-colors hover:text-destructive"
+                  className="text-muted-foreground hover:text-destructive"
                   aria-label={t("Remove")}
                 >
                   <Trash2 className="size-4" />
-                </button>
+                </Button>
               </div>
             ))}
           </div>

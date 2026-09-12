@@ -72,14 +72,14 @@ export const getPlatformDefaults = createServerFn({ method: "GET" })
     if (!saved || typeof saved !== "object" || Array.isArray(saved)) return fallbackDefaults;
     const value = saved as Record<string, unknown>;
     return {
-      credits: typeof value.credits === "number" ? value.credits : fallbackDefaults.credits,
-      creditRefillAmount: typeof value.creditRefillAmount === "number" ? value.creditRefillAmount : fallbackDefaults.creditRefillAmount,
-      creditRefillHours: typeof value.creditRefillHours === "number" ? value.creditRefillHours : fallbackDefaults.creditRefillHours,
-      premium: typeof value.premium === "boolean" ? value.premium : fallbackDefaults.premium,
-      accessDays: typeof value.accessDays === "number" ? value.accessDays : null,
-      blocked: typeof value.blocked === "boolean" ? value.blocked : fallbackDefaults.blocked,
-      allowedTools: value.allowedTools && typeof value.allowedTools === "object" && !Array.isArray(value.allowedTools)
-        ? value.allowedTools as Record<string, boolean>
+      credits: typeof value["credits"] === "number" ? value["credits"] : fallbackDefaults.credits,
+      creditRefillAmount: typeof value["creditRefillAmount"] === "number" ? value["creditRefillAmount"] : fallbackDefaults.creditRefillAmount,
+      creditRefillHours: typeof value["creditRefillHours"] === "number" ? value["creditRefillHours"] : fallbackDefaults.creditRefillHours,
+      premium: typeof value["premium"] === "boolean" ? value["premium"] : fallbackDefaults.premium,
+      accessDays: typeof value["accessDays"] === "number" ? value["accessDays"] : null,
+      blocked: typeof value["blocked"] === "boolean" ? value["blocked"] : fallbackDefaults.blocked,
+      allowedTools: value["allowedTools"] && typeof value["allowedTools"] === "object" && !Array.isArray(value["allowedTools"])
+        ? value["allowedTools"] as Record<string, boolean>
         : fallbackDefaults.allowedTools,
     };
   });
