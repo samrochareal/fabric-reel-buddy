@@ -10,7 +10,9 @@ import { createPlanCheckoutSession } from "@/lib/payments.functions";
 import { useBuyerCurrency } from "@/lib/locale";
 import { fetchBranding, useBranding } from "@/lib/branding";
 import { normalizeLandingContent, planPriceLabel, type LandingPlan } from "@/lib/landing-content";
-import { useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
+import { translateLandingPlan } from "@/lib/landing-i18n";
+
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -41,7 +43,14 @@ export const Route = createFileRoute("/checkout")({
 
 function CheckoutPage() {
   const { plan: planId, session_id: sessionId } = Route.useSearch();
-  const [plan, setPlan] = useState<LandingPlan | null>(null);
+  const [sourcePlan, setSourcePlan] = useState<LandingPlan | null>(null);
+  const [lang] = useLang();
+  // The pack texts follow the language the visitor picked.
+  const plan = useMemo(
+    () => (sourcePlan ? translateLandingPlan(sourcePlan, lang) : null),
+    [sourcePlan, lang],
+  );
+
   const currency = useBuyerCurrency();
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +71,7 @@ function CheckoutPage() {
         fetchBranding().then((b) => normalizeLandingContent(b.landing_content)),
       ]);
       setSignedIn(Boolean(data.session));
-      setPlan(
+      setSourcePlan(
         content.plans.items.find((item) => item.id === planId && item.active && !item.free) ?? null,
       );
       setLoading(false);
