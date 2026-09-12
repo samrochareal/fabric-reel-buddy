@@ -171,6 +171,33 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_credit_grants: {
+        Row: {
+          created_at: string
+          credits: number
+          event_key: string
+          id: string
+          price_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits?: number
+          event_key: string
+          id?: string
+          price_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          event_key?: string
+          id?: string
+          price_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           account_defaults: Json
@@ -330,6 +357,54 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          environment: string
+          id: string
+          price_id: string | null
+          product_id: string | null
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          price_id?: string | null
+          product_id?: string | null
+          status?: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          price_id?: string | null
+          product_id?: string | null
+          status?: string
+          stripe_customer_id?: string
+          stripe_subscription_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -436,6 +511,15 @@ export type Database = {
           _credit_refill_hours?: number
           _credits?: number
           _premium?: boolean
+          _user_id: string
+        }
+        Returns: Json
+      }
+      apply_plan_credits: {
+        Args: {
+          _credits: number
+          _event_key: string
+          _price_id?: string
           _user_id: string
         }
         Returns: Json
