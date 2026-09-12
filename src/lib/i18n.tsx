@@ -468,7 +468,7 @@ const PT: Record<string, string> = {
   "{n} failed": "{n} falharam",
 
   // recharge
-  "Add credits": "Adicionar créditos",
+
   "Each credit equals one processed video. It is a one-time payment and the credits land in your account right away.":
     "Cada crédito equivale a um vídeo processado. O pagamento é único e os créditos entram na sua conta na hora.",
   "You have {n} credits right now.": "Você tem {n} créditos agora.",
