@@ -104,7 +104,7 @@ function RechargePage() {
                   variant={plan.highlight ? "default" : "outline"}
                 >
                   <Link to="/checkout" search={{ plan: plan.id, session_id: "" }}>
-                    {plan.cta || "Comprar créditos"}
+                    {plan.cta || t("Buy credits")}
                   </Link>
                 </Button>
               </div>
