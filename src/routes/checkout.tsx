@@ -7,17 +7,25 @@ import { Button } from "@/components/ui/button";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { getStripe, getStripeEnvironment } from "@/lib/stripe";
 import { createPlanCheckoutSession } from "@/lib/payments.functions";
-import { formatPrice, getBuyerCurrency, type BuyerCurrency } from "@/lib/geo.functions";
-import { fetchBranding } from "@/lib/branding";
-import { normalizeLandingContent, type LandingPlan } from "@/lib/landing-content";
+import { useBuyerCurrency } from "@/lib/locale";
+import { fetchBranding, useBranding } from "@/lib/branding";
+import { normalizeLandingContent, planPriceLabel, type LandingPlan } from "@/lib/landing-content";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
     meta: [
-      { title: "Assinar um plano" },
-      { name: "description", content: "Escolha seu plano, pague com segurança e receba os créditos na sua conta na hora." },
-      { property: "og:title", content: "Assinar um plano" },
-      { property: "og:description", content: "Pagamento seguro e créditos liberados automaticamente na sua conta." },
+      { title: "Speed Flow" },
+      {
+        name: "description",
+        content:
+          "Escolha seu pacote de créditos, pague com segurança e receba os créditos na sua conta na hora.",
+      },
+      { property: "og:title", content: "Speed Flow" },
+      {
+        property: "og:description",
+        content: "Pagamento seguro e créditos liberados automaticamente na sua conta.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "robots", content: "noindex" },
@@ -34,22 +42,26 @@ export const Route = createFileRoute("/checkout")({
 function CheckoutPage() {
   const { plan: planId, session_id: sessionId } = Route.useSearch();
   const [plan, setPlan] = useState<LandingPlan | null>(null);
-  const [currency, setCurrency] = useState<BuyerCurrency>("brl");
+  const currency = useBuyerCurrency();
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const branding = useBranding();
+  const t = useT();
+
+  // The browser tab shows the system name defined by the master.
+  useEffect(() => {
+    if (branding.system_name) document.title = branding.system_name;
+  }, [branding.system_name]);
 
   useEffect(() => {
     void (async () => {
-      const [{ data }, branding, geo] = await Promise.all([
+      const [{ data }, content] = await Promise.all([
         supabase.auth.getSession(),
-        fetchBranding(),
-        getBuyerCurrency().catch(() => ({ currency: "brl" as const })),
+        fetchBranding().then((b) => normalizeLandingContent(b.landing_content)),
       ]);
       setSignedIn(Boolean(data.session));
-      setCurrency(geo.currency);
-      const content = normalizeLandingContent(branding.landing_content);
       setPlan(
         content.plans.items.find((item) => item.id === planId && item.active && !item.free) ?? null,
       );
@@ -88,40 +100,61 @@ function CheckoutPage() {
     <div className="min-h-screen bg-background text-foreground">
       <PaymentTestModeBanner />
       <div className="mx-auto max-w-3xl px-4 py-10">
-        <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="size-3.5" /> Voltar
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" /> {t("Back")}
         </Link>
 
         {sessionId ? (
           <div className="mt-8 rounded-2xl border border-primary/40 bg-card p-8 text-center">
-            <h1 className="font-display text-2xl font-bold">Pagamento concluído!</h1>
+            <h1 className="font-display text-2xl font-bold">{t("Payment complete!")}</h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Seus créditos entram na conta em instantes. Você já pode voltar para o painel e começar a produzir.
+              {t(
+                "Your credits land in your account in a moment. You can go back to your projects and start creating.",
+              )}
             </p>
             <Button asChild className="mt-6 font-bold">
-              <Link to="/dashboard">Ir para meus projetos</Link>
+              <Link to="/dashboard">{t("Go to my projects")}</Link>
             </Button>
           </div>
         ) : loading ? (
-          <div className="mt-16 flex justify-center"><Loader2 className="size-6 animate-spin text-primary" /></div>
+          <div className="mt-16 flex justify-center">
+            <Loader2 className="size-6 animate-spin text-primary" />
+          </div>
         ) : !plan ? (
           <div className="mt-8 rounded-2xl border border-border bg-card p-8 text-center">
-            <h1 className="font-display text-2xl font-bold">Plano indisponível</h1>
-            <p className="mt-3 text-sm text-muted-foreground">Escolha um dos planos disponíveis na página inicial.</p>
-            <Button asChild className="mt-6 font-bold"><Link to="/">Ver planos</Link></Button>
+            <h1 className="font-display text-2xl font-bold">{t("Pack unavailable")}</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t("Choose one of the packs available on the home page.")}
+            </p>
+            <Button asChild className="mt-6 font-bold">
+              <Link to="/">{t("See packs")}</Link>
+            </Button>
           </div>
         ) : !signedIn ? (
-          <div className="mt-16 flex justify-center"><Loader2 className="size-6 animate-spin text-primary" /></div>
+          <div className="mt-16 flex justify-center">
+            <Loader2 className="size-6 animate-spin text-primary" />
+          </div>
         ) : (
           <>
             <header className="mt-6">
               <h1 className="font-display text-2xl font-bold">
-                Plano {plan.name} · {formatPrice(plan.amountCents / 100, currency)}
+                {plan.name} · {planPriceLabel(plan, currency)}
                 <span className="text-sm font-semibold text-muted-foreground">{plan.period}</span>
               </h1>
-              <p className="mt-2 text-sm text-muted-foreground">{plan.credits} créditos de vídeo a cada cobrança.</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t("{n} video credits released as soon as the payment is confirmed.", {
+                  n: plan.credits,
+                })}
+              </p>
             </header>
-            {error && <p className="mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+            {error && (
+              <p className="mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </p>
+            )}
             {options && (
               <div className="mt-6" id="checkout">
                 <EmbeddedCheckoutProvider stripe={getStripe()} options={options}>

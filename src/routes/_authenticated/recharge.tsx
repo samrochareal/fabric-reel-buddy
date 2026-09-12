@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+
 import { useBranding } from "@/lib/branding";
 import { useMyAccount } from "@/lib/account";
-import { formatPrice, getBuyerCurrency, type BuyerCurrency } from "@/lib/geo.functions";
+import { planPriceLabel } from "@/lib/landing-content";
+import { useBuyerCurrency } from "@/lib/locale";
 
 export const Route = createFileRoute("/_authenticated/recharge")({
   head: () => ({
@@ -30,13 +31,7 @@ export const Route = createFileRoute("/_authenticated/recharge")({
 function RechargePage() {
   const branding = useBranding();
   const { account } = useMyAccount();
-  const [currency, setCurrency] = useState<BuyerCurrency>("brl");
-
-  useEffect(() => {
-    void getBuyerCurrency()
-      .then((geo) => setCurrency(geo.currency))
-      .catch(() => {});
-  }, []);
+  const currency = useBuyerCurrency();
   const plans = branding.landing_content.plans.items.filter((plan) => plan.active && !plan.free);
 
   return (
@@ -74,7 +69,7 @@ function RechargePage() {
                 <h2 className="font-display text-lg font-bold">{plan.name}</h2>
                 <div className="mt-2 flex items-end gap-1">
                   <span className="font-display text-3xl font-bold">
-                    {formatPrice(plan.amountCents / 100, currency)}
+                    {planPriceLabel(plan, currency)}
                   </span>
                   <span className="pb-1 text-sm font-semibold text-muted-foreground">
                     {plan.period}

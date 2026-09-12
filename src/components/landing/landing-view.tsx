@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { shown, withSystemName, type LandingContent, type LandingSection } from "@/lib/landing-content";
+import { planPriceLabel, shown, withSystemName, type LandingContent, type LandingSection } from "@/lib/landing-content";
+import { useBuyerCurrency } from "@/lib/locale";
 
 export type LandingDevice = "desktop" | "mobile";
 export type LandingSelection = {
@@ -281,6 +282,8 @@ export function LandingView({
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const editing = Boolean(edit);
   const mobile = device === "mobile";
+  // Visitors in Brazil see prices in reais, everyone else in dollars.
+  const buyerCurrency = useBuyerCurrency();
 
   const featureIcons = [Layers, Crop, Frame, Images, TypeIcon, Wand2, Zap, Gauge, ShieldCheck];
 
@@ -747,7 +750,7 @@ export function LandingView({
                 >
                   <EditableText as="h3" value={plan.name} onChange={editing ? (v) => setPlan({ name: v }) : undefined} className="font-display text-lg font-bold" placeholder="Nome do plano" {...visibility(`plans.item.${i}.name`, "Nome do plano", () => removeItem("plans", "items", i))} />
                   <div className="mt-2 flex items-end gap-1">
-                    <EditableText value={plan.price} onChange={editing ? (v) => setPlan({ price: v }) : undefined} className="font-display text-3xl font-bold" placeholder="Preço" {...visibility(`plans.item.${i}.price`, "Preço")} />
+                    <EditableText value={editing ? plan.price : planPriceLabel(plan, buyerCurrency)} onChange={editing ? (v) => setPlan({ price: v }) : undefined} className="font-display text-3xl font-bold" placeholder="Preço" {...visibility(`plans.item.${i}.price`, "Preço")} />
                     <EditableText value={plan.period} onChange={editing ? (v) => setPlan({ period: v }) : undefined} className="pb-1 text-sm font-semibold text-muted-foreground" placeholder="/mês" {...visibility(`plans.item.${i}.period`, "Periodicidade")} />
                   </div>
                   <EditableText as="p" value={plan.description} onChange={editing ? (v) => setPlan({ description: v }) : undefined} className="mt-2 text-sm text-muted-foreground" placeholder="Descrição" {...visibility(`plans.item.${i}.description`, "Descrição do plano")} />

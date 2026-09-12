@@ -288,11 +288,14 @@ export const syncPlanCatalog = createServerFn({ method: "POST" })
             });
 
         for (const currency of ["brl", "usd"] as const) {
+          // Each currency has its own amount, set by the master.
+          const amountCents = planAmountCents(plan, currency);
+          if (amountCents < 100) continue;
           const key = lookupKeyFor(plan.id, currency);
           const existing = await stripe.prices.list({ lookup_keys: [key], active: true, limit: 1 });
           const current = existing.data[0];
           const matches =
-            current && !current.recurring && current.unit_amount === plan.amountCents && current.currency === currency;
+            current && !current.recurring && current.unit_amount === amountCents && current.currency === currency;
 
           if (!matches) {
             if (current) {
@@ -301,7 +304,7 @@ export const syncPlanCatalog = createServerFn({ method: "POST" })
             }
             await stripe.prices.create({
               currency,
-              unit_amount: plan.amountCents,
+              unit_amount: amountCents,
               product: product.id,
               lookup_key: key,
               transfer_lookup_key: true,

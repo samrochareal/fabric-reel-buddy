@@ -466,6 +466,19 @@ const PT: Record<string, string> = {
   "{m} minutes and {s} seconds": "{m} minutos e {s} segundos",
   "{s} seconds": "{s} segundos",
   "{n} failed": "{n} falharam",
+
+  // checkout
+  "Back": "Voltar",
+  "Payment complete!": "Pagamento concluído!",
+  "Your credits land in your account in a moment. You can go back to your projects and start creating.":
+    "Seus créditos entram na conta em instantes. Você já pode voltar para o painel e começar a produzir.",
+  "Go to my projects": "Ir para meus projetos",
+  "Pack unavailable": "Pacote indisponível",
+  "Choose one of the packs available on the home page.":
+    "Escolha um dos pacotes disponíveis na página inicial.",
+  "See packs": "Ver pacotes",
+  "{n} video credits released as soon as the payment is confirmed.":
+    "{n} créditos de vídeo liberados assim que o pagamento for confirmado.",
 };
 
 

@@ -12,6 +12,7 @@ import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { useAutoLanguage } from "../lib/locale";
 
 function NotFoundComponent() {
   return (
@@ -134,6 +135,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  // First visit: Portuguese for Brazil, English anywhere else.
+  useAutoLanguage();
 
   return (
     <QueryClientProvider client={queryClient}>
