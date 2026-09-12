@@ -20,6 +20,8 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedLandingEditorRouteImport } from './routes/_authenticated/landing-editor'
 import { Route as AuthenticatedNewPasswordRouteImport } from './routes/_authenticated/new-password'
 import { Route as AuthenticatedOverlayCreatorRouteImport } from './routes/_authenticated/overlay-creator'
+import { Route as AuthenticatedPlansRouteImport } from './routes/_authenticated/plans'
+import { Route as AuthenticatedRechargeRouteImport } from './routes/_authenticated/recharge'
 import { Route as AuthenticatedReferralsRouteImport } from './routes/_authenticated/referrals'
 import { Route as AuthenticatedEditorProjectIdRouteImport } from './routes/_authenticated/editor.$projectId'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
@@ -81,6 +83,16 @@ const AuthenticatedOverlayCreatorRoute =
     path: '/overlay-creator',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPlansRoute = AuthenticatedPlansRouteImport.update({
+  id: '/plans',
+  path: '/plans',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRechargeRoute = AuthenticatedRechargeRouteImport.update({
+  id: '/recharge',
+  path: '/recharge',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedReferralsRoute = AuthenticatedReferralsRouteImport.update({
   id: '/referrals',
   path: '/referrals',
@@ -110,6 +122,8 @@ export interface FileRoutesByFullPath {
   '/landing-editor': typeof AuthenticatedLandingEditorRoute
   '/new-password': typeof AuthenticatedNewPasswordRoute
   '/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
+  '/plans': typeof AuthenticatedPlansRoute
+  '/recharge': typeof AuthenticatedRechargeRoute
   '/referrals': typeof AuthenticatedReferralsRoute
   '/editor/$projectId': typeof AuthenticatedEditorProjectIdRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -125,6 +139,8 @@ export interface FileRoutesByTo {
   '/landing-editor': typeof AuthenticatedLandingEditorRoute
   '/new-password': typeof AuthenticatedNewPasswordRoute
   '/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
+  '/plans': typeof AuthenticatedPlansRoute
+  '/recharge': typeof AuthenticatedRechargeRoute
   '/referrals': typeof AuthenticatedReferralsRoute
   '/editor/$projectId': typeof AuthenticatedEditorProjectIdRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -142,6 +158,8 @@ export interface FileRoutesById {
   '/_authenticated/landing-editor': typeof AuthenticatedLandingEditorRoute
   '/_authenticated/new-password': typeof AuthenticatedNewPasswordRoute
   '/_authenticated/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
+  '/_authenticated/plans': typeof AuthenticatedPlansRoute
+  '/_authenticated/recharge': typeof AuthenticatedRechargeRoute
   '/_authenticated/referrals': typeof AuthenticatedReferralsRoute
   '/_authenticated/editor/$projectId': typeof AuthenticatedEditorProjectIdRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -159,6 +177,8 @@ export interface FileRouteTypes {
     | '/landing-editor'
     | '/new-password'
     | '/overlay-creator'
+    | '/plans'
+    | '/recharge'
     | '/referrals'
     | '/editor/$projectId'
     | '/api/public/payments/webhook'
@@ -174,6 +194,8 @@ export interface FileRouteTypes {
     | '/landing-editor'
     | '/new-password'
     | '/overlay-creator'
+    | '/plans'
+    | '/recharge'
     | '/referrals'
     | '/editor/$projectId'
     | '/api/public/payments/webhook'
@@ -190,6 +212,8 @@ export interface FileRouteTypes {
     | '/_authenticated/landing-editor'
     | '/_authenticated/new-password'
     | '/_authenticated/overlay-creator'
+    | '/_authenticated/plans'
+    | '/_authenticated/recharge'
     | '/_authenticated/referrals'
     | '/_authenticated/editor/$projectId'
     | '/api/public/payments/webhook'
@@ -284,6 +308,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOverlayCreatorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/plans': {
+      id: '/_authenticated/plans'
+      path: '/plans'
+      fullPath: '/plans'
+      preLoaderRoute: typeof AuthenticatedPlansRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/recharge': {
+      id: '/_authenticated/recharge'
+      path: '/recharge'
+      fullPath: '/recharge'
+      preLoaderRoute: typeof AuthenticatedRechargeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/referrals': {
       id: '/_authenticated/referrals'
       path: '/referrals'
@@ -314,6 +352,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLandingEditorRoute: typeof AuthenticatedLandingEditorRoute
   AuthenticatedNewPasswordRoute: typeof AuthenticatedNewPasswordRoute
   AuthenticatedOverlayCreatorRoute: typeof AuthenticatedOverlayCreatorRoute
+  AuthenticatedPlansRoute: typeof AuthenticatedPlansRoute
+  AuthenticatedRechargeRoute: typeof AuthenticatedRechargeRoute
   AuthenticatedReferralsRoute: typeof AuthenticatedReferralsRoute
   AuthenticatedEditorProjectIdRoute: typeof AuthenticatedEditorProjectIdRoute
 }
@@ -324,6 +364,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLandingEditorRoute: AuthenticatedLandingEditorRoute,
   AuthenticatedNewPasswordRoute: AuthenticatedNewPasswordRoute,
   AuthenticatedOverlayCreatorRoute: AuthenticatedOverlayCreatorRoute,
+  AuthenticatedPlansRoute: AuthenticatedPlansRoute,
+  AuthenticatedRechargeRoute: AuthenticatedRechargeRoute,
   AuthenticatedReferralsRoute: AuthenticatedReferralsRoute,
   AuthenticatedEditorProjectIdRoute: AuthenticatedEditorProjectIdRoute,
 }

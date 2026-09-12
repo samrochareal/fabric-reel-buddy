@@ -20,11 +20,15 @@ export type LandingPlan = {
   name: string;
   price: string;
   period: string;
+  /** What the person pays, in cents. The master edits this in the plans panel. */
+  amountCents: number;
   credits: number;
   description: string;
   features: string[];
   active: boolean;
   highlight: boolean;
+  /** A free plan is not charged: it just sends the person to the sign-up. */
+  free: boolean;
   cta: string;
 };
 
@@ -97,27 +101,33 @@ export const defaultLandingContent: LandingContent = {
   steps: { eyebrow: "Como funciona", title: "Em poucos passos,", highlight: "você vai mais longe.", items: [{ title: "Crie um projeto", text: "Cada projeto guarda suas configurações, overlays, títulos e imagens de fundo." }, { title: "Suba o lote", text: "Arraste seus clipes e veja a prévia do resultado antes de processar." }, { title: "Ajuste uma vez", text: "Enquadramento, bordas, overlay e título valem para todos os vídeos." }, { title: "Baixe tudo pronto", text: "Os arquivos saem nomeados pelo projeto, prontos para publicar." }] },
   plans: {
     eyebrow: "Planos e créditos",
-    title: "Escolha o plano do seu",
+    title: "Compre créditos no seu",
     highlight: "ritmo de produção.",
-    intro: "Cada crédito equivale a um vídeo processado. Os créditos entram na sua conta assim que o pagamento é confirmado.",
+    intro: "Cada crédito equivale a um vídeo processado. Pagamento único: os créditos entram na sua conta assim que o pagamento é confirmado e não expiram.",
     items: [
       {
-        id: "starter", priceId: "starter_monthly", name: "Starter", price: "R$ 29", period: "/mês", credits: 30,
+        id: "free", priceId: "", name: "Grátis", price: "R$ 0", period: "para sempre", amountCents: 0, credits: 0,
+        description: "Créditos liberados automaticamente todos os dias",
+        features: ["Créditos gratuitos renovados automaticamente", "Todos os formatos", "Sem cartão de crédito"],
+        active: true, highlight: false, free: true, cta: "Começar grátis",
+      },
+      {
+        id: "credits_150", priceId: "credits_150", name: "150 créditos", price: "R$ 29", period: "pagamento único", amountCents: 2900, credits: 150,
         description: "Para quem posta toda semana",
-        features: ["30 créditos de vídeo por mês", "Todos os formatos", "Créditos somados na sua conta"],
-        active: true, highlight: false, cta: "Assinar Starter",
+        features: ["150 vídeos processados", "Todos os formatos", "Créditos não expiram"],
+        active: true, highlight: false, free: false, cta: "Comprar 150 créditos",
       },
       {
-        id: "pro", priceId: "pro_monthly", name: "Pro", price: "R$ 79", period: "/mês", credits: 100,
+        id: "credits_500", priceId: "credits_500", name: "500 créditos", price: "R$ 79", period: "pagamento único", amountCents: 7900, credits: 500,
         description: "Para criadores e social media",
-        features: ["100 créditos de vídeo por mês", "Todos os formatos", "Suporte prioritário"],
-        active: true, highlight: true, cta: "Assinar Pro",
+        features: ["500 vídeos processados", "Todos os formatos", "Suporte prioritário"],
+        active: true, highlight: true, free: false, cta: "Comprar 500 créditos",
       },
       {
-        id: "studio", priceId: "studio_monthly", name: "Studio", price: "R$ 189", period: "/mês", credits: 300,
+        id: "credits_1200", priceId: "credits_1200", name: "1200 créditos", price: "R$ 189", period: "pagamento único", amountCents: 18900, credits: 1200,
         description: "Para agências e alto volume",
-        features: ["300 créditos de vídeo por mês", "Todos os formatos", "Suporte prioritário"],
-        active: true, highlight: false, cta: "Assinar Studio",
+        features: ["1200 vídeos processados", "Todos os formatos", "Suporte prioritário"],
+        active: true, highlight: false, free: false, cta: "Comprar 1200 créditos",
       },
     ],
   },
@@ -139,6 +149,37 @@ function merge<T>(base: T, saved: unknown): T {
   return out as T;
 }
 
+/** Older saved plans had no amount or free flag: fill them in so nothing breaks. */
+function normalizePlans(items: unknown): LandingPlan[] {
+  if (!Array.isArray(items) || items.length === 0) return defaultLandingContent.plans.items;
+  return items.map((raw, index) => {
+    const plan = (raw ?? {}) as Partial<LandingPlan>;
+    const digits = String(plan.price ?? "").replace(/[^\d]/g, "");
+    const amount =
+      typeof plan.amountCents === "number" && plan.amountCents >= 0
+        ? Math.round(plan.amountCents)
+        : digits
+          ? Number(digits) * 100
+          : 0;
+    const credits = Math.max(0, Math.round(Number(plan.credits ?? 0)));
+    return {
+      id: String(plan.id ?? `plan_${index}`),
+      priceId: String(plan.priceId ?? ""),
+      name: String(plan.name ?? ""),
+      price: String(plan.price ?? ""),
+      period: String(plan.period ?? ""),
+      amountCents: amount,
+      credits,
+      description: String(plan.description ?? ""),
+      features: Array.isArray(plan.features) ? plan.features.map((f) => String(f)) : [],
+      active: plan.active !== false,
+      highlight: Boolean(plan.highlight),
+      free: typeof plan.free === "boolean" ? plan.free : amount === 0,
+      cta: String(plan.cta ?? ""),
+    };
+  });
+}
+
 export function normalizeLandingContent(value: unknown) {
   const merged = merge(defaultLandingContent, value);
   const saved = Array.isArray(merged.sections) ? merged.sections : [];
@@ -147,7 +188,12 @@ export function normalizeLandingContent(value: unknown) {
   const base = order.length ? order : [...LANDING_SECTIONS];
   // Newly shipped sections join the page unless the master deleted them.
   const complete = [...base, ...LANDING_SECTIONS.filter((s) => !base.includes(s) && !removed.includes(s))];
-  return { ...merged, sections: complete, removedSections: removed };
+  return {
+    ...merged,
+    sections: complete,
+    removedSections: removed,
+    plans: { ...merged.plans, items: normalizePlans(merged.plans?.items) },
+  };
 }
 
 

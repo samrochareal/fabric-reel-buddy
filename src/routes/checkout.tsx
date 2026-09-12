@@ -42,7 +42,9 @@ function CheckoutPage() {
       const [{ data }, branding] = await Promise.all([supabase.auth.getSession(), fetchBranding()]);
       setSignedIn(Boolean(data.session));
       const content = normalizeLandingContent(branding.landing_content);
-      setPlan(content.plans.items.find((item) => item.id === planId && item.active) ?? null);
+      setPlan(
+        content.plans.items.find((item) => item.id === planId && item.active && !item.free) ?? null,
+      );
       setLoading(false);
     })();
   }, [planId]);
@@ -53,7 +55,7 @@ function CheckoutPage() {
       fetchClientSecret: async () => {
         const result = await createPlanCheckoutSession({
           data: {
-            priceId: plan.priceId,
+            planId: plan.id,
             returnUrl: `${window.location.origin}/checkout?plan=${plan.id}&session_id={CHECKOUT_SESSION_ID}`,
             environment: getStripeEnvironment(),
           },

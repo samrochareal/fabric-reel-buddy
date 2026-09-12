@@ -10,15 +10,9 @@ function getSupabase() {
   return _supabase;
 }
 
-/** Credits per plan come from the master's landing page settings. */
-const FALLBACK_CREDITS: Record<string, number> = {
-  starter_monthly: 30,
-  pro_monthly: 100,
-  studio_monthly: 300,
-};
-
-async function creditsForPrice(priceId: string | undefined): Promise<number> {
-  if (!priceId) return 0;
+/** Credits per plan come from the master's saved plans. */
+async function creditsForPlan(planId: string | undefined): Promise<number> {
+  if (!planId) return 0;
   const { data } = await getSupabase()
     .from("platform_settings")
     .select("landing_content")
@@ -28,25 +22,38 @@ async function creditsForPrice(priceId: string | undefined): Promise<number> {
   const items = Array.isArray(landing?.plans?.items) ? landing.plans.items : [];
   for (const item of items) {
     if (item && typeof item === "object") {
-      const plan = item as { priceId?: string; credits?: number };
-      if (plan.priceId === priceId && typeof plan.credits === "number") return plan.credits;
+      const plan = item as { id?: string; credits?: number };
+      if (plan.id === planId && typeof plan.credits === "number") return plan.credits;
     }
   }
-  return FALLBACK_CREDITS[priceId] ?? 0;
+  return 0;
 }
 
 function priceIdOf(item: any): string | undefined {
   return item?.price?.lookup_key ?? item?.price?.metadata?.lovable_external_id ?? item?.price?.id;
 }
 
-async function grantCredits(userId: string, priceId: string | undefined, eventKey: string) {
-  const credits = await creditsForPrice(priceId);
+/**
+ * Credits come from the checkout metadata written on the server when the
+ * payment started, with the saved plan as a fallback.
+ */
+async function grantCredits(
+  userId: string,
+  planId: string | undefined,
+  eventKey: string,
+  metadataCredits?: unknown,
+) {
+  const fromMetadata = Number(metadataCredits);
+  const credits =
+    Number.isFinite(fromMetadata) && fromMetadata > 0
+      ? Math.round(fromMetadata)
+      : await creditsForPlan(planId);
   if (!credits) return;
   await getSupabase().rpc("apply_plan_credits", {
     _user_id: userId,
     _credits: credits,
     _event_key: eventKey,
-    _price_id: priceId ?? null,
+    _price_id: planId ?? null,
   });
 }
 
@@ -99,11 +106,13 @@ async function handleWebhook(req: Request, env: StripeEnv) {
       if (object.payment_status === "unpaid") break;
       const userId = object.metadata?.userId;
       if (!userId) break;
-      // One-time purchases: the line item carries the plan; subscriptions get
-      // their credits from invoice.paid (first invoice included).
       if (object.mode === "payment") {
-        const priceId = object.metadata?.priceId;
-        await grantCredits(userId, priceId, `session:${object.id}`);
+        await grantCredits(
+          userId,
+          object.metadata?.planId,
+          `session:${object.id}`,
+          object.metadata?.credits,
+        );
       }
       break;
     }
@@ -111,13 +120,18 @@ async function handleWebhook(req: Request, env: StripeEnv) {
     case "checkout.session.async_payment_succeeded": {
       const userId = object.metadata?.userId;
       if (userId && object.mode === "payment") {
-        await grantCredits(userId, object.metadata?.priceId, `session:${object.id}`);
+        await grantCredits(
+          userId,
+          object.metadata?.planId,
+          `session:${object.id}`,
+          object.metadata?.credits,
+        );
       }
       break;
     }
 
     case "invoice.paid": {
-      // Covers the first subscription payment and every renewal.
+      // Legacy subscriptions still renew: credits come from the saved plan.
       const lines = object.lines?.data ?? [];
       const priceId = priceIdOf(lines[0]);
       const subscriptionId =

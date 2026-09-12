@@ -78,6 +78,8 @@ const PT: Record<string, string> = {
   // header / shell
   "Batch editor": "Editor em lote",
   "Master panel": "Painel master",
+  Plans: "Planos",
+  "Add credits": "Adicionar créditos",
   "Sign out": "Sair",
   "Leave guest mode": "Sair do modo visitante",
   "Guest · nothing is saved": "Visitante · nada é salvo",
