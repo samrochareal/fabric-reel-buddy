@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { planPriceLabel, shown, withSystemName, type LandingContent, type LandingSection } from "@/lib/landing-content";
 import { useBuyerCurrency } from "@/lib/locale";
 import { LanguageToggle } from "@/lib/i18n";
+import { useLandingContent } from "@/lib/landing-i18n";
+
 
 export type LandingDevice = "desktop" | "mobile";
 export type LandingSelection = {
