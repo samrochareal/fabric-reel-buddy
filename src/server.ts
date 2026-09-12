@@ -8,16 +8,16 @@ type ServerEntry = {
 };
 
 /**
- * The video editor needs cross-origin isolation, but the payment form is
- * shown inside a frame from the payment provider, which isolation blocks.
- * So the payment page is served without those headers.
+ * Only the video editor needs cross-origin isolation. Every other page is
+ * served without it, so the payment frame also works when the visitor reaches
+ * the payment page from inside the site, without reloading.
  */
-export function isPaymentPath(pathname: string): boolean {
-  return pathname === "/checkout" || pathname.startsWith("/checkout/");
+export function needsVideoIsolation(pathname: string): boolean {
+  return pathname === "/editor" || pathname.startsWith("/editor/");
 }
 
 function withVideoProcessingHeaders(request: Request, response: Response): Response {
-  if (isPaymentPath(new URL(request.url).pathname)) return response;
+  if (!needsVideoIsolation(new URL(request.url).pathname)) return response;
   const headers = new Headers(response.headers);
   headers.set("Cross-Origin-Opener-Policy", "same-origin");
   headers.set("Cross-Origin-Embedder-Policy", "credentialless");
