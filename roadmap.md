@@ -15,8 +15,10 @@
 - [x] Persistir os padrões globais e aplicá-los automaticamente a novos usuários
 - [x] Permitir ocultar links do menu lateral sem excluí-los
 - [x] Evitar conteúdo padrão visível enquanto a landing page carrega
-- [ ] Permitir excluir qualquer elemento da landing page (textos, botões, itens, imagens e seções)
-- [ ] Criar área de planos no editor: ativar/desativar e editar características
-- [ ] Exibir os planos ativos na landing page
-- [ ] Ativar pagamentos com Stripe
-- [ ] Creditar automaticamente os créditos do plano após o pagamento
+- [x] Permitir excluir qualquer elemento da landing page (textos, botões, itens, imagens e seções)
+- [x] Criar área de planos no editor: ativar/desativar e editar características
+- [x] Exibir os planos ativos na landing page
+- [x] Ativar pagamentos dos pacotes de créditos
+- [x] Creditar automaticamente os créditos após o pagamento
+- [x] Pacotes de pagamento único (150/500/1200 créditos) e plano gratuito diário
+- [x] Página "Planos" no menu master e página de compra de créditos para os usuários
