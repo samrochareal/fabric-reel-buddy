@@ -286,25 +286,28 @@ export const syncPlanCatalog = createServerFn({ method: "POST" })
               metadata: { lovable_plan_id: plan.id, credits: String(plan.credits) },
             });
 
-        const existing = await stripe.prices.list({ lookup_keys: [key], active: true, limit: 1 });
-        const current = existing.data[0];
-        const matches =
-          current && !current.recurring && current.unit_amount === plan.amountCents && current.currency === "brl";
+        for (const currency of ["brl", "usd"] as const) {
+          const key = lookupKeyFor(plan.id, currency);
+          const existing = await stripe.prices.list({ lookup_keys: [key], active: true, limit: 1 });
+          const current = existing.data[0];
+          const matches =
+            current && !current.recurring && current.unit_amount === plan.amountCents && current.currency === currency;
 
-        if (!matches) {
-          if (current) {
-            await stripe.prices.update(current.id, { active: false });
-            archived += 1;
+          if (!matches) {
+            if (current) {
+              await stripe.prices.update(current.id, { active: false });
+              archived += 1;
+            }
+            await stripe.prices.create({
+              currency,
+              unit_amount: plan.amountCents,
+              product: product.id,
+              lookup_key: key,
+              transfer_lookup_key: true,
+              nickname: name,
+              metadata: { lovable_plan_id: plan.id, credits: String(plan.credits) },
+            });
           }
-          await stripe.prices.create({
-            currency: "brl",
-            unit_amount: plan.amountCents,
-            product: product.id,
-            lookup_key: key,
-            transfer_lookup_key: true,
-            nickname: name,
-            metadata: { lovable_plan_id: plan.id, credits: String(plan.credits) },
-          });
         }
         synced += 1;
       }
