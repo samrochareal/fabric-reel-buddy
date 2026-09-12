@@ -148,7 +148,18 @@ function PlansAdminPage() {
     if (!content) return;
     setSaving(true);
     try {
-      await saveLandingContent(content);
+      const cleaned: LandingContent = {
+        ...content,
+        plans: {
+          ...content.plans,
+          items: content.plans.items.map((plan) => ({
+            ...plan,
+            features: plan.features.map((f) => f.trim()).filter(Boolean),
+          })),
+        },
+      };
+      setContent(cleaned);
+      await saveLandingContent(cleaned);
       refreshBranding();
       toast.success("Planos atualizados.");
       if (paymentsConfigured()) {
