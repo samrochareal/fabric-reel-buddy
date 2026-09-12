@@ -93,6 +93,32 @@ export const defaultLandingContent: LandingContent = {
     stats: [{ title: "100", text: "vídeos por lote" }, { title: "9:16", text: "formato garantido" }, { title: "0", text: "programas para instalar" }, { title: "1 clique", text: "para aplicar em todos" }],
   },
   steps: { eyebrow: "Como funciona", title: "Em poucos passos,", highlight: "você vai mais longe.", items: [{ title: "Crie um projeto", text: "Cada projeto guarda suas configurações, overlays, títulos e imagens de fundo." }, { title: "Suba o lote", text: "Arraste seus clipes e veja a prévia do resultado antes de processar." }, { title: "Ajuste uma vez", text: "Enquadramento, bordas, overlay e título valem para todos os vídeos." }, { title: "Baixe tudo pronto", text: "Os arquivos saem nomeados pelo projeto, prontos para publicar." }] },
+  plans: {
+    eyebrow: "Planos e créditos",
+    title: "Escolha o plano do seu",
+    highlight: "ritmo de produção.",
+    intro: "Cada crédito equivale a um vídeo processado. Os créditos entram na sua conta assim que o pagamento é confirmado.",
+    items: [
+      {
+        id: "starter", priceId: "starter_monthly", name: "Starter", price: "R$ 29", period: "/mês", credits: 30,
+        description: "Para quem posta toda semana",
+        features: ["30 créditos de vídeo por mês", "Todos os formatos", "Créditos somados na sua conta"],
+        active: true, highlight: false, cta: "Assinar Starter",
+      },
+      {
+        id: "pro", priceId: "pro_monthly", name: "Pro", price: "R$ 79", period: "/mês", credits: 100,
+        description: "Para criadores e social media",
+        features: ["100 créditos de vídeo por mês", "Todos os formatos", "Suporte prioritário"],
+        active: true, highlight: true, cta: "Assinar Pro",
+      },
+      {
+        id: "studio", priceId: "studio_monthly", name: "Studio", price: "R$ 189", period: "/mês", credits: 300,
+        description: "Para agências e alto volume",
+        features: ["300 créditos de vídeo por mês", "Todos os formatos", "Suporte prioritário"],
+        active: true, highlight: false, cta: "Assinar Studio",
+      },
+    ],
+  },
   audience: { eyebrow: "Para criadores, marcas e equipes", title: "Feito para quem", highlight: "vive de conteúdo.", items: [{ title: "Criadores de conteúdo", text: "Produza semanas de posts em uma única sessão." }, { title: "Social media e agências", text: "Entregue vários clientes com o mesmo padrão visual." }, { title: "Lojas e infoprodutos", text: "Teste dezenas de variações do mesmo anúncio." }, { title: "Equipes de edição", text: "Perfis salvos mantêm a identidade em todo o time." }] },
   faq: { eyebrow: "Dúvidas frequentes", title: "Perguntas", highlight: "mais comuns.", items: [{ q: "Preciso instalar algum programa?", a: "Não. O {system} roda direto no navegador, no computador ou no celular." }, { q: "Quantos vídeos posso processar de uma vez?", a: "Até 100 vídeos por lote, com até 100 MB e 3 minutos cada." }, { q: "Meus vídeos ficam seguros?", a: "Sim. A edição acontece no seu próprio dispositivo, então os arquivos não são enviados para fora." }, { q: "Consigo aplicar um ajuste em apenas um vídeo do lote?", a: "Sim. A opção “somente este vídeo” altera apenas o vídeo aberto na prévia." }, { q: "Posso salvar minhas molduras e títulos?", a: "Sim. Overlays, títulos e imagens de fundo ficam salvos dentro de cada projeto." }] },
   cta: { title: "Menos tempo editando.", highlight: "Mais vídeos no ar.", text: "Entre agora e veja como é rápido transformar um lote de clipes em conteúdo pronto para publicar.", primary: "Começar agora", secondary: "Ver recursos", image: null },
