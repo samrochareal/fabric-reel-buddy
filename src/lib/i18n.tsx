@@ -131,6 +131,22 @@ const PT: Record<string, string> = {
   "Turbo processing": "Processamento turbo",
   "Renders the batch as fast as possible and keeps files light. The final image loses a little quality because of the stronger compression.":
     "Processa o lote o mais rápido possível e deixa os arquivos leves. A imagem final perde um pouco de qualidade por causa da compressão mais forte.",
+  "Quality loss": "Perda de qualidade",
+  "Low quality loss": "Baixa",
+  "Medium quality loss": "Média",
+  "High quality loss": "Alta",
+  "Output size": "Tamanho do vídeo",
+  "Compression": "Compressão",
+  "Fastest": "Mais rápida",
+  "Balanced": "Equilibrada",
+  "Smallest file": "Arquivo menor",
+  "Each video comes out at {size} pixels.": "Cada vídeo sai em {size} pixels.",
+  "Sharper image, larger file, a bit slower.":
+    "Imagem mais nítida, arquivo maior e um pouco mais lento.",
+  "Good balance between speed, sharpness and file size.":
+    "Bom equilíbrio entre velocidade, nitidez e tamanho do arquivo.",
+  "Very light files and the fastest render, visibly softer image.":
+    "Arquivos bem leves e processamento mais rápido, com imagem visivelmente mais suave.",
   "Batch settings": "Config. em lote",
   "This video only": "Só este vídeo",
   "Framing": "Enquadramento",
