@@ -69,6 +69,14 @@ export const createPlanCheckoutSession = createServerFn({ method: "POST" })
         return { error: "Este plano ainda não tem valor e créditos definidos." };
       }
 
+      // Currency follows the buyer's country: BRL in Brazil, USD elsewhere
+      // (same number, no conversion — R$29 becomes $29).
+      const country =
+        getRequestHeader("cf-ipcountry") ??
+        getRequestHeader("x-vercel-ip-country") ??
+        getRequestHeader("x-country-code");
+      const currency = currencyForCountry(country);
+
       const stripe = createStripeClient(data.environment);
       const {
         data: { user },
@@ -86,18 +94,23 @@ export const createPlanCheckoutSession = createServerFn({ method: "POST" })
       let lineItem: Record<string, unknown> = {
         quantity: 1,
         price_data: {
-          currency: "brl",
+          currency,
           unit_amount: plan.amountCents,
           product_data: { name: plan.name || label, description: label },
         },
       };
       const catalogue = await stripe.prices.list({
-        lookup_keys: [lookupKeyFor(plan.id)],
+        lookup_keys: [lookupKeyFor(plan.id, currency)],
         active: true,
         limit: 1,
       });
       const catalogued = catalogue.data[0];
-      if (catalogued && catalogued.unit_amount === plan.amountCents && !catalogued.recurring) {
+      if (
+        catalogued &&
+        catalogued.unit_amount === plan.amountCents &&
+        catalogued.currency === currency &&
+        !catalogued.recurring
+      ) {
         lineItem = { quantity: 1, price: catalogued.id };
       }
 
