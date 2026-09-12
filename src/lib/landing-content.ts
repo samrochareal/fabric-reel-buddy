@@ -51,6 +51,7 @@ export type LandingContent = {
   features: { eyebrow: string; title: string; highlight: string; intro: string; items: LandingFeature[] };
   benefits: { eyebrow: string; title: string; highlight: string; items: string[]; stats: LandingFeature[] };
   steps: { eyebrow: string; title: string; highlight: string; items: LandingStep[] };
+  plans: { eyebrow: string; title: string; highlight: string; intro: string; items: LandingPlan[] };
   audience: { eyebrow: string; title: string; highlight: string; items: LandingAudience[] };
   faq: { eyebrow: string; title: string; highlight: string; items: LandingFaq[] };
   cta: { title: string; highlight: string; text: string; primary: string; secondary: string; image: string | null };
