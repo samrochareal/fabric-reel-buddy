@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import { useBranding } from "@/lib/branding";
 import { useMyAccount } from "@/lib/account";
+import { formatPrice, getBuyerCurrency, type BuyerCurrency } from "@/lib/geo.functions";
 
 export const Route = createFileRoute("/_authenticated/recharge")({
   head: () => ({
@@ -28,6 +30,13 @@ export const Route = createFileRoute("/_authenticated/recharge")({
 function RechargePage() {
   const branding = useBranding();
   const { account } = useMyAccount();
+  const [currency, setCurrency] = useState<BuyerCurrency>("brl");
+
+  useEffect(() => {
+    void getBuyerCurrency()
+      .then((geo) => setCurrency(geo.currency))
+      .catch(() => {});
+  }, []);
   const plans = branding.landing_content.plans.items.filter((plan) => plan.active && !plan.free);
 
   return (
