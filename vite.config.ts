@@ -6,8 +6,28 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// The payment page embeds a frame from the payment provider, which
+// cross-origin isolation blocks. Keep isolation off for that page in dev too.
+const dropIsolationOnCheckout = {
+  name: "drop-isolation-on-checkout",
+  configureServer(server: {
+    middlewares: { use: (fn: (req: unknown, res: unknown, next: () => void) => void) => void };
+  }) {
+    server.middlewares.use((req, res, next) => {
+      const url = (req as { url?: string }).url ?? "";
+      if (url.startsWith("/checkout")) {
+        const response = res as { removeHeader: (name: string) => void };
+        response.removeHeader("Cross-Origin-Opener-Policy");
+        response.removeHeader("Cross-Origin-Embedder-Policy");
+      }
+      next();
+    });
+  },
+};
+
 export default defineConfig({
   vite: {
+    plugins: [dropIsolationOnCheckout],
     server: {
       headers: {
         "Cross-Origin-Opener-Policy": "same-origin",
