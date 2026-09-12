@@ -33,6 +33,7 @@ export type LandingSection = (typeof LANDING_SECTIONS)[number];
 
 export type LandingContent = {
   sections: LandingSection[];
+  removedSections: LandingSection[];
   hidden: Record<string, boolean>;
   links: Record<string, string>;
   styles: Record<string, LandingElementStyle>;
@@ -61,6 +62,7 @@ export type LandingContent = {
 
 export const defaultLandingContent: LandingContent = {
   sections: [...LANDING_SECTIONS],
+  removedSections: [],
   hidden: {},
   links: {},
   styles: {},
