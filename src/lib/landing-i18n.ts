@@ -1,5 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useLang, type Lang } from "@/lib/i18n";
+import { translateLandingTexts } from "@/lib/landing-translate.functions";
 import type { LandingContent, LandingPlan } from "@/lib/landing-content";
 
 /**
