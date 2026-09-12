@@ -467,8 +467,18 @@ const PT: Record<string, string> = {
   "{s} seconds": "{s} segundos",
   "{n} failed": "{n} falharam",
 
+  // recharge
+  "Add credits": "Adicionar créditos",
+  "Each credit equals one processed video. It is a one-time payment and the credits land in your account right away.":
+    "Cada crédito equivale a um vídeo processado. O pagamento é único e os créditos entram na sua conta na hora.",
+  "You have {n} credits right now.": "Você tem {n} créditos agora.",
+  "No credit pack is available at the moment.":
+    "Nenhum pacote de créditos está disponível no momento.",
+  "Buy credits": "Comprar créditos",
+
   // checkout
   "Back": "Voltar",
+
   "Payment complete!": "Pagamento concluído!",
   "Your credits land in your account in a moment. You can go back to your projects and start creating.":
     "Seus créditos entram na conta em instantes. Você já pode voltar para o painel e começar a produzir.",
