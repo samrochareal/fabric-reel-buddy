@@ -103,19 +103,21 @@ function LandingEditorPage() {
     });
   };
 
-  const chooseImage = (file: File | undefined) => {
+  const chooseImage = async (file: File | undefined) => {
     if (!file || !selection?.onChange) return;
-    if (file.size > 400_000) {
-      toast.error("Escolha uma imagem de até 400KB.");
+    if (file.size > LANDING_IMAGE_MAX_BYTES) {
+      toast.error("Escolha uma imagem de até 10MB.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const value = String(reader.result);
+    const apply = (value: string) => {
       selection.onChange?.(value);
-      setSelection((current) => current ? { ...current, value } : current);
+      setSelection((current) => (current ? { ...current, value } : current));
     };
-    reader.readAsDataURL(file);
+    try {
+      apply(await uploadLandingImage(file));
+    } catch {
+      toast.error("Não foi possível enviar a imagem. Tente novamente.");
+    }
   };
 
   if (loading || !isAdmin) return null;
