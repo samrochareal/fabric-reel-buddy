@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { createContext, useContext, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   ArrowRight,
   Check,
@@ -27,7 +27,22 @@ import { cn } from "@/lib/utils";
 import { shown, withSystemName, type LandingContent, type LandingSection } from "@/lib/landing-content";
 
 export type LandingDevice = "desktop" | "mobile";
-export type LandingEdit = { update: (fn: (c: LandingContent) => LandingContent) => void };
+export type LandingSelection = {
+  key: string;
+  label: string;
+  kind: "text" | "button" | "image" | "item" | "section";
+  value?: string;
+  onChange?: (value: string) => void;
+  hidden: boolean;
+  onToggleHidden: () => void;
+};
+export type LandingEdit = {
+  update: (fn: (c: LandingContent) => LandingContent) => void;
+  selectedKey?: string | undefined;
+  onSelect?: ((selection: LandingSelection) => void) | undefined;
+};
+
+const LandingEditorContext = createContext<{ edit?: LandingEdit; content?: LandingContent }>({});
 
 /* ------------------------------------------------------------------ */
 /* click-to-edit text                                                  */
@@ -41,6 +56,8 @@ function EditableText({
   placeholder = "Texto",
   hidden = false,
   onToggleHidden,
+  elementKey,
+  label,
 }: {
   value: string;
   onChange?: ((next: string) => void) | undefined;
@@ -49,8 +66,25 @@ function EditableText({
   placeholder?: string | undefined;
   hidden?: boolean | undefined;
   onToggleHidden?: (() => void) | undefined;
+  elementKey?: string | undefined;
+  label?: string | undefined;
 }) {
   const Tag = as as React.ElementType;
+  const editor = useContext(LandingEditorContext);
+  const style = elementKey ? editor.content?.styles?.[elementKey] : undefined;
+  const selected = Boolean(elementKey && editor.edit?.selectedKey === elementKey);
+  const select = () => {
+    if (!onChange || !elementKey) return;
+    editor.edit?.onSelect?.({
+      key: elementKey,
+      label: label ?? placeholder,
+      kind: placeholder === "Botão" || placeholder === "Entrar" || placeholder === "Link de login" ? "button" : "text",
+      value,
+      onChange,
+      hidden,
+      onToggleHidden: onToggleHidden ?? (() => {}),
+    });
+  };
 
   if (!onChange) {
     if (hidden || !shown(value)) return null;
@@ -58,32 +92,20 @@ function EditableText({
   }
 
   return (
-    <span className={cn("relative inline-flex items-center gap-1", hidden && "opacity-35")}>
+    <span
+      className={cn("relative inline-flex items-center", hidden && "opacity-35", selected && "outline-2 outline-offset-4 outline-primary")}
+      style={style as CSSProperties | undefined}
+      onClick={(event) => { event.preventDefault(); event.stopPropagation(); select(); }}
+    >
       <Tag
         data-editable=""
-        contentEditable
-        suppressContentEditableWarning
-        spellCheck={false}
-        data-placeholder={placeholder}
-        onBlur={(e: React.FocusEvent<HTMLElement>) => onChange(e.currentTarget.textContent ?? "")}
-        onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            e.currentTarget.blur();
-          }
-        }}
         className={cn(
-          "cursor-text rounded outline-none ring-1 ring-dashed ring-primary/40 transition hover:ring-primary focus:ring-2 focus:ring-primary",
+          "cursor-pointer rounded outline-none ring-1 ring-dashed ring-transparent transition hover:ring-primary/60",
           className,
         )}
       >
-        {value}
+        {value || placeholder}
       </Tag>
-      {onToggleHidden && (
-        <span role="button" tabIndex={0} onClick={onToggleHidden} onKeyDown={(e) => e.key === "Enter" && onToggleHidden()} className="inline-flex cursor-pointer p-1 text-muted-foreground hover:text-foreground" title={hidden ? "Mostrar elemento" : "Ocultar elemento"}>
-          {hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-        </span>
-      )}
     </span>
   );
 }
@@ -121,9 +143,9 @@ function EditList<T>({
   const noop = () => {};
 
   if (!editing || !onChange) {
-    const visible = items.filter((item, index) => keep(item) && !(hiddenKey && isHidden?.(`${hiddenKey}.${index}`)));
+    const visible = items.map((item, index) => ({ item, index })).filter(({ item, index }) => keep(item) && !(hiddenKey && isHidden?.(`${hiddenKey}.${index}`)));
     if (!visible.length) return null;
-    return <div className={className}>{visible.map((item, i) => render(item, i, noop))}</div>;
+    return <div className={className}>{visible.map(({ item, index }) => render(item, index, noop))}</div>;
   }
 
   const move = (from: number, to: number) => {
@@ -150,52 +172,14 @@ function EditList<T>({
               if (dragFrom.current !== null) move(dragFrom.current, i);
               dragFrom.current = null;
             }}
-            className="relative rounded-xl ring-1 ring-dashed ring-primary/25"
+            className="relative cursor-grab rounded-xl ring-1 ring-dashed ring-transparent hover:ring-primary/50"
           >
-            <div className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-md bg-background/90 p-0.5 shadow">
-              <span className="cursor-grab p-1 text-muted-foreground" title="Arraste para reordenar">
-                <GripVertical className="size-3.5" />
-              </span>
-              {hiddenKey && onToggleHidden && (
-                <button
-                  type="button"
-                  className="p-1 text-muted-foreground hover:text-foreground"
-                  onClick={() => onToggleHidden(`${hiddenKey}.${i}`)}
-                  title={isHidden?.(`${hiddenKey}.${i}`) ? "Mostrar elemento" : "Ocultar elemento"}
-                >
-                  {isHidden?.(`${hiddenKey}.${i}`) ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                </button>
-              )}
-              <button type="button" className="p-1 text-muted-foreground hover:text-foreground" onClick={() => move(i, i - 1)} title="Subir">
-                <ChevronUp className="size-3.5" />
-              </button>
-              <button type="button" className="p-1 text-muted-foreground hover:text-foreground" onClick={() => move(i, i + 1)} title="Descer">
-                <ChevronDown className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                className="p-1 text-muted-foreground hover:text-destructive"
-                onClick={() => onChange(items.filter((_, j) => j !== i))}
-                title="Excluir"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-            </div>
             <div className={cn(isHidden?.(`${hiddenKey}.${i}`) && "opacity-35")}>
               {render(item, i, (next) => onChange(items.map((it, j) => (j === i ? next : it))))}
             </div>
           </div>
         ))}
       </div>
-      {blank && (
-        <button
-          type="button"
-          onClick={() => onChange([...items, blank()])}
-          className="mt-3 flex items-center gap-1.5 rounded-lg border border-dashed border-primary/50 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/10"
-        >
-          <Plus className="size-3.5" /> {addLabel}
-        </button>
-      )}
     </>
   );
 }
@@ -284,20 +268,6 @@ function SectionShell({
       }}
       className={cn("relative border-y-2 border-dashed border-transparent hover:border-primary/40", hidden && "opacity-35")}
     >
-      <div className="pointer-events-auto absolute left-2 top-2 z-30 flex items-center gap-1 rounded-md bg-background/90 px-1.5 py-1 text-[11px] font-bold shadow">
-        <GripVertical className="size-3.5 cursor-grab text-muted-foreground" />
-        {label}
-        <button type="button" className="px-1 text-muted-foreground hover:text-foreground" onClick={onToggleHidden} title={hidden ? "Mostrar seção" : "Ocultar seção"}>
-          {hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-        </button>
-        <button type="button" className="px-1 text-muted-foreground hover:text-foreground" onClick={() => onMove(section, -1)} title="Subir seção">
-          <ChevronUp className="size-3.5" />
-        </button>
-        <button type="button" className="px-1 text-muted-foreground hover:text-foreground" onClick={() => onMove(section, 1)} title="Descer seção">
-          <ChevronDown className="size-3.5" />
-        </button>
-        <span className="text-muted-foreground">{index + 1}</span>
-      </div>
       {children}
     </div>
   );
@@ -353,7 +323,7 @@ export function LandingView({
   const isHidden = (key: string) => Boolean(content.hidden?.[key]);
   const toggleHidden = (key: string) =>
     edit?.update((c) => ({ ...c, hidden: { ...c.hidden, [key]: !c.hidden?.[key] } }));
-  const visibility = (key: string) => ({ hidden: isHidden(key), onToggleHidden: edit ? () => toggleHidden(key) : undefined });
+  const visibility = (key: string, label?: string) => ({ elementKey: key, label, hidden: isHidden(key), onToggleHidden: edit ? () => toggleHidden(key) : undefined });
 
   const moveSection = (section: LandingSection, delta: number) =>
     edit?.update((c) => {
@@ -752,6 +722,7 @@ export function LandingView({
   const visibleSections = content.sections.filter((s) => (mobile && !editing ? s === "hero" || s === "features" || s === "cta" : true));
 
   return (
+    <LandingEditorContext.Provider value={{ edit, content }}>
     <div className="min-h-screen bg-background text-foreground" style={pageStyle}>
       {/* header */}
       <header className={cn("sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur", isHidden("header") && !editing && "hidden", isHidden("header") && editing && "opacity-35")}>
@@ -836,6 +807,7 @@ export function LandingView({
         </div>
       </footer>
     </div>
+    </LandingEditorContext.Provider>
   );
 }
 
