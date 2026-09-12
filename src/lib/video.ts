@@ -536,8 +536,9 @@ async function renderOnce(
   const ff = await getFFmpeg();
   const source = await probeSource(file);
   const turbo = opts.turbo === true;
-  const size = encodeSize(source, turbo);
-  const videoBitrate = targetVideoBitrate(file, source, turbo);
+  const turboSettings = turboSettingsOf(opts);
+  const size = encodeSize(source, turbo, turboSettings);
+  const videoBitrate = targetVideoBitrate(file, source, turbo, turboSettings);
 
   const stamp = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const inputName = `in_${stamp}.mp4`;
@@ -592,11 +593,11 @@ async function renderOnce(
       // search, B-frames and lookahead are trimmed (that is where the time
       // goes), while CRF 20 keeps the compression visually imperceptible.
       "-preset",
-      turbo ? "ultrafast" : "veryfast",
+      turbo ? turboSettings.compression : "veryfast",
       "-tune",
       turbo ? "zerolatency" : "fastdecode",
       "-crf",
-      turbo ? "32" : "20",
+      turbo ? String(TURBO_QUALITY[turboSettings.quality].crf) : "20",
       // Turbo: ultrafast's own defaults are the fastest x264 path; the custom
       // parameter set below would only slow it down.
       ...(turbo
