@@ -19,9 +19,13 @@ export type LandingPlan = {
   priceId: string;
   name: string;
   price: string;
+  /** Price text shown to buyers outside Brazil (dollar). */
+  priceUsd: string;
   period: string;
   /** What the person pays, in cents. The master edits this in the plans panel. */
   amountCents: number;
+  /** What buyers outside Brazil pay, in cents of dollar. */
+  amountCentsUsd: number;
   credits: number;
   description: string;
   features: string[];
@@ -31,6 +35,22 @@ export type LandingPlan = {
   free: boolean;
   cta: string;
 };
+
+/** Amount charged for this pack in the buyer's currency, in cents. */
+export function planAmountCents(
+  plan: Pick<LandingPlan, "amountCents" | "amountCentsUsd">,
+  currency: "brl" | "usd",
+): number {
+  if (currency === "brl") return plan.amountCents;
+  return plan.amountCentsUsd > 0 ? plan.amountCentsUsd : plan.amountCents;
+}
+
+/** Price text shown on the page in the buyer's currency. */
+export function planPriceLabel(plan: LandingPlan, currency: "brl" | "usd"): string {
+  const cents = planAmountCents(plan, currency);
+  if (currency === "brl") return plan.price || `R$ ${cents / 100}`;
+  return plan.priceUsd || `$${cents / 100}`;
+}
 
 export const LANDING_SECTIONS = ["hero", "features", "benefits", "steps", "plans", "audience", "faq", "cta"] as const;
 export type LandingSection = (typeof LANDING_SECTIONS)[number];
@@ -106,25 +126,25 @@ export const defaultLandingContent: LandingContent = {
     intro: "Cada crédito equivale a um vídeo processado. Pagamento único: os créditos entram na sua conta assim que o pagamento é confirmado e não expiram.",
     items: [
       {
-        id: "free", priceId: "", name: "Grátis", price: "R$ 0", period: "para sempre", amountCents: 0, credits: 0,
+        id: "free", priceId: "", name: "Grátis", price: "R$ 0", priceUsd: "$0", period: "para sempre", amountCents: 0, amountCentsUsd: 0, credits: 0,
         description: "Créditos liberados automaticamente todos os dias",
         features: ["Créditos gratuitos renovados automaticamente", "Todos os formatos", "Sem cartão de crédito"],
         active: true, highlight: false, free: true, cta: "Começar grátis",
       },
       {
-        id: "credits_150", priceId: "credits_150", name: "150 créditos", price: "R$ 29", period: "pagamento único", amountCents: 2900, credits: 150,
+        id: "credits_150", priceId: "credits_150", name: "150 créditos", price: "R$ 29", priceUsd: "$29", period: "pagamento único", amountCents: 2900, amountCentsUsd: 2900, credits: 150,
         description: "Para quem posta toda semana",
         features: ["150 vídeos processados", "Todos os formatos", "Créditos não expiram"],
         active: true, highlight: false, free: false, cta: "Comprar 150 créditos",
       },
       {
-        id: "credits_500", priceId: "credits_500", name: "500 créditos", price: "R$ 79", period: "pagamento único", amountCents: 7900, credits: 500,
+        id: "credits_500", priceId: "credits_500", name: "500 créditos", price: "R$ 79", priceUsd: "$79", period: "pagamento único", amountCents: 7900, amountCentsUsd: 7900, credits: 500,
         description: "Para criadores e social media",
         features: ["500 vídeos processados", "Todos os formatos", "Suporte prioritário"],
         active: true, highlight: true, free: false, cta: "Comprar 500 créditos",
       },
       {
-        id: "credits_1200", priceId: "credits_1200", name: "1200 créditos", price: "R$ 189", period: "pagamento único", amountCents: 18900, credits: 1200,
+        id: "credits_1200", priceId: "credits_1200", name: "1200 créditos", price: "R$ 189", priceUsd: "$189", period: "pagamento único", amountCents: 18900, amountCentsUsd: 18900, credits: 1200,
         description: "Para agências e alto volume",
         features: ["1200 vídeos processados", "Todos os formatos", "Suporte prioritário"],
         active: true, highlight: false, free: false, cta: "Comprar 1200 créditos",
@@ -162,13 +182,20 @@ function normalizePlans(items: unknown): LandingPlan[] {
           ? Number(digits) * 100
           : 0;
     const credits = Math.max(0, Math.round(Number(plan.credits ?? 0)));
+    // Packs saved before the dollar price existed charge the same number in USD.
+    const amountUsd =
+      typeof plan.amountCentsUsd === "number" && plan.amountCentsUsd > 0
+        ? Math.round(plan.amountCentsUsd)
+        : amount;
     return {
       id: String(plan.id ?? `plan_${index}`),
       priceId: String(plan.priceId ?? ""),
       name: String(plan.name ?? ""),
       price: String(plan.price ?? ""),
+      priceUsd: String(plan.priceUsd ?? ""),
       period: String(plan.period ?? ""),
       amountCents: amount,
+      amountCentsUsd: amountUsd,
       credits,
       description: String(plan.description ?? ""),
       features: Array.isArray(plan.features) ? plan.features.map((f) => String(f)) : [],
