@@ -291,7 +291,7 @@ export function LandingView({
   } as React.CSSProperties;
 
   // group-level setters -------------------------------------------------
-  type Group = "nav" | "hero" | "features" | "benefits" | "steps" | "audience" | "faq" | "cta" | "footer" | "mobile";
+  type Group = "nav" | "hero" | "features" | "benefits" | "steps" | "audience" | "plans" | "faq" | "cta" | "footer" | "mobile";
   const patch = (group: Group, values: Record<string, unknown>) =>
     edit?.update((c) => ({ ...c, [group]: { ...(c[group] as Record<string, unknown>), ...values } }) as LandingContent);
   const on = (group: Group, field: string) =>
@@ -301,10 +301,30 @@ export function LandingView({
   const isHidden = (key: string) => Boolean(content.hidden?.[key]);
   const toggleHidden = (key: string) =>
     edit?.update((c) => ({ ...c, hidden: { ...c.hidden, [key]: !c.hidden?.[key] } }));
-  const visibility = (key: string, label?: string) => ({ elementKey: key, label, hidden: isHidden(key), onToggleHidden: edit ? () => toggleHidden(key) : undefined });
+  /** Removing an item drops it from the page for good. */
+  const removeItem = (group: Group, field: string, index: number) =>
+    edit?.update((c) => {
+      const arr = [...(((c[group] as Record<string, unknown>)[field] as unknown[]) ?? [])];
+      arr.splice(index, 1);
+      return { ...c, [group]: { ...(c[group] as Record<string, unknown>), [field]: arr } } as LandingContent;
+    });
+  const deleteSection = (section: LandingSection) =>
+    edit?.update((c) => ({
+      ...c,
+      sections: c.sections.filter((s) => s !== section),
+      removedSections: [...(c.removedSections ?? []), section],
+    }));
+  const visibility = (key: string, label?: string, onDelete?: () => void) => ({
+    elementKey: key,
+    label,
+    hidden: isHidden(key),
+    onToggleHidden: edit ? () => toggleHidden(key) : undefined,
+    onDelete: edit ? onDelete : undefined,
+  });
   const selectImage = (key: string, label: string, value: string | null, onChange: (value: string) => void) => {
-    edit?.onSelect?.({ key, label, kind: "image", value: value ?? "", onChange, hidden: isHidden(key), onToggleHidden: () => toggleHidden(key) });
+    edit?.onSelect?.({ key, label, kind: "image", value: value ?? "", onChange, hidden: isHidden(key), onToggleHidden: () => toggleHidden(key), onDelete: () => onChange("") });
   };
+
 
   const moveSection = (section: LandingSection, delta: number) =>
     edit?.update((c) => {
