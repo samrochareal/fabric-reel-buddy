@@ -11,3 +11,7 @@
 - [ ] Transformar o editor da landing em um criador visual com painel lateral contextual
 - [ ] Permitir adicionar, vincular, estilizar e reposicionar elementos individualmente
 - [ ] Validar salvamento e publicação das alterações no desktop e celular
+- [ ] Exibir no topo créditos utilizados/créditos disponíveis
+- [ ] Persistir os padrões globais e aplicá-los automaticamente a novos usuários
+- [ ] Permitir ocultar links do menu lateral sem excluí-los
+- [ ] Evitar conteúdo padrão visível enquanto a landing page carrega
