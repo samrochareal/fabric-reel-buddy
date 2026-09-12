@@ -437,16 +437,18 @@ export function LandingView({
             />
           </div>
 
-          <div
-            className={cn("relative rounded-2xl border border-border bg-card p-3 shadow-2xl", editing && "cursor-pointer hover:ring-2 hover:ring-primary/60", isHidden("hero.image") && editing && "opacity-35")}
-            onClick={() => selectImage("hero.image", "Imagem da abertura", content.hero.image, (image) => patch("hero", { image: image || null }))}
-          >
-            {content.hero.image && !isHidden("hero.image") ? (
-              <img src={content.hero.image} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" />
-            ) : (
-              <EditorMock />
-            )}
-          </div>
+          {(editing || !isHidden("hero.image")) && (
+            <div
+              className={cn("relative rounded-2xl border border-border bg-card p-3 shadow-2xl", editing && "cursor-pointer hover:ring-2 hover:ring-primary/60", isHidden("hero.image") && editing && "opacity-35")}
+              onClick={() => selectImage("hero.image", "Imagem da abertura", content.hero.image, (image) => patch("hero", { image: image || null }))}
+            >
+              {content.hero.image ? (
+                <img src={content.hero.image} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" />
+              ) : (
+                <EditorMock />
+              )}
+            </div>
+          )}
         </div>
       </section>
     ),
