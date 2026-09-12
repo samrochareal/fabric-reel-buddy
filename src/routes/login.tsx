@@ -32,9 +32,9 @@ export const Route = createFileRoute("/login")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>) => {
+  validateSearch: (search: Record<string, unknown>): { next?: string } => {
     const next = typeof search["next"] === "string" ? search["next"] : "";
-    return { next: next.startsWith("/") ? next : "" };
+    return next.startsWith("/") ? { next } : {};
   },
   component: AuthPage,
 });
