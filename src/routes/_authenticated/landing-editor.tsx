@@ -12,6 +12,7 @@ import {
   type LandingContent,
 } from "@/lib/landing-content";
 import { useIsAdmin } from "@/lib/admin";
+import { LANDING_IMAGE_MAX_BYTES, uploadLandingImage } from "@/lib/landing-images";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
