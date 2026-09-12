@@ -80,6 +80,7 @@ const PT: Record<string, string> = {
   "Master panel": "Painel master",
   Plans: "Planos",
   "Add credits": "Adicionar créditos",
+  Information: "Informações",
   "Sign out": "Sair",
   "Leave guest mode": "Sair do modo visitante",
   "Guest · nothing is saved": "Visitante · nada é salvo",
