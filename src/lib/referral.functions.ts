@@ -18,7 +18,7 @@ export const getMyReferral = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false }),
       context.supabase
         .from("platform_settings")
-        .select("referral_enabled, referral_reward_credits")
+        .select("referral_enabled, referral_reward_credits, referral_reward_mode, referral_reward_percent")
         .limit(1)
         .maybeSingle(),
     ]);
@@ -34,6 +34,13 @@ export const getMyReferral = createServerFn({ method: "GET" })
       ),
       creditsPerSignup:
         (settings as { referral_reward_credits?: number } | null)?.referral_reward_credits ?? 0,
+      rewardMode:
+        (settings as { referral_reward_mode?: string } | null)?.referral_reward_mode === "percent"
+          ? ("percent" as const)
+          : ("fixed" as const),
+      percentPerRecharge: Number(
+        (settings as { referral_reward_percent?: number } | null)?.referral_reward_percent ?? 0,
+      ),
     };
   });
 

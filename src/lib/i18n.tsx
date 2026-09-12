@@ -398,6 +398,14 @@ const PT: Record<string, string> = {
     "Ative o programa e escolha quantos créditos vale cada indicação.",
   "Referral programme is active": "Programa de indicações ativo",
   "Credits per referral": "Créditos por indicação",
+  "Fixed credits per sign-up": "Créditos fixos por cadastro",
+  "Share of every recharge": "Porcentagem de cada recarga",
+  "Percentage of each recharge (%)": "Porcentagem de cada recarga (%)",
+  "The inviter earns this share of the credits each invited person buys.":
+    "Quem indica recebe essa porcentagem dos créditos que a pessoa indicada comprar.",
+  "You earn {n}% of the credits every invited person buys.":
+    "Você recebe {n}% dos créditos que cada pessoa indicada comprar.",
+
   "Referral settings updated.": "Configurações de indicação atualizadas.",
   "Sign-ups by referral": "Inscrições por indicação",
   "Referral credits given": "Créditos de indicação concedidos",

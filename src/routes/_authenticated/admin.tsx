@@ -49,6 +49,7 @@ import {
   saveBranding,
   saveExternalLinks,
   saveReferralSettings,
+  type ReferralRewardMode,
   useBranding,
   useRefreshBranding,
   type ExternalLink,
@@ -397,6 +398,8 @@ function AdminPage() {
   const [sending, setSending] = useState(false);
   const [referralOn, setReferralOn] = useState(false);
   const [referralCredits, setReferralCredits] = useState(5);
+  const [referralMode, setReferralMode] = useState<ReferralRewardMode>("fixed");
+  const [referralPercent, setReferralPercent] = useState(10);
   const [savingReferral, setSavingReferral] = useState(false);
   const [defCredits, setDefCredits] = useState(5);
   const [defRefillAmount, setDefRefillAmount] = useState(5);
@@ -428,6 +431,8 @@ function AdminPage() {
       setLinks(b.external_links);
       setReferralOn(b.referral_enabled);
       setReferralCredits(b.referral_reward_credits);
+      setReferralMode(b.referral_reward_mode);
+      setReferralPercent(b.referral_reward_percent);
     });
   }, []);
 
@@ -448,7 +453,12 @@ function AdminPage() {
   const onSaveReferral = async () => {
     setSavingReferral(true);
     try {
-      await saveReferralSettings({ enabled: referralOn, credits: referralCredits });
+      await saveReferralSettings({
+        enabled: referralOn,
+        credits: referralCredits,
+        mode: referralMode,
+        percent: referralPercent,
+      });
       refreshBranding();
       void stats.refetch();
       toast.success(t("Referral settings updated."));
@@ -1023,16 +1033,53 @@ function AdminPage() {
             <Switch checked={referralOn} onCheckedChange={setReferralOn} />
           </div>
 
-          <div className="mt-3 max-w-xs">
-            <p className="text-xs font-semibold">{t("Credits per referral")}</p>
-            <Input
-              type="number"
-              min={0}
-              className="mt-1.5 h-10"
-              value={referralCredits}
-              onChange={(e) => setReferralCredits(Math.max(0, Number(e.target.value) || 0))}
-            />
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setReferralMode("fixed")}
+              className={`rounded-lg border p-3 text-left text-xs font-semibold transition-colors ${referralMode === "fixed" ? "border-primary bg-primary/10" : "border-border hover:bg-muted"}`}
+            >
+              {t("Fixed credits per sign-up")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setReferralMode("percent")}
+              className={`rounded-lg border p-3 text-left text-xs font-semibold transition-colors ${referralMode === "percent" ? "border-primary bg-primary/10" : "border-border hover:bg-muted"}`}
+            >
+              {t("Share of every recharge")}
+            </button>
           </div>
+
+          {referralMode === "fixed" ? (
+            <div className="mt-3 max-w-xs">
+              <p className="text-xs font-semibold">{t("Credits per referral")}</p>
+              <Input
+                type="number"
+                min={0}
+                className="mt-1.5 h-10"
+                value={referralCredits}
+                onChange={(e) => setReferralCredits(Math.max(0, Number(e.target.value) || 0))}
+              />
+            </div>
+          ) : (
+            <div className="mt-3 max-w-xs">
+              <p className="text-xs font-semibold">{t("Percentage of each recharge (%)")}</p>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                className="mt-1.5 h-10"
+                value={referralPercent}
+                onChange={(e) =>
+                  setReferralPercent(Math.min(100, Math.max(0, Number(e.target.value) || 0)))
+                }
+              />
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                {t("The inviter earns this share of the credits each invited person buys.")}
+              </p>
+            </div>
+          )}
+
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <Stat
