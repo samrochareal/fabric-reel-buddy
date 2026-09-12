@@ -54,6 +54,31 @@ function AuthPage() {
   const [remember, setRemember] = useState(true);
   const [captcha, setCaptcha] = useState({ a: 0, b: 0 });
   const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [recover, setRecover] = useState(false);
+  const [recoverSent, setRecoverSent] = useState(false);
+
+  const sendRecovery = async () => {
+    const address = email.trim();
+    if (!isValidEmail(address)) {
+      toast.error(t("Enter a valid e-mail."));
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(address, {
+        redirectTo: `${window.location.origin}/new-password`,
+      });
+      if (error) throw error;
+      setRecoverSent(true);
+      toast.success(t("Send recovery e-mail"));
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : t("We couldn't send the recovery e-mail."),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const newCaptcha = useCallback(() => {
     setCaptcha({ a: 2 + Math.floor(Math.random() * 8), b: 1 + Math.floor(Math.random() * 9) });
@@ -151,6 +176,71 @@ function AuthPage() {
       setBusy(false);
     }
   };
+
+  if (recover) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="flex items-center justify-center gap-2">
+            {branding.ready && branding.logo_url && (
+              <img src={branding.logo_url} alt={branding.system_name} className="h-7 w-auto" />
+            )}
+            <span className="font-display text-lg font-bold tracking-tight">
+              {branding.ready ? branding.system_name : ""}
+            </span>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-border bg-card p-6">
+            <h1 className="font-display text-2xl font-bold tracking-tight">
+              {t("Recover your password")}
+            </h1>
+            {recoverSent ? (
+              <div className="mt-4 rounded-lg border border-border bg-background/60 p-4 text-sm">
+                <Mail className="mb-2 size-5 text-primary" />
+                {t("We sent recovery instructions to")} <strong>{email}</strong>.{" "}
+                {t("Open the e-mail and follow the link to choose a new password.")}
+              </div>
+            ) : (
+              <>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  {t("Enter your e-mail and we'll send you a link to set a new password.")}
+                </p>
+                <div className="mt-5 space-y-3">
+                  <Input
+                    className="h-11"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && void sendRecovery()}
+                  />
+                  <Button
+                    className="h-11 w-full"
+                    disabled={busy}
+                    onClick={() => void sendRecovery()}
+                  >
+                    {busy && <Loader2 className="mr-2 size-4 animate-spin" />}
+                    {t("Send recovery e-mail")}
+                  </Button>
+                </div>
+              </>
+            )}
+            <button
+              type="button"
+              className="mt-4 w-full text-xs text-muted-foreground transition-colors hover:text-foreground"
+              onClick={() => {
+                setRecover(false);
+                setRecoverSent(false);
+              }}
+            >
+              {t("Back to sign in")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
@@ -282,6 +372,18 @@ function AuthPage() {
                 {busy && <Loader2 className="mr-2 size-4 animate-spin" />}
                 {mode === "signin" ? t("Sign in") : t("Create account")}
               </Button>
+              {mode === "signin" && (
+                <button
+                  type="button"
+                  className="w-full text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => {
+                    setRecover(true);
+                    setRecoverSent(false);
+                  }}
+                >
+                  {t("Forgot your password?")}
+                </button>
+              )}
             </div>
           )}
 
