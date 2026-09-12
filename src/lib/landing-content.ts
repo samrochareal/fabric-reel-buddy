@@ -142,9 +142,14 @@ function merge<T>(base: T, saved: unknown): T {
 export function normalizeLandingContent(value: unknown) {
   const merged = merge(defaultLandingContent, value);
   const saved = Array.isArray(merged.sections) ? merged.sections : [];
+  const removed = Array.isArray(merged.removedSections) ? merged.removedSections : [];
   const order = saved.filter((s): s is LandingSection => (LANDING_SECTIONS as readonly string[]).includes(s));
-  return { ...merged, sections: order.length ? order : [...LANDING_SECTIONS] };
+  const base = order.length ? order : [...LANDING_SECTIONS];
+  // Newly shipped sections join the page unless the master deleted them.
+  const complete = [...base, ...LANDING_SECTIONS.filter((s) => !base.includes(s) && !removed.includes(s))];
+  return { ...merged, sections: complete, removedSections: removed };
 }
+
 
 /** An empty text means the master removed that element from the page. */
 export function shown(text: string | null | undefined) {
