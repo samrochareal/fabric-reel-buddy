@@ -182,13 +182,20 @@ function normalizePlans(items: unknown): LandingPlan[] {
           ? Number(digits) * 100
           : 0;
     const credits = Math.max(0, Math.round(Number(plan.credits ?? 0)));
+    // Packs saved before the dollar price existed charge the same number in USD.
+    const amountUsd =
+      typeof plan.amountCentsUsd === "number" && plan.amountCentsUsd > 0
+        ? Math.round(plan.amountCentsUsd)
+        : amount;
     return {
       id: String(plan.id ?? `plan_${index}`),
       priceId: String(plan.priceId ?? ""),
       name: String(plan.name ?? ""),
       price: String(plan.price ?? ""),
+      priceUsd: String(plan.priceUsd ?? ""),
       period: String(plan.period ?? ""),
       amountCents: amount,
+      amountCentsUsd: amountUsd,
       credits,
       description: String(plan.description ?? ""),
       features: Array.isArray(plan.features) ? plan.features.map((f) => String(f)) : [],
