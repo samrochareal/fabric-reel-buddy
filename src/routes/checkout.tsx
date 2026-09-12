@@ -44,12 +44,9 @@ export const Route = createFileRoute("/checkout")({
 function CheckoutPage() {
   const { plan: planId, session_id: sessionId } = Route.useSearch();
   const [sourcePlan, setSourcePlan] = useState<LandingPlan | null>(null);
-  const [lang] = useLang();
   // The pack texts follow the language the visitor picked.
-  const plan = useMemo(
-    () => (sourcePlan ? translateLandingPlan(sourcePlan, lang) : null),
-    [sourcePlan, lang],
-  );
+  const sourcePlans = useMemo(() => (sourcePlan ? [sourcePlan] : []), [sourcePlan]);
+  const plan = useLandingPlans(sourcePlans)[0] ?? null;
 
   const currency = useBuyerCurrency();
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
