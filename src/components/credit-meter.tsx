@@ -8,7 +8,7 @@ function pad(n: number) {
   return String(Math.max(0, n)).padStart(2, "0");
 }
 
-/** Credits as XXX/XXX, replaced by a countdown once they run out. */
+/** Credits as used/available, replaced by a countdown once they run out. */
 export function CreditMeter({ account: given }: { account?: Account | null }) {
   const t = useT();
   const fallback = useMyAccount();
@@ -32,7 +32,8 @@ export function CreditMeter({ account: given }: { account?: Account | null }) {
   if (account.premium) {
     return (
       <span className="flex items-center gap-1.5 rounded-full border border-primary/50 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary">
-        <InfinityIcon className="size-3.5" /> {t("Unlimited")}
+        <InfinityIcon className="size-3.5" />
+        <span className="font-mono tabular-nums">{pad(account.credits_used)}/∞</span>
       </span>
     );
   }
@@ -53,14 +54,13 @@ export function CreditMeter({ account: given }: { account?: Account | null }) {
     );
   }
 
-  const total = Math.max(account.credits, account.credit_refill_amount);
   return (
     <span
       className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-mono text-xs font-bold tabular-nums"
-      title={t("1 credit = 1 processed video")}
+      title={t("Credits used / credits available")}
     >
       <Coins className="size-3.5 text-primary" />
-      {pad(account.credits)}/{pad(total)}
+      {pad(account.credits_used)}/{pad(account.credits)}
     </span>
   );
 }

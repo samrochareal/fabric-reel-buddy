@@ -23,6 +23,7 @@ export function SideMenu() {
   const [open, setOpen] = useState(false);
   const [guest, setGuest] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
+  const visibleLinks = branding.external_links.filter((link) => !link.hidden);
 
   useEffect(() => {
     if (isGuest()) {
@@ -100,12 +101,12 @@ export function SideMenu() {
             </Link>
           )}
 
-          {branding.external_links.length > 0 && (
+          {visibleLinks.length > 0 && (
             <>
               <p className="mt-3 px-3 pb-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
                 {t("Links")}
               </p>
-              {branding.external_links.map((link) => (
+              {visibleLinks.map((link) => (
                 <a
                   key={link.url}
                   href={link.url}

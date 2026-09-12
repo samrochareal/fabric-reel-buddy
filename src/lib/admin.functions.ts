@@ -1,6 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const fallbackDefaults = {
+  credits: 5,
+  creditRefillAmount: 5,
+  creditRefillHours: 12,
+  premium: false,
+  accessDays: null as number | null,
+  blocked: false,
+  allowedTools: {} as Record<string, boolean>,
+};
+
 async function assertAdmin(context: { supabase: unknown; userId: string }) {
   const supabase = context.supabase as {
     from: (t: string) => {
@@ -44,6 +54,34 @@ export const listUsers = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin.rpc("admin_list_users");
     if (error) throw error;
     return data;
+  });
+
+/** Master-only: reads the persistent defaults used for current and future accounts. */
+export const getPlatformDefaults = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("platform_settings")
+      .select("account_defaults")
+      .eq("id", true)
+      .maybeSingle();
+    if (error) throw error;
+    const saved = data?.account_defaults;
+    if (!saved || typeof saved !== "object" || Array.isArray(saved)) return fallbackDefaults;
+    const value = saved as Record<string, unknown>;
+    return {
+      credits: typeof value.credits === "number" ? value.credits : fallbackDefaults.credits,
+      creditRefillAmount: typeof value.creditRefillAmount === "number" ? value.creditRefillAmount : fallbackDefaults.creditRefillAmount,
+      creditRefillHours: typeof value.creditRefillHours === "number" ? value.creditRefillHours : fallbackDefaults.creditRefillHours,
+      premium: typeof value.premium === "boolean" ? value.premium : fallbackDefaults.premium,
+      accessDays: typeof value.accessDays === "number" ? value.accessDays : null,
+      blocked: typeof value.blocked === "boolean" ? value.blocked : fallbackDefaults.blocked,
+      allowedTools: value.allowedTools && typeof value.allowedTools === "object" && !Array.isArray(value.allowedTools)
+        ? value.allowedTools as Record<string, boolean>
+        : fallbackDefaults.allowedTools,
+    };
   });
 
 /** Turns the master's form values into arguments for admin_update_user. */
@@ -102,6 +140,21 @@ export const updateAllUsers = createServerFn({ method: "POST" })
       supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin"),
     ]);
     if (error) throw error;
+
+    const defaults = {
+      credits: Math.max(0, Math.round(data.credits ?? fallbackDefaults.credits)),
+      creditRefillAmount: Math.max(0, Math.round(data.creditRefillAmount ?? fallbackDefaults.creditRefillAmount)),
+      creditRefillHours: Math.max(1, Math.round(data.creditRefillHours ?? fallbackDefaults.creditRefillHours)),
+      premium: data.premium ?? fallbackDefaults.premium,
+      accessDays: typeof data.accessDays === "number" && data.accessDays > 0 ? data.accessDays : null,
+      blocked: data.blocked ?? fallbackDefaults.blocked,
+      allowedTools: data.allowedTools ?? fallbackDefaults.allowedTools,
+    };
+    const { error: defaultsError } = await supabaseAdmin
+      .from("platform_settings")
+      .update({ account_defaults: defaults })
+      .eq("id", true);
+    if (defaultsError) throw defaultsError;
 
     const adminIds = new Set((admins ?? []).map((r) => r.user_id));
     const targets = (profiles ?? []).map((p) => p.id).filter((id) => !adminIds.has(id));

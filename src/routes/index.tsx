@@ -31,11 +31,13 @@ function LandingPage() {
   const isMobile = useIsMobile();
   const content = normalizeLandingContent(branding.landing_content);
 
+  if (!branding.ready) return <main className="min-h-screen bg-background" aria-busy="true" />;
+
   return (
     <LandingView
       content={content}
-      systemName={branding.ready ? branding.system_name : ""}
-      brandImage={branding.ready ? branding.logo_url || branding.icon_url : null}
+      systemName={branding.system_name}
+      brandImage={branding.logo_url || branding.icon_url}
       device={isMobile ? "mobile" : "desktop"}
     />
   );
