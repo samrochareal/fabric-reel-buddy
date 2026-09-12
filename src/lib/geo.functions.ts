@@ -9,12 +9,13 @@ export function currencyForCountry(country: string | null | undefined): BuyerCur
 }
 
 export const getBuyerCurrency = createServerFn({ method: "GET" }).handler(
-  (): { currency: BuyerCurrency } => {
+  (): { currency: BuyerCurrency; country: string } => {
     const country =
       getRequestHeader("cf-ipcountry") ??
       getRequestHeader("x-vercel-ip-country") ??
-      getRequestHeader("x-country-code");
-    return { currency: currencyForCountry(country) };
+      getRequestHeader("x-country-code") ??
+      "";
+    return { currency: currencyForCountry(country), country: country.toUpperCase() };
   },
 );
 
