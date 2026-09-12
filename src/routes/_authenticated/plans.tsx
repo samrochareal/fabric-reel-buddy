@@ -62,6 +62,8 @@ function PlansAdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingFree, setSavingFree] = useState(false);
+  const [sales, setSales] = useState<SalesSummary | null>(null);
+  const [salesError, setSalesError] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -69,6 +71,15 @@ function PlansAdminPage() {
         fetchBranding(),
         fetchPlatformDefaults().catch(() => null),
       ]);
+      if (paymentsConfigured()) {
+        try {
+          const result = await getPlanSales({ data: { environment: getStripeEnvironment() } });
+          if ("error" in result) setSalesError(result.error);
+          else setSales(result);
+        } catch {
+          setSalesError("Não conseguimos carregar as vendas agora.");
+        }
+      }
       setContent(normalizeLandingContent(branding.landing_content));
       if (defaults) {
         setFreeCredits(defaults.creditRefillAmount);
