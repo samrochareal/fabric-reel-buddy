@@ -75,7 +75,7 @@ export const createPlanCheckoutSession = createServerFn({ method: "POST" })
         ui_mode: "embedded_page",
         return_url: data.returnUrl,
         customer: customerId,
-        ...(!isRecurring && { payment_intent_data: { description: productDescription } }),
+        ...(!isRecurring && productDescription ? { payment_intent_data: { description: productDescription } } : {}),
         metadata: { userId: context.userId },
         ...(isRecurring && { subscription_data: { metadata: { userId: context.userId } } }),
       });
