@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Coins, Gift, LogOut, Menu, ShieldCheck, Tags } from "lucide-react";
+import { Coins, Gift, Info, LogOut, Menu, ShieldCheck, Tags } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { exitGuestMode, isGuest } from "@/lib/guest-mode";
@@ -99,6 +99,14 @@ export function SideMenu() {
               </Link>
             </>
           )}
+
+          <Link
+            to="/info"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <Info className="size-4 text-primary" /> {t("Information")}
+          </Link>
 
           {!guest && (
             <Link

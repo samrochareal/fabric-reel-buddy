@@ -17,6 +17,7 @@ import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedInfoRouteImport } from './routes/_authenticated/info'
 import { Route as AuthenticatedLandingEditorRouteImport } from './routes/_authenticated/landing-editor'
 import { Route as AuthenticatedNewPasswordRouteImport } from './routes/_authenticated/new-password'
 import { Route as AuthenticatedOverlayCreatorRouteImport } from './routes/_authenticated/overlay-creator'
@@ -64,6 +65,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInfoRoute = AuthenticatedInfoRouteImport.update({
+  id: '/info',
+  path: '/info',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedLandingEditorRoute =
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/info': typeof AuthenticatedInfoRoute
   '/landing-editor': typeof AuthenticatedLandingEditorRoute
   '/new-password': typeof AuthenticatedNewPasswordRoute
   '/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/info': typeof AuthenticatedInfoRoute
   '/landing-editor': typeof AuthenticatedLandingEditorRoute
   '/new-password': typeof AuthenticatedNewPasswordRoute
   '/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/info': typeof AuthenticatedInfoRoute
   '/_authenticated/landing-editor': typeof AuthenticatedLandingEditorRoute
   '/_authenticated/new-password': typeof AuthenticatedNewPasswordRoute
   '/_authenticated/overlay-creator': typeof AuthenticatedOverlayCreatorRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin'
     | '/dashboard'
+    | '/info'
     | '/landing-editor'
     | '/new-password'
     | '/overlay-creator'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin'
     | '/dashboard'
+    | '/info'
     | '/landing-editor'
     | '/new-password'
     | '/overlay-creator'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
+    | '/_authenticated/info'
     | '/_authenticated/landing-editor'
     | '/_authenticated/new-password'
     | '/_authenticated/overlay-creator'
@@ -301,6 +313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/info': {
+      id: '/_authenticated/info'
+      path: '/info'
+      fullPath: '/info'
+      preLoaderRoute: typeof AuthenticatedInfoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/landing-editor': {
       id: '/_authenticated/landing-editor'
       path: '/landing-editor'
@@ -370,6 +389,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedInfoRoute: typeof AuthenticatedInfoRoute
   AuthenticatedLandingEditorRoute: typeof AuthenticatedLandingEditorRoute
   AuthenticatedNewPasswordRoute: typeof AuthenticatedNewPasswordRoute
   AuthenticatedOverlayCreatorRoute: typeof AuthenticatedOverlayCreatorRoute
@@ -382,6 +402,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedInfoRoute: AuthenticatedInfoRoute,
   AuthenticatedLandingEditorRoute: AuthenticatedLandingEditorRoute,
   AuthenticatedNewPasswordRoute: AuthenticatedNewPasswordRoute,
   AuthenticatedOverlayCreatorRoute: AuthenticatedOverlayCreatorRoute,
