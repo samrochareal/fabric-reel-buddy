@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Gift, LogOut, Menu, ShieldCheck } from "lucide-react";
+import { Coins, Gift, LogOut, Menu, ShieldCheck, Tags } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { exitGuestMode, isGuest } from "@/lib/guest-mode";
@@ -82,12 +82,31 @@ export function SideMenu() {
         {/* navigation + master links */}
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           {isAdmin && (
+            <>
+              <Link
+                to="/admin"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+              >
+                <ShieldCheck className="size-4" /> {t("Master panel")}
+              </Link>
+              <Link
+                to="/plans"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+              >
+                <Tags className="size-4" /> {t("Plans")}
+              </Link>
+            </>
+          )}
+
+          {!guest && (
             <Link
-              to="/admin"
+              to="/recharge"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
             >
-              <ShieldCheck className="size-4" /> {t("Master panel")}
+              <Coins className="size-4 text-primary" /> {t("Add credits")}
             </Link>
           )}
 
