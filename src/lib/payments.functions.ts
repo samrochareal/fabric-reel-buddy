@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { normalizeLandingContent } from "@/lib/landing-content";
+import { normalizeLandingContent, planAmountCents } from "@/lib/landing-content";
 import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib/stripe.server";
 import { currencyForCountry } from "@/lib/geo.functions";
 import { getRequestHeader } from "@tanstack/react-start/server";
@@ -65,17 +65,19 @@ export const createPlanCheckoutSession = createServerFn({ method: "POST" })
       const items = normalizeLandingContent(settings?.landing_content).plans.items;
       const plan = items.find((item) => item.id === data.planId && item.active && !item.free);
       if (!plan) return { error: "Este plano não está disponível." };
-      if (plan.amountCents < 100 || plan.credits <= 0) {
-        return { error: "Este plano ainda não tem valor e créditos definidos." };
-      }
 
-      // Currency follows the buyer's country: BRL in Brazil, USD elsewhere
-      // (same number, no conversion — R$29 becomes $29).
+      // Currency follows the buyer's country: BRL in Brazil, USD elsewhere.
+      // The master sets each amount separately in the plans panel.
       const country =
         getRequestHeader("cf-ipcountry") ??
         getRequestHeader("x-vercel-ip-country") ??
         getRequestHeader("x-country-code");
       const currency = currencyForCountry(country);
+      const amountCents = planAmountCents(plan, currency);
+
+      if (amountCents < 100 || plan.credits <= 0) {
+        return { error: "Este plano ainda não tem valor e créditos definidos." };
+      }
 
       const stripe = createStripeClient(data.environment);
       const {
@@ -95,7 +97,7 @@ export const createPlanCheckoutSession = createServerFn({ method: "POST" })
         quantity: 1,
         price_data: {
           currency,
-          unit_amount: plan.amountCents,
+          unit_amount: amountCents,
           product_data: { name: plan.name || label, description: label },
         },
       };
@@ -107,7 +109,7 @@ export const createPlanCheckoutSession = createServerFn({ method: "POST" })
       const catalogued = catalogue.data[0];
       if (
         catalogued &&
-        catalogued.unit_amount === plan.amountCents &&
+        catalogued.unit_amount === amountCents &&
         catalogued.currency === currency &&
         !catalogued.recurring
       ) {
