@@ -1,12 +1,30 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useIsAdmin } from "@/lib/admin";
 import { fetchPlatformDefaults, savePlatformDefaults } from "@/lib/admin";
 import { fetchBranding, useRefreshBranding } from "@/lib/branding";
+import { getPlanSales } from "@/lib/payments.functions";
+import { getStripeEnvironment, paymentsConfigured } from "@/lib/stripe";
+
+type SalesSummary = {
+  salesCount: number;
+  creditsGranted: number;
+  totals: Array<{ currency: string; amount: number }>;
+};
+
+function providerDashboardUrl(): string {
+  try {
+    return getStripeEnvironment() === "live"
+      ? "https://dashboard.stripe.com/dashboard"
+      : "https://dashboard.stripe.com/test/dashboard";
+  } catch {
+    return "https://dashboard.stripe.com/";
+  }
+}
 import {
   normalizeLandingContent,
   saveLandingContent,
@@ -44,6 +62,8 @@ function PlansAdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingFree, setSavingFree] = useState(false);
+  const [sales, setSales] = useState<SalesSummary | null>(null);
+  const [salesError, setSalesError] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -51,6 +71,15 @@ function PlansAdminPage() {
         fetchBranding(),
         fetchPlatformDefaults().catch(() => null),
       ]);
+      if (paymentsConfigured()) {
+        try {
+          const result = await getPlanSales({ data: { environment: getStripeEnvironment() } });
+          if ("error" in result) setSalesError(result.error);
+          else setSales(result);
+        } catch {
+          setSalesError("Não conseguimos carregar as vendas agora.");
+        }
+      }
       setContent(normalizeLandingContent(branding.landing_content));
       if (defaults) {
         setFreeCredits(defaults.creditRefillAmount);
@@ -179,6 +208,61 @@ function PlansAdminPage() {
           Cada pacote é um pagamento único. O valor e os créditos definidos aqui valem na página
           inicial, na compra de créditos e no pagamento.
         </p>
+
+        {/* sales summary */}
+        <section className="mt-8 rounded-2xl border border-border bg-card p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-lg font-bold">Vendas</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tudo que já foi pago e os créditos liberados por essas vendas.
+              </p>
+            </div>
+            <Button asChild variant="outline" size="sm" className="font-bold">
+              <a href={providerDashboardUrl()} target="_blank" rel="noreferrer">
+                <ExternalLink className="size-4" /> Abrir painel de pagamentos
+              </a>
+            </Button>
+          </div>
+
+          {salesError ? (
+            <p className="mt-4 text-sm font-semibold text-destructive">{salesError}</p>
+          ) : !sales ? (
+            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" /> Carregando vendas…
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-xs font-bold text-muted-foreground">Valor processado</p>
+                <p className="mt-1 font-display text-2xl font-bold">
+                  {sales.totals.length === 0
+                    ? "R$ 0,00"
+                    : sales.totals
+                        .map((t) =>
+                          t.amount.toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: t.currency.toUpperCase(),
+                          }),
+                        )
+                        .join(" · ")}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-xs font-bold text-muted-foreground">Vendas concluídas</p>
+                <p className="mt-1 font-display text-2xl font-bold">{sales.salesCount}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-xs font-bold text-muted-foreground">Créditos liberados</p>
+                <p className="mt-1 font-display text-2xl font-bold">{sales.creditsGranted}</p>
+              </div>
+            </div>
+          )}
+          <p className="mt-3 text-xs text-muted-foreground">
+            Para detalhes de cada venda, reembolsos e a configuração da conta de pagamentos, use o
+            painel de pagamentos no botão acima.
+          </p>
+        </section>
 
         {/* free plan */}
         <section className="mt-8 rounded-2xl border border-border bg-card p-5">

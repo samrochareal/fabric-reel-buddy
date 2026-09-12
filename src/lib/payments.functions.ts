@@ -102,6 +102,75 @@ export const createPlanCheckoutSession = createServerFn({ method: "POST" })
     }
   });
 
+type PlanSalesResult =
+  | {
+      salesCount: number;
+      creditsGranted: number;
+      totals: Array<{ currency: string; amount: number }>;
+    }
+  | { error: string };
+
+/**
+ * Master-only sales summary: money processed in the payment provider and
+ * credits granted from those payments. Never trust the browser for these.
+ */
+export const getPlanSales = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { environment: StripeEnv }) => data)
+  .handler(async ({ data, context }): Promise<PlanSalesResult> => {
+    try {
+      const { data: isAdmin } = await context.supabase.rpc("has_role", {
+        _user_id: context.userId,
+        _role: "admin",
+      });
+      if (!isAdmin) return { error: "Área restrita ao usuário master." };
+
+      // Credits granted come from our own ledger (bypasses RLS intentionally).
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: grants, error: grantsError } = await supabaseAdmin
+        .from("payment_credit_grants")
+        .select("credits");
+      if (grantsError) return { error: getStripeErrorMessage(grantsError) };
+      const creditsGranted = (grants ?? []).reduce(
+        (sum, row) => sum + (Number(row.credits) || 0),
+        0,
+      );
+
+      // Money processed comes straight from the provider: every successful
+      // charge, grouped by currency (major unit, e.g. reais — not centavos).
+      const stripe = createStripeClient(data.environment);
+      const totals = new Map<string, number>();
+      let salesCount = 0;
+      let startingAfter: string | undefined;
+      for (let page = 0; page < 10; page += 1) {
+        const batch = await stripe.charges.list({
+          limit: 100,
+          ...(startingAfter ? { starting_after: startingAfter } : {}),
+        });
+        for (const charge of batch.data) {
+          if (!charge.paid || charge.refunded) continue;
+          const currency = (charge.currency ?? "brl").toLowerCase();
+          totals.set(currency, (totals.get(currency) ?? 0) + (charge.amount ?? 0));
+          salesCount += 1;
+        }
+        if (!batch.has_more || batch.data.length === 0) break;
+        startingAfter = batch.data[batch.data.length - 1]?.id;
+        if (!startingAfter) break;
+      }
+
+      return {
+        salesCount,
+        creditsGranted,
+        totals: [...totals.entries()].map(([currency, minor]) => ({
+          currency,
+          amount: minor / 100,
+        })),
+      };
+    } catch (error) {
+      return { error: getStripeErrorMessage(error) };
+    }
+  });
+
 /** Opens the provider's billing page so the person can cancel or change the card. */
 export const createBillingPortalSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
