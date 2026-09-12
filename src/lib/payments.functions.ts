@@ -73,17 +73,29 @@ export const createPlanCheckoutSession = createServerFn({ method: "POST" })
       });
 
       const label = `${plan.credits} créditos de vídeo`;
+
+      // Prefer the real catalogue entry kept in sync with the master's plans.
+      // Falls back to an inline amount if the catalogue has not synced yet.
+      let lineItem: Record<string, unknown> = {
+        quantity: 1,
+        price_data: {
+          currency: "brl",
+          unit_amount: plan.amountCents,
+          product_data: { name: plan.name || label, description: label },
+        },
+      };
+      const catalogue = await stripe.prices.list({
+        lookup_keys: [lookupKeyFor(plan.id)],
+        active: true,
+        limit: 1,
+      });
+      const catalogued = catalogue.data[0];
+      if (catalogued && catalogued.unit_amount === plan.amountCents && !catalogued.recurring) {
+        lineItem = { quantity: 1, price: catalogued.id };
+      }
+
       const session = await stripe.checkout.sessions.create({
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: "brl",
-              unit_amount: plan.amountCents,
-              product_data: { name: plan.name || label, description: label },
-            },
-          },
-        ],
+        line_items: [lineItem as never],
         mode: "payment",
         ui_mode: "embedded_page",
         return_url: data.returnUrl,
