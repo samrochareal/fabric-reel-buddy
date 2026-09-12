@@ -209,6 +209,61 @@ function PlansAdminPage() {
           inicial, na compra de créditos e no pagamento.
         </p>
 
+        {/* sales summary */}
+        <section className="mt-8 rounded-2xl border border-border bg-card p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-lg font-bold">Vendas</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tudo que já foi pago e os créditos liberados por essas vendas.
+              </p>
+            </div>
+            <Button asChild variant="outline" size="sm" className="font-bold">
+              <a href={providerDashboardUrl()} target="_blank" rel="noreferrer">
+                <ExternalLink className="size-4" /> Abrir painel de pagamentos
+              </a>
+            </Button>
+          </div>
+
+          {salesError ? (
+            <p className="mt-4 text-sm font-semibold text-destructive">{salesError}</p>
+          ) : !sales ? (
+            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" /> Carregando vendas…
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-xs font-bold text-muted-foreground">Valor processado</p>
+                <p className="mt-1 font-display text-2xl font-bold">
+                  {sales.totals.length === 0
+                    ? "R$ 0,00"
+                    : sales.totals
+                        .map((t) =>
+                          t.amount.toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: t.currency.toUpperCase(),
+                          }),
+                        )
+                        .join(" · ")}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-xs font-bold text-muted-foreground">Vendas concluídas</p>
+                <p className="mt-1 font-display text-2xl font-bold">{sales.salesCount}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="text-xs font-bold text-muted-foreground">Créditos liberados</p>
+                <p className="mt-1 font-display text-2xl font-bold">{sales.creditsGranted}</p>
+              </div>
+            </div>
+          )}
+          <p className="mt-3 text-xs text-muted-foreground">
+            Para detalhes de cada venda, reembolsos e a configuração da conta de pagamentos, use o
+            painel de pagamentos no botão acima.
+          </p>
+        </section>
+
         {/* free plan */}
         <section className="mt-8 rounded-2xl border border-border bg-card p-5">
           <h2 className="font-display text-lg font-bold">Plano gratuito</h2>
