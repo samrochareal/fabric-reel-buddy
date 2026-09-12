@@ -292,11 +292,6 @@ export const syncPlanCatalog = createServerFn({ method: "POST" })
       }
 
       // Packs the master removed or turned off stop being sellable.
-      const ours = await stripe.products.search({
-        query: `metadata['lovable_plan_id']:null`,
-        limit: 1,
-      }).catch(() => null);
-      void ours;
       const allPrices = await stripe.prices.list({ active: true, limit: 100 });
       for (const price of allPrices.data) {
         const planId = price.metadata?.["lovable_plan_id"];
