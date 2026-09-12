@@ -54,6 +54,31 @@ function AuthPage() {
   const [remember, setRemember] = useState(true);
   const [captcha, setCaptcha] = useState({ a: 0, b: 0 });
   const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [recover, setRecover] = useState(false);
+  const [recoverSent, setRecoverSent] = useState(false);
+
+  const sendRecovery = async () => {
+    const address = email.trim();
+    if (!isValidEmail(address)) {
+      toast.error(t("Enter a valid e-mail."));
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(address, {
+        redirectTo: `${window.location.origin}/new-password`,
+      });
+      if (error) throw error;
+      setRecoverSent(true);
+      toast.success(t("Send recovery e-mail"));
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : t("We couldn't send the recovery e-mail."),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const newCaptcha = useCallback(() => {
     setCaptcha({ a: 2 + Math.floor(Math.random() * 8), b: 1 + Math.floor(Math.random() * 9) });
