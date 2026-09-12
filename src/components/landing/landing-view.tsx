@@ -259,9 +259,11 @@ const SECTION_LABELS: Record<LandingSection, string> = {
   benefits: "Benefícios",
   steps: "Como funciona",
   audience: "Para quem é",
+  plans: "Planos",
   faq: "Perguntas",
   cta: "Chamada final",
 };
+
 
 export function LandingView({
   content,
