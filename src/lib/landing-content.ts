@@ -171,7 +171,9 @@ function merge<T>(base: T, saved: unknown): T {
 
 /** Older saved plans had no amount or free flag: fill them in so nothing breaks. */
 function normalizePlans(items: unknown): LandingPlan[] {
-  if (!Array.isArray(items) || items.length === 0) return defaultLandingContent.plans.items;
+  // Never resurrect the original packs: when the master deleted every pack,
+  // the page must stay without plans instead of flashing old ones back.
+  if (!Array.isArray(items) || items.length === 0) return [];
   return items.map((raw, index) => {
     const plan = (raw ?? {}) as Partial<LandingPlan>;
     const digits = String(plan.price ?? "").replace(/[^\d]/g, "");
