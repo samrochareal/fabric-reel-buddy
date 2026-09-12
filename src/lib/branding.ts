@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { defaultLandingContent, normalizeLandingContent, type LandingContent } from "@/lib/landing-content";
+import { blankLandingContent, normalizeLandingContent, type LandingContent } from "@/lib/landing-content";
 
 export type Palette = {
   primary: string;
@@ -10,6 +10,8 @@ export type Palette = {
 };
 
 export type ExternalLink = { title: string; url: string; icon?: string; hidden?: boolean };
+
+export type ReferralRewardMode = "fixed" | "percent";
 
 export type Branding = {
   system_name: string;
@@ -20,6 +22,8 @@ export type Branding = {
   external_links: ExternalLink[];
   referral_enabled: boolean;
   referral_reward_credits: number;
+  referral_reward_mode: ReferralRewardMode;
+  referral_reward_percent: number;
   landing_content: LandingContent;
 };
 
@@ -33,7 +37,10 @@ export const defaultBranding: Branding = {
   external_links: [],
   referral_enabled: false,
   referral_reward_credits: 5,
-  landing_content: defaultLandingContent,
+  referral_reward_mode: "fixed",
+  referral_reward_percent: 10,
+  // nothing saved yet: stay blank so no original text is ever shown
+  landing_content: blankLandingContent,
 };
 
 export const brandingQueryKey = ["branding"] as const;
@@ -74,7 +81,7 @@ export async function fetchBranding(): Promise<Branding> {
   const { data, error } = await supabase
     .from("platform_settings")
     .select(
-      "system_name, tagline, palette, logo_url, icon_url, external_links, referral_enabled, referral_reward_credits, landing_content",
+      "system_name, tagline, palette, logo_url, icon_url, external_links, referral_enabled, referral_reward_credits, referral_reward_mode, referral_reward_percent, landing_content",
     )
     .limit(1)
     .maybeSingle();
@@ -88,17 +95,26 @@ export async function fetchBranding(): Promise<Branding> {
     external_links: normalizeLinks(data.external_links),
     referral_enabled: Boolean(data.referral_enabled),
     referral_reward_credits: data.referral_reward_credits ?? defaultBranding.referral_reward_credits,
+    referral_reward_mode: data.referral_reward_mode === "percent" ? "percent" : "fixed",
+    referral_reward_percent: Number(data.referral_reward_percent ?? defaultBranding.referral_reward_percent),
     landing_content: normalizeLandingContent(data.landing_content),
   };
 }
 
 /** Master-only switch for the referral programme and its bonus size. */
-export async function saveReferralSettings(input: { enabled: boolean; credits: number }) {
+export async function saveReferralSettings(input: {
+  enabled: boolean;
+  credits: number;
+  mode: ReferralRewardMode;
+  percent: number;
+}) {
   const { error } = await supabase
     .from("platform_settings")
     .update({
       referral_enabled: input.enabled,
       referral_reward_credits: Math.max(0, Math.round(input.credits)),
+      referral_reward_mode: input.mode,
+      referral_reward_percent: Math.min(100, Math.max(0, Math.round(input.percent))),
     })
     .eq("id", true);
   if (error) throw error;
