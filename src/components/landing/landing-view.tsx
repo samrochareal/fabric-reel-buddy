@@ -829,13 +829,16 @@ export function LandingView({
             </nav>
           )}
 
-          {((shown(content.nav.login) && !isHidden("nav.login")) || editing) && (
-            <LandingCta editing={editing} href={content.links["nav.login"]}>
-              <Button size="sm" className="font-bold">
-                <EditableText value={content.nav.login} onChange={on("nav", "login")} placeholder="Entrar" {...visibility("nav.login", "Botão de login")} />
-              </Button>
-            </LandingCta>
-          )}
+          <div className="flex shrink-0 items-center gap-2">
+            <LanguageToggle />
+            {((shown(content.nav.login) && !isHidden("nav.login")) || editing) && (
+              <LandingCta editing={editing} href={content.links["nav.login"]}>
+                <Button size="sm" className="font-bold">
+                  <EditableText value={content.nav.login} onChange={on("nav", "login")} placeholder="Entrar" {...visibility("nav.login", "Botão de login")} />
+                </Button>
+              </LandingCta>
+            )}
+          </div>
         </div>
       </header>
 
