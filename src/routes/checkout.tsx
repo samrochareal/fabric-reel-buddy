@@ -22,10 +22,11 @@ export const Route = createFileRoute("/checkout")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { plan?: string; session_id?: string } => ({
-    plan: typeof search["plan"] === "string" ? search["plan"] : undefined,
-    session_id: typeof search["session_id"] === "string" ? search["session_id"] : undefined,
+  validateSearch: (search: Record<string, unknown>) => ({
+    plan: typeof search["plan"] === "string" ? search["plan"] : "",
+    session_id: typeof search["session_id"] === "string" ? search["session_id"] : "",
   }),
+
   component: CheckoutPage,
 });
 
