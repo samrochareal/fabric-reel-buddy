@@ -212,6 +212,7 @@ function SectionShell({
   onMove,
   hidden,
   onToggleHidden,
+  onDelete,
   children,
 }: {
   edit?: LandingEdit | undefined;
@@ -221,6 +222,7 @@ function SectionShell({
   onMove: (section: LandingSection, delta: number) => void;
   hidden: boolean;
   onToggleHidden: () => void;
+  onDelete: () => void;
   children: React.ReactNode;
 }) {
   if (!edit) return hidden ? null : <>{children}</>;
@@ -238,13 +240,14 @@ function SectionShell({
       className={cn("relative cursor-move border-y-2 border-dashed border-transparent hover:border-primary/40", hidden && "opacity-35")}
       onClick={(event) => {
         if (event.target !== event.currentTarget) return;
-        edit.onSelect?.({ key: `section.${section}`, label, kind: "section", hidden, onToggleHidden });
+        edit.onSelect?.({ key: `section.${section}`, label, kind: "section", hidden, onToggleHidden, onDelete });
       }}
     >
       {children}
     </div>
   );
 }
+
 
 /* ------------------------------------------------------------------ */
 /* landing page                                                        */
