@@ -20,11 +20,15 @@ export type LandingPlan = {
   name: string;
   price: string;
   period: string;
+  /** What the person pays, in cents. The master edits this in the plans panel. */
+  amountCents: number;
   credits: number;
   description: string;
   features: string[];
   active: boolean;
   highlight: boolean;
+  /** A free plan is not charged: it just sends the person to the sign-up. */
+  free: boolean;
   cta: string;
 };
 
