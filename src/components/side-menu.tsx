@@ -100,6 +100,14 @@ export function SideMenu() {
             </>
           )}
 
+          <Link
+            to="/info"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <Info className="size-4 text-primary" /> {t("Information")}
+          </Link>
+
           {!guest && (
             <Link
               to="/recharge"
