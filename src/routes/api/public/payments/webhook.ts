@@ -106,11 +106,13 @@ async function handleWebhook(req: Request, env: StripeEnv) {
       if (object.payment_status === "unpaid") break;
       const userId = object.metadata?.userId;
       if (!userId) break;
-      // One-time purchases: the line item carries the plan; subscriptions get
-      // their credits from invoice.paid (first invoice included).
       if (object.mode === "payment") {
-        const priceId = object.metadata?.priceId;
-        await grantCredits(userId, priceId, `session:${object.id}`);
+        await grantCredits(
+          userId,
+          object.metadata?.planId,
+          `session:${object.id}`,
+          object.metadata?.credits,
+        );
       }
       break;
     }
@@ -118,13 +120,18 @@ async function handleWebhook(req: Request, env: StripeEnv) {
     case "checkout.session.async_payment_succeeded": {
       const userId = object.metadata?.userId;
       if (userId && object.mode === "payment") {
-        await grantCredits(userId, object.metadata?.priceId, `session:${object.id}`);
+        await grantCredits(
+          userId,
+          object.metadata?.planId,
+          `session:${object.id}`,
+          object.metadata?.credits,
+        );
       }
       break;
     }
 
     case "invoice.paid": {
-      // Covers the first subscription payment and every renewal.
+      // Legacy subscriptions still renew: credits come from the saved plan.
       const lines = object.lines?.data ?? [];
       const priceId = priceIdOf(lines[0]);
       const subscriptionId =
