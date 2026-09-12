@@ -1023,16 +1023,53 @@ function AdminPage() {
             <Switch checked={referralOn} onCheckedChange={setReferralOn} />
           </div>
 
-          <div className="mt-3 max-w-xs">
-            <p className="text-xs font-semibold">{t("Credits per referral")}</p>
-            <Input
-              type="number"
-              min={0}
-              className="mt-1.5 h-10"
-              value={referralCredits}
-              onChange={(e) => setReferralCredits(Math.max(0, Number(e.target.value) || 0))}
-            />
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setReferralMode("fixed")}
+              className={`rounded-lg border p-3 text-left text-xs font-semibold transition-colors ${referralMode === "fixed" ? "border-primary bg-primary/10" : "border-border hover:bg-muted"}`}
+            >
+              {t("Fixed credits per sign-up")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setReferralMode("percent")}
+              className={`rounded-lg border p-3 text-left text-xs font-semibold transition-colors ${referralMode === "percent" ? "border-primary bg-primary/10" : "border-border hover:bg-muted"}`}
+            >
+              {t("Share of every recharge")}
+            </button>
           </div>
+
+          {referralMode === "fixed" ? (
+            <div className="mt-3 max-w-xs">
+              <p className="text-xs font-semibold">{t("Credits per referral")}</p>
+              <Input
+                type="number"
+                min={0}
+                className="mt-1.5 h-10"
+                value={referralCredits}
+                onChange={(e) => setReferralCredits(Math.max(0, Number(e.target.value) || 0))}
+              />
+            </div>
+          ) : (
+            <div className="mt-3 max-w-xs">
+              <p className="text-xs font-semibold">{t("Percentage of each recharge (%)")}</p>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                className="mt-1.5 h-10"
+                value={referralPercent}
+                onChange={(e) =>
+                  setReferralPercent(Math.min(100, Math.max(0, Number(e.target.value) || 0)))
+                }
+              />
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                {t("The inviter earns this share of the credits each invited person buys.")}
+              </p>
+            </div>
+          )}
+
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <Stat
