@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { createContext, useContext, useRef, useState, type CSSProperties } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type CSSProperties } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowRight,
   Check,
@@ -784,9 +785,9 @@ export function LandingView({
                       <EditableText value={plan.cta} onChange={(v) => setPlan({ cta: v })} placeholder="Botão" {...visibility(`plans.item.${i}.cta`, "Botão do plano")} />
                     </Button>
                   ) : plan.free ? (
-                    <Link to="/login" className="mt-6">
-                      <Button className="w-full font-bold" variant={plan.highlight ? "default" : "outline"}>{plan.cta}</Button>
-                    </Link>
+                    <LandingCta editing={false}>
+                      <Button className="mt-6 w-full font-bold" variant={plan.highlight ? "default" : "outline"}>{plan.cta}</Button>
+                    </LandingCta>
                   ) : (
                     <Link to="/checkout" search={{ plan: plan.id, session_id: "" }} className="mt-6">
                       <Button className="w-full font-bold" variant={plan.highlight ? "default" : "outline"}>{plan.cta}</Button>
