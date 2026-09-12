@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { shown, withSystemName, type LandingContent, type LandingSection } from "@/lib/landing-content";
+import { planPriceLabel, shown, withSystemName, type LandingContent, type LandingSection } from "@/lib/landing-content";
+import { useBuyerCurrency } from "@/lib/locale";
 
 export type LandingDevice = "desktop" | "mobile";
 export type LandingSelection = {
@@ -281,6 +282,8 @@ export function LandingView({
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const editing = Boolean(edit);
   const mobile = device === "mobile";
+  // Visitors in Brazil see prices in reais, everyone else in dollars.
+  const buyerCurrency = useBuyerCurrency();
 
   const featureIcons = [Layers, Crop, Frame, Images, TypeIcon, Wand2, Zap, Gauge, ShieldCheck];
 
