@@ -71,7 +71,41 @@ export type EditOptions = {
   stripMetadata: boolean;
   /** fastest possible render: lower resolution/bitrate, slightly softer image */
   turbo: boolean;
+  /** fine tuning applied only while turbo is on */
+  turboSettings?: TurboSettings;
 };
+
+/** How much quality the person accepts losing in exchange for speed. */
+export type TurboQuality = "low" | "medium" | "high";
+export type TurboWidth = 480 | 720 | 1080;
+export type TurboCompression = "ultrafast" | "superfast" | "veryfast";
+
+export type TurboSettings = {
+  /** quality loss the person accepts: low keeps the most detail */
+  quality: TurboQuality;
+  /** output width in pixels (height follows 9:16) */
+  width: TurboWidth;
+  /** compression speed: ultrafast is the quickest, veryfast the tidiest file */
+  compression: TurboCompression;
+};
+
+export const defaultTurboSettings = (): TurboSettings => ({
+  quality: "medium",
+  width: 720,
+  compression: "ultrafast",
+});
+
+export function turboSettingsOf(opts: EditOptions): TurboSettings {
+  return { ...defaultTurboSettings(), ...(opts.turboSettings ?? {}) };
+}
+
+/** CRF and bitrate ceiling per quality-loss level (higher CRF = smaller file). */
+const TURBO_QUALITY: Record<TurboQuality, { crf: number; bitrateFactor: number; maxKbps: number }> =
+  {
+    low: { crf: 26, bitrateFactor: 0.8, maxKbps: 4_000 },
+    medium: { crf: 30, bitrateFactor: 0.55, maxKbps: 2_500 },
+    high: { crf: 36, bitrateFactor: 0.35, maxKbps: 1_400 },
+  };
 
 export const defaultEditOptions = (): EditOptions => ({
   aspect: "9:16",
@@ -97,6 +131,7 @@ export const defaultEditOptions = (): EditOptions => ({
   bgImage: { enabled: false, src: null, opacity: 1, layer: "back" },
   stripMetadata: false,
   turbo: false,
+  turboSettings: defaultTurboSettings(),
 });
 
 
