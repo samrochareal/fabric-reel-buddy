@@ -32,7 +32,10 @@ function RechargePage() {
   const branding = useBranding();
   const { account } = useMyAccount();
   const currency = useBuyerCurrency();
-  const plans = branding.landing_content.plans.items.filter((plan) => plan.active && !plan.free);
+  const t = useT();
+  const plans = useLandingPlans(
+    branding.landing_content.plans.items.filter((plan) => plan.active && !plan.free),
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -41,14 +44,17 @@ function RechargePage() {
           to="/dashboard"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="size-3.5" /> Meus projetos
+          <ArrowLeft className="size-3.5" /> {t("My projects")}
         </Link>
 
-        <h1 className="mt-5 font-display text-3xl font-bold">Adicionar créditos</h1>
+        <h1 className="mt-5 font-display text-3xl font-bold">{t("Add credits")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Cada crédito equivale a um vídeo processado. O pagamento é único e os créditos entram na
-          sua conta na hora.
-          {account && !account.premium ? ` Você tem ${account.credits} créditos agora.` : ""}
+          {t(
+            "Each credit equals one processed video. It is a one-time payment and the credits land in your account right away.",
+          )}
+          {account && !account.premium
+            ? ` ${t("You have {n} credits right now.", { n: account.credits })}`
+            : ""}
         </p>
 
         {!branding.ready ? (
@@ -57,8 +63,9 @@ function RechargePage() {
           </div>
         ) : plans.length === 0 ? (
           <p className="mt-10 rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
-            Nenhum pacote de créditos está disponível no momento.
+            {t("No credit pack is available at the moment.")}
           </p>
+
         ) : (
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {plans.map((plan) => (
