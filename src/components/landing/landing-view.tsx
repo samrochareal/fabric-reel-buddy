@@ -831,7 +831,7 @@ export function LandingView({
       </header>
 
       {visibleSections.map((section) => (
-        <SectionShell key={section} edit={edit} order={content.sections} section={section} label={SECTION_LABELS[section]} onMove={moveSection} hidden={isHidden(`section.${section}`)} onToggleHidden={() => toggleHidden(`section.${section}`)}>
+        <SectionShell key={section} edit={edit} order={content.sections} section={section} label={SECTION_LABELS[section]} onMove={moveSection} hidden={isHidden(`section.${section}`)} onToggleHidden={() => toggleHidden(`section.${section}`)} onDelete={() => deleteSection(section)}>
           {sections[section]}
         </SectionShell>
       ))}
