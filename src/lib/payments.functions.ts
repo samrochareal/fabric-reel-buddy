@@ -5,6 +5,11 @@ import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib
 
 type CheckoutSessionResult = { clientSecret: string } | { error: string };
 
+/** Stable key that ties one saved pack to its entry in the payment catalogue. */
+function lookupKeyFor(planId: string): string {
+  return `pack_${planId}`;
+}
+
 async function resolveOrCreateCustomer(
   stripe: ReturnType<typeof createStripeClient>,
   options: { email?: string | undefined; userId?: string | undefined },
