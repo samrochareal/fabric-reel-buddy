@@ -134,6 +134,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  // First visit: Portuguese for Brazil, English anywhere else.
+  useAutoLanguage();
 
   return (
     <QueryClientProvider client={queryClient}>
