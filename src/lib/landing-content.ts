@@ -144,7 +144,7 @@ export const defaultLandingContent: LandingContent = {
         active: true, highlight: true, free: false, cta: "Comprar 500 créditos",
       },
       {
-        id: "credits_1200", priceId: "credits_1200", name: "1200 créditos", price: "R$ 189", priceUsd: "$189", period: "pagamento único", amountCents: 18900, amountCentsUsd: 18900, credits: 1200,
+        id: "credits_1200", priceId: "credits_1200", name: "1300 créditos", price: "R$ 189", priceUsd: "$49", period: "pagamento único", amountCents: 18900, amountCentsUsd: 4900, credits: 1300,
         description: "Para agências e alto volume",
         features: ["1200 vídeos processados", "Todos os formatos", "Suporte prioritário"],
         active: true, highlight: false, free: false, cta: "Comprar 1200 créditos",
