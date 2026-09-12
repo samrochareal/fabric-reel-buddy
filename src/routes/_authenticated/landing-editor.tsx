@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowUp, Eye, EyeOff, Link2, Loader2, Monitor, Plus, RotateCcw, Save, Smartphone, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Eye, EyeOff, Link2, Loader2, Monitor, Plus, RotateCcw, Save, Smartphone, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { LandingView, type LandingDevice, type LandingSelection } from "@/components/landing/landing-view";
@@ -97,7 +97,9 @@ function LandingEditorPage() {
       if (kind === "step") return { ...current, steps: { ...current.steps, items: [...current.steps.items, { title: "Novo passo", text: "Descrição do passo." }] } };
       if (kind === "audience") return { ...current, audience: { ...current.audience, items: [...current.audience.items, { title: "Novo público", text: "Descrição." }] } };
       if (kind === "faq") return { ...current, faq: { ...current.faq, items: [...current.faq.items, { q: "Nova pergunta?", a: "Resposta." }] } };
+      if (kind === "plan") return { ...current, plans: { ...current.plans, items: [...current.plans.items, { id: `plan_${Date.now()}`, priceId: "", name: "Novo plano", price: "R$ 0", period: "/mês", credits: 0, description: "Descrição do plano", features: ["Benefício"], active: false, highlight: false, cta: "Assinar" }] } };
       return { ...current, hero: { ...current.hero, badges: [...current.hero.badges, "Novo selo"] } };
+
     });
   };
 
@@ -239,16 +241,62 @@ function LandingEditorPage() {
                   <div className="grid grid-cols-3 gap-1">{(["left", "center", "right"] as const).map((align) => <Button key={align} size="sm" variant={content.styles[selection.key]?.textAlign === align ? "default" : "outline"} onClick={() => patchSelectionStyle({ textAlign: align })}>{align === "left" ? "Esq." : align === "center" ? "Centro" : "Dir."}</Button>)}</div>
                 </div>
               </>}
+              {selection.kind === "plan" && selection.planIndex !== undefined && (() => {
+                const index = selection.planIndex;
+                const plan = content.plans.items[index];
+                if (!plan) return null;
+                const setPlan = (values: Partial<typeof plan>) =>
+                  setContent((current) => ({ ...current, plans: { ...current.plans, items: current.plans.items.map((p, j) => (j === index ? { ...p, ...values } : p)) } }));
+                return (
+                  <div className="space-y-3 border border-border p-3">
+                    <p className="text-xs font-bold uppercase text-muted-foreground">Plano</p>
+                    <Button variant={plan.active ? "default" : "outline"} size="sm" className="w-full" onClick={() => setPlan({ active: !plan.active })}>
+                      {plan.active ? "Plano ativo (clique para desativar)" : "Plano desativado (clique para ativar)"}
+                    </Button>
+                    <Button variant={plan.highlight ? "default" : "outline"} size="sm" className="w-full" onClick={() => setPlan({ highlight: !plan.highlight })}>
+                      {plan.highlight ? "Em destaque" : "Sem destaque"}
+                    </Button>
+                    <label className="block text-xs font-bold">Créditos entregues
+                      <input type="number" min="0" className="mt-2 h-9 w-full border border-border bg-background px-2 text-sm font-normal outline-none focus:border-primary" value={plan.credits} onChange={(event) => setPlan({ credits: Number(event.target.value) })} />
+                    </label>
+                    <label className="block text-xs font-bold">Identificador de cobrança
+                      <input className="mt-2 h-9 w-full border border-border bg-background px-2 text-sm font-normal outline-none focus:border-primary" value={plan.priceId} onChange={(event) => setPlan({ priceId: event.target.value })} />
+                    </label>
+                    <label className="block text-xs font-bold">Novo benefício
+                      <input className="mt-2 h-9 w-full border border-border bg-background px-2 text-sm font-normal outline-none focus:border-primary" placeholder="Escreva e pressione Enter" onKeyDown={(event) => { if (event.key !== "Enter") return; const value = event.currentTarget.value.trim(); if (!value) return; setPlan({ features: [...plan.features, value] }); event.currentTarget.value = ""; }} />
+                    </label>
+                  </div>
+                );
+              })()}
               <Button variant="outline" className="w-full" onClick={() => { selection.onToggleHidden(); setSelection({ ...selection, hidden: !selection.hidden }); }}>{selection.hidden ? <Eye className="size-4" /> : <EyeOff className="size-4" />}{selection.hidden ? "Mostrar elemento" : "Ocultar elemento"}</Button>
+              {selection.onDelete && (
+                <Button variant="destructive" className="w-full" onClick={() => { if (!window.confirm("Excluir este elemento da landing page?")) return; selection.onDelete?.(); setSelection(null); }}>
+                  <Trash2 className="size-4" /> Excluir elemento
+                </Button>
+              )}
               {selection.kind !== "section" && selection.kind !== "image" && <Button variant="ghost" className="w-full" onClick={() => setContent((current) => { const styles = { ...current.styles }; const links = { ...current.links }; delete styles[selection.key]; delete links[selection.key]; return { ...current, styles, links }; })}>Restaurar aparência</Button>}
+
             </div>
           ) : (
             <div className="p-4">
-              <p className="text-xs leading-relaxed text-muted-foreground">Clique em qualquer texto ou botão na página para editar. Arraste cartões e seções para mudar a ordem.</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">Clique em qualquer texto, botão, imagem, plano ou seção na página para editar, ocultar ou excluir. Arraste cartões e seções para mudar a ordem.</p>
               <p className="mb-2 mt-5 text-xs font-bold">Adicionar elemento</p>
               <div className="grid grid-cols-2 gap-2">
-                {[["feature", "Recurso"], ["benefit", "Benefício"], ["stat", "Número"], ["step", "Passo"], ["audience", "Público"], ["faq", "Pergunta"], ["badge", "Selo"]].map(([kind, label]) => kind && label ? <Button key={kind} variant="outline" size="sm" onClick={() => addElement(kind)}><Plus className="size-3.5" />{label}</Button> : null)}
+                {[["feature", "Recurso"], ["benefit", "Benefício"], ["stat", "Número"], ["step", "Passo"], ["audience", "Público"], ["faq", "Pergunta"], ["badge", "Selo"], ["plan", "Plano"]].map(([kind, label]) => kind && label ? <Button key={kind} variant="outline" size="sm" onClick={() => addElement(kind)}><Plus className="size-3.5" />{label}</Button> : null)}
               </div>
+              {(content.removedSections ?? []).length > 0 && (
+                <>
+                  <p className="mb-2 mt-6 text-xs font-bold">Seções excluídas</p>
+                  <div className="space-y-1">
+                    {(content.removedSections ?? []).map((section) => (
+                      <Button key={section} variant="outline" size="sm" className="w-full justify-start" onClick={() => setContent((current) => ({ ...current, sections: [...current.sections, section], removedSections: (current.removedSections ?? []).filter((s) => s !== section) }))}>
+                        <Plus className="size-3.5" /> Restaurar {section}
+                      </Button>
+                    ))}
+                  </div>
+                </>
+              )}
+
               <p className="mb-2 mt-6 text-xs font-bold">Ordem das seções</p>
               <div className="space-y-1">{content.sections.map((section, index) => <div key={section} draggable onDragStart={(event) => event.dataTransfer.setData("text/section-index", String(index))} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const from = Number(event.dataTransfer.getData("text/section-index")); if (!Number.isFinite(from) || from === index) return; setContent((current) => { const sections = [...current.sections]; const moved = sections[from]; if (!moved) return current; sections.splice(from, 1); sections.splice(index, 0, moved); return { ...current, sections }; }); }} className="flex cursor-grab items-center justify-between border border-border px-3 py-2 text-xs font-bold"><span>{section}</span><div className="flex"><Button size="icon" variant="ghost" disabled={index === 0} onClick={() => setContent((current) => { if (index === 0) return current; const sections = [...current.sections]; const currentSection = sections[index]; const previousSection = sections[index - 1]; if (!currentSection || !previousSection) return current; sections[index - 1] = currentSection; sections[index] = previousSection; return { ...current, sections }; })}><ArrowUp className="size-3.5" /></Button><Button size="icon" variant="ghost" disabled={index === content.sections.length - 1} onClick={() => setContent((current) => { const sections = [...current.sections]; const currentSection = sections[index]; const nextSection = sections[index + 1]; if (!currentSection || !nextSection) return current; sections[index] = nextSection; sections[index + 1] = currentSection; return { ...current, sections }; })}><ArrowDown className="size-3.5" /></Button></div></div>)}</div>
             </div>
