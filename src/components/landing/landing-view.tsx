@@ -268,7 +268,7 @@ const SECTION_LABELS: Record<LandingSection, string> = {
 
 
 export function LandingView({
-  content,
+  content: sourceContent,
   systemName,
   brandImage,
   device,
@@ -285,6 +285,10 @@ export function LandingView({
   const mobile = device === "mobile";
   // Visitors in Brazil see prices in reais, everyone else in dollars.
   const buyerCurrency = useBuyerCurrency();
+  // The page follows the language picker; the master always edits the original text.
+  const content = useLandingContent(sourceContent, !editing);
+
+
 
   const featureIcons = [Layers, Crop, Frame, Images, TypeIcon, Wand2, Zap, Gauge, ShieldCheck];
 
