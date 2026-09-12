@@ -71,7 +71,41 @@ export type EditOptions = {
   stripMetadata: boolean;
   /** fastest possible render: lower resolution/bitrate, slightly softer image */
   turbo: boolean;
+  /** fine tuning applied only while turbo is on */
+  turboSettings?: TurboSettings;
 };
+
+/** How much quality the person accepts losing in exchange for speed. */
+export type TurboQuality = "low" | "medium" | "high";
+export type TurboWidth = 480 | 720 | 1080;
+export type TurboCompression = "ultrafast" | "superfast" | "veryfast";
+
+export type TurboSettings = {
+  /** quality loss the person accepts: low keeps the most detail */
+  quality: TurboQuality;
+  /** output width in pixels (height follows 9:16) */
+  width: TurboWidth;
+  /** compression speed: ultrafast is the quickest, veryfast the tidiest file */
+  compression: TurboCompression;
+};
+
+export const defaultTurboSettings = (): TurboSettings => ({
+  quality: "medium",
+  width: 720,
+  compression: "ultrafast",
+});
+
+export function turboSettingsOf(opts: EditOptions): TurboSettings {
+  return { ...defaultTurboSettings(), ...(opts.turboSettings ?? {}) };
+}
+
+/** CRF and bitrate ceiling per quality-loss level (higher CRF = smaller file). */
+const TURBO_QUALITY: Record<TurboQuality, { crf: number; bitrateFactor: number; maxKbps: number }> =
+  {
+    low: { crf: 26, bitrateFactor: 0.8, maxKbps: 4_000 },
+    medium: { crf: 30, bitrateFactor: 0.55, maxKbps: 2_500 },
+    high: { crf: 36, bitrateFactor: 0.35, maxKbps: 1_400 },
+  };
 
 export const defaultEditOptions = (): EditOptions => ({
   aspect: "9:16",
@@ -97,6 +131,7 @@ export const defaultEditOptions = (): EditOptions => ({
   bgImage: { enabled: false, src: null, opacity: 1, layer: "back" },
   stripMetadata: false,
   turbo: false,
+  turboSettings: defaultTurboSettings(),
 });
 
 
@@ -279,14 +314,20 @@ function probeSource(file: File): Promise<SourceInfo> {
  * time and adds no detail, so the output never exceeds the source resolution
  * (kept 9:16 and never below 720x1280 so short-form video stays crisp).
  */
-function encodeSize(info: SourceInfo, turbo = false): { w: number; h: number } {
+function encodeSize(
+  info: SourceInfo,
+  turbo = false,
+  turboSettings: TurboSettings = defaultTurboSettings(),
+): { w: number; h: number } {
   const sourceLong = Math.max(info.width, info.height);
-  // Turbo always renders at 720x1280: the smallest 9:16 frame that still
-  // looks right on short-form feeds, and far less pixel work per frame.
-  if (turbo) return { w: 720, h: 1280 };
+  const even = (n: number) => Math.round(n / 2) * 2;
+  // Turbo renders at the width the person chose (9:16), far less pixel work.
+  if (turbo) {
+    const w = even(turboSettings.width);
+    return { w, h: even((w * 16) / 9) };
+  }
   if (!sourceLong) return ENCODE_SIZE;
   const h = Math.min(ENCODE_SIZE.h, Math.max(1280, sourceLong));
-  const even = (n: number) => Math.round(n / 2) * 2;
   return { w: even((h * 9) / 16), h: even(h) };
 }
 
@@ -295,12 +336,18 @@ function encodeSize(info: SourceInfo, turbo = false): { w: number; h: number } {
  * the finished file close to the source size, while a small headroom allowance
  * avoids crushing detailed frames during the unavoidable re-encode.
  */
-function targetVideoBitrate(file: File, info: SourceInfo, turbo = false): number {
-  if (info.duration <= 0) return turbo ? 1_600 : 4_000;
+function targetVideoBitrate(
+  file: File,
+  info: SourceInfo,
+  turbo = false,
+  turboSettings: TurboSettings = defaultTurboSettings(),
+): number {
+  const tier = TURBO_QUALITY[turboSettings.quality];
+  if (info.duration <= 0) return turbo ? Math.round(tier.maxKbps * 0.65) : 4_000;
   const sourceTotalKbps = (file.size * 8) / info.duration / 1_000;
-  const sourceVideoBudget = sourceTotalKbps * (turbo ? 0.5 : 1.03) - 128;
+  const sourceVideoBudget = sourceTotalKbps * (turbo ? tier.bitrateFactor : 1.03) - 128;
   return turbo
-    ? Math.round(Math.min(2_500, Math.max(500, sourceVideoBudget)))
+    ? Math.round(Math.min(tier.maxKbps, Math.max(400, sourceVideoBudget)))
     : Math.round(Math.min(10_000, Math.max(700, sourceVideoBudget)));
 }
 
@@ -489,8 +536,9 @@ async function renderOnce(
   const ff = await getFFmpeg();
   const source = await probeSource(file);
   const turbo = opts.turbo === true;
-  const size = encodeSize(source, turbo);
-  const videoBitrate = targetVideoBitrate(file, source, turbo);
+  const turboSettings = turboSettingsOf(opts);
+  const size = encodeSize(source, turbo, turboSettings);
+  const videoBitrate = targetVideoBitrate(file, source, turbo, turboSettings);
 
   const stamp = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const inputName = `in_${stamp}.mp4`;
@@ -545,11 +593,11 @@ async function renderOnce(
       // search, B-frames and lookahead are trimmed (that is where the time
       // goes), while CRF 20 keeps the compression visually imperceptible.
       "-preset",
-      turbo ? "ultrafast" : "veryfast",
+      turbo ? turboSettings.compression : "veryfast",
       "-tune",
       turbo ? "zerolatency" : "fastdecode",
       "-crf",
-      turbo ? "32" : "20",
+      turbo ? String(TURBO_QUALITY[turboSettings.quality].crf) : "20",
       // Turbo: ultrafast's own defaults are the fastest x264 path; the custom
       // parameter set below would only slow it down.
       ...(turbo

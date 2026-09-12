@@ -332,3 +332,50 @@ export const syncPlanCatalog = createServerFn({ method: "POST" })
       return { error: getStripeErrorMessage(error) };
     }
   });
+
+/**
+ * Safety net for credits: when the buyer comes back from the payment form we
+ * confirm the payment with the provider and release the credits ourselves.
+ * It shares the webhook's event key, so credits are never granted twice.
+ */
+export const claimCheckoutCredits = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { sessionId: string; environment: StripeEnv }) => {
+    if (!/^cs_[A-Za-z0-9_]+$/.test(data.sessionId)) throw new Error("Invalid sessionId");
+    return data;
+  })
+  .handler(async ({ data, context }): Promise<{ credits: number } | { error: string }> => {
+    try {
+      const stripe = createStripeClient(data.environment);
+      const session = await stripe.checkout.sessions.retrieve(data.sessionId);
+      if (session.payment_status !== "paid") return { error: "Pagamento ainda não confirmado." };
+      if (session.metadata?.["userId"] !== context.userId) return { error: "Compra de outra conta." };
+
+      const planId = session.metadata?.["planId"];
+      let credits = Number(session.metadata?.["credits"]);
+      if (!Number.isFinite(credits) || credits <= 0) {
+        const { data: settings } = await context.supabase
+          .from("platform_settings")
+          .select("landing_content")
+          .eq("id", true)
+          .maybeSingle();
+        const plan = normalizeLandingContent(settings?.landing_content).plans.items.find(
+          (item) => item.id === planId,
+        );
+        credits = plan?.credits ?? 0;
+      }
+      if (credits <= 0) return { error: "Este plano não tem créditos definidos." };
+
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error } = await supabaseAdmin.rpc("apply_plan_credits", {
+        _user_id: context.userId,
+        _credits: Math.round(credits),
+        _event_key: `session:${session.id}`,
+        ...(planId ? { _price_id: planId } : {}),
+      });
+      if (error) return { error: getStripeErrorMessage(error) };
+      return { credits: Math.round(credits) };
+    } catch (error) {
+      return { error: getStripeErrorMessage(error) };
+    }
+  });

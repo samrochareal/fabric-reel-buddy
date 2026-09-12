@@ -22,3 +22,6 @@
 - [x] Creditar automaticamente os créditos após o pagamento
 - [x] Pacotes de pagamento único (150/500/1200 créditos) e plano gratuito diário
 - [x] Página "Planos" no menu master e página de compra de créditos para os usuários
+- [x] Liberar os créditos logo após o pagamento confirmado (com rede de segurança na volta do checkout)
+- [x] Usuário já logado vai direto para os projetos ao clicar em "Entrar"
+- [x] Painel de detalhes do processamento turbo (compressão, tamanho e perda de qualidade)
