@@ -8,3 +8,6 @@
 - [x] Validar painel, desktop e mobile
 - [x] Usar somente a identidade definida pelo master no cabeçalho
 - [x] Permitir ocultar seções, itens, links e imagens da landing page
+- [ ] Transformar o editor da landing em um criador visual com painel lateral contextual
+- [ ] Permitir adicionar, vincular, estilizar e reposicionar elementos individualmente
+- [ ] Validar salvamento e publicação das alterações no desktop e celular
