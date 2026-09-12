@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+
 import { useBranding } from "@/lib/branding";
 import { useMyAccount } from "@/lib/account";
 import { planPriceLabel } from "@/lib/landing-content";
@@ -69,7 +69,7 @@ function RechargePage() {
                 <h2 className="font-display text-lg font-bold">{plan.name}</h2>
                 <div className="mt-2 flex items-end gap-1">
                   <span className="font-display text-3xl font-bold">
-                    {formatPrice(plan.amountCents / 100, currency)}
+                    {planPriceLabel(plan, currency)}
                   </span>
                   <span className="pb-1 text-sm font-semibold text-muted-foreground">
                     {plan.period}
