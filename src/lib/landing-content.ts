@@ -9,6 +9,8 @@ export type LandingElementStyle = {
   backgroundColor?: string;
   fontSize?: number;
   width?: number;
+  x?: number;
+  y?: number;
   textAlign?: "left" | "center" | "right";
 };
 

@@ -47,6 +47,7 @@ function elementStyle(content: LandingContent | undefined, key: string | undefin
     backgroundColor: value.backgroundColor,
     fontSize: value.fontSize ? `${value.fontSize}px` : undefined,
     width: value.width ? `${value.width}%` : undefined,
+    transform: value.x || value.y ? `translate(${value.x ?? 0}px, ${value.y ?? 0}px)` : undefined,
     textAlign: value.textAlign,
   };
 }
