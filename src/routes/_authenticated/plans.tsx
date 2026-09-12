@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useIsAdmin } from "@/lib/admin";
 import { fetchPlatformDefaults, savePlatformDefaults } from "@/lib/admin";
 import { fetchBranding, useRefreshBranding } from "@/lib/branding";
-import { getPlanSales } from "@/lib/payments.functions";
+import { getPlanSales, syncPlanCatalog } from "@/lib/payments.functions";
 import { getStripeEnvironment, paymentsConfigured } from "@/lib/stripe";
 
 type SalesSummary = {
