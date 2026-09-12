@@ -9,7 +9,7 @@ export type Palette = {
   accent: string;
 };
 
-export type ExternalLink = { title: string; url: string; icon?: string };
+export type ExternalLink = { title: string; url: string; icon?: string; hidden?: boolean };
 
 export type Branding = {
   system_name: string;
@@ -64,6 +64,7 @@ function normalizeLinks(value: unknown): ExternalLink[] {
         title: String(l.title ?? "").trim(),
         url: toExternalUrl(String(l.url ?? "")),
         icon: String(l.icon ?? "link").trim() || "link",
+        hidden: Boolean(l.hidden),
       };
     })
     .filter((l) => l.title && l.url);

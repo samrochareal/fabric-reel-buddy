@@ -173,6 +173,7 @@ export type Database = {
       }
       platform_settings: {
         Row: {
+          account_defaults: Json
           created_at: string
           external_links: Json
           icon_url: string | null
@@ -187,6 +188,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_defaults?: Json
           created_at?: string
           external_links?: Json
           icon_url?: string | null
@@ -201,6 +203,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_defaults?: Json
           created_at?: string
           external_links?: Json
           icon_url?: string | null

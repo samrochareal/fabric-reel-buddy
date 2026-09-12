@@ -90,6 +90,16 @@ export type PlatformUser = {
   overlay_count: number;
 };
 
+export type PlatformDefaults = {
+  credits: number;
+  creditRefillAmount: number;
+  creditRefillHours: number;
+  premium: boolean;
+  accessDays: number | null;
+  blocked: boolean;
+  allowedTools: Record<string, boolean>;
+};
+
 export async function fetchPlatformStats(): Promise<PlatformStats> {
   const { getPlatformStats } = await import("@/lib/admin.functions");
   const data = await getPlatformStats();
@@ -134,6 +144,12 @@ export async function savePlatformDefaults(input: {
   const { updateAllUsers } = await import("@/lib/admin.functions");
   const result = await updateAllUsers({ data: input });
   return result as { updated: number; total: number };
+}
+
+export async function fetchPlatformDefaults(): Promise<PlatformDefaults> {
+  const { getPlatformDefaults } = await import("@/lib/admin.functions");
+  const result = await getPlatformDefaults();
+  return result as PlatformDefaults;
 }
 
 /** Master-only: deletes an account for good. */

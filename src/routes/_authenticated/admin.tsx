@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   BarChart3,
+  Eye,
+  EyeOff,
   Gift,
   Image as ImageIcon,
   LayoutTemplate,
@@ -31,6 +33,7 @@ import {
 import {
   deletePlatformUser,
   fetchPlatformStats,
+  fetchPlatformDefaults,
 
   fetchPlatformUsers,
   resetPlatformUserPassword,
@@ -428,6 +431,19 @@ function AdminPage() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    void fetchPlatformDefaults().then((defaults) => {
+      setDefCredits(defaults.credits);
+      setDefRefillAmount(defaults.creditRefillAmount);
+      setDefRefillHours(defaults.creditRefillHours);
+      setDefPremium(defaults.premium);
+      setDefBlocked(defaults.blocked);
+      setDefDays(defaults.accessDays ? String(defaults.accessDays) : "");
+      setDefTools(defaults.allowedTools);
+    });
+  }, [isAdmin]);
+
 
   const onSaveReferral = async () => {
     setSavingReferral(true);
@@ -501,12 +517,7 @@ function AdminPage() {
     setApplyingSpec(true);
     try {
       const parsed = Number(defDays);
-      const accessDays =
-        defDays.trim() === ""
-          ? undefined
-          : Number.isFinite(parsed) && parsed > 0
-            ? parsed
-            : null;
+      const accessDays = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
       const payload = {
         credits: defCredits,
         creditRefillAmount: defRefillAmount,
@@ -514,7 +525,7 @@ function AdminPage() {
         premium: defPremium,
         blocked: defBlocked,
         allowedTools: defTools,
-        ...(accessDays === undefined ? {} : { accessDays }),
+        accessDays,
       };
       let updated = 0;
       for (const userId of specIds) {
@@ -1386,14 +1397,30 @@ function AdminPage() {
                     )
                   }
                 />
-                <button
+                <Button
                   type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() =>
+                    setLinks((prev) =>
+                      prev.map((l, j) => (j === i ? { ...l, hidden: !l.hidden } : l)),
+                    )
+                  }
+                  aria-label={link.hidden ? t("Show link") : t("Hide link")}
+                  title={link.hidden ? t("Show link") : t("Hide link")}
+                >
+                  {link.hidden ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
                   onClick={() => setLinks((prev) => prev.filter((_, j) => j !== i))}
-                  className="text-muted-foreground transition-colors hover:text-destructive"
+                  className="text-muted-foreground hover:text-destructive"
                   aria-label={t("Remove")}
                 >
                   <Trash2 className="size-4" />
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -1401,7 +1428,7 @@ function AdminPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
               variant="outline"
-              onClick={() => setLinks((prev) => [...prev, { title: "", url: "", icon: "link" }])}
+              onClick={() => setLinks((prev) => [...prev, { title: "", url: "", icon: "link", hidden: false }])}
             >
               <Plus className="mr-1.5 size-4" /> {t("Add link")}
             </Button>
