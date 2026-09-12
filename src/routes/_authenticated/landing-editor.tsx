@@ -223,7 +223,7 @@ function LandingEditorPage() {
               {selection.kind === "image" && (
                 <div className="space-y-3">
                   {selection.value && <img src={selection.value} alt="" className="aspect-video w-full border border-border object-cover" />}
-                  <label className="block cursor-pointer border border-dashed border-primary p-4 text-center text-xs font-bold">Escolher imagem<input type="file" accept="image/*" className="hidden" onChange={(event) => chooseImage(event.target.files?.[0])} /></label>
+                  <label className="block cursor-pointer border border-dashed border-primary p-4 text-center text-xs font-bold">Escolher imagem<input type="file" accept="image/*" className="hidden" onChange={(event) => void chooseImage(event.target.files?.[0])} /></label>
                   {selection.value && <Button variant="ghost" className="w-full" onClick={() => { selection.onChange?.(""); setSelection({ ...selection, value: "" }); }}>Remover imagem</Button>}
                 </div>
               )}
