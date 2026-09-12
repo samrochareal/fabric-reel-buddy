@@ -10,7 +10,9 @@ import { createPlanCheckoutSession } from "@/lib/payments.functions";
 import { useBuyerCurrency } from "@/lib/locale";
 import { fetchBranding, useBranding } from "@/lib/branding";
 import { normalizeLandingContent, planPriceLabel, type LandingPlan } from "@/lib/landing-content";
-import { useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
+import { translateLandingPlan } from "@/lib/landing-i18n";
+
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
