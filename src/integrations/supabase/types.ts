@@ -234,6 +234,8 @@ export type Database = {
           palette: Json
           referral_enabled: boolean
           referral_reward_credits: number
+          referral_reward_mode: string
+          referral_reward_percent: number
           system_name: string
           tagline: string | null
           updated_at: string
@@ -249,6 +251,8 @@ export type Database = {
           palette?: Json
           referral_enabled?: boolean
           referral_reward_credits?: number
+          referral_reward_mode?: string
+          referral_reward_percent?: number
           system_name?: string
           tagline?: string | null
           updated_at?: string
@@ -264,6 +268,8 @@ export type Database = {
           palette?: Json
           referral_enabled?: boolean
           referral_reward_credits?: number
+          referral_reward_mode?: string
+          referral_reward_percent?: number
           system_name?: string
           tagline?: string | null
           updated_at?: string
