@@ -96,7 +96,11 @@ function ReferralsPage() {
                 </Button>
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                {t("{n} credits per sign-up", { n: referral.creditsPerSignup })}
+                {referral.rewardMode === "percent"
+                  ? t("You earn {n}% of the credits every invited person buys.", {
+                      n: referral.percentPerRecharge,
+                    })
+                  : t("{n} credits per sign-up", { n: referral.creditsPerSignup })}
               </p>
             </div>
 
