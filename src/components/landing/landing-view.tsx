@@ -707,9 +707,86 @@ export function LandingView({
         </div>
       </section>
     ),
+    plans: (
+      <section id="planos" className={cn("border-t border-border/60", mobile ? "py-12" : "py-20")}>
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto max-w-2xl text-center">
+            <EditableText as="p" value={content.plans.eyebrow} onChange={on("plans", "eyebrow")} className="text-xs font-bold uppercase tracking-[0.2em] text-primary" placeholder="Selo" {...visibility("plans.eyebrow")} />
+            <h2 className={cn("mt-3 font-display font-bold", mobile ? "text-2xl" : "text-4xl")}>
+              <EditableText value={content.plans.title} onChange={on("plans", "title")} placeholder="Título" {...visibility("plans.title")} />{" "}
+              <EditableText value={content.plans.highlight} onChange={on("plans", "highlight")} className="text-primary" placeholder="Destaque" {...visibility("plans.highlight")} />
+            </h2>
+            <EditableText as="p" value={content.plans.intro} onChange={on("plans", "intro")} className="mt-4 text-sm text-muted-foreground" placeholder="Descrição" {...visibility("plans.intro")} />
+          </div>
+
+          <div className={cn("mt-10 grid gap-5", mobile ? "grid-cols-1" : "sm:grid-cols-2 lg:grid-cols-3")}>
+            {content.plans.items.map((plan, i) => {
+              if (!editing && (!plan.active || isHidden(`plans.item.${i}`))) return null;
+              const setPlan = (values: Partial<typeof plan>) =>
+                list<typeof plan>("plans", "items")?.(content.plans.items.map((p, j) => (j === i ? { ...p, ...values } : p)));
+              return (
+                <div
+                  key={plan.id}
+                  className={cn(
+                    "relative flex flex-col rounded-2xl border bg-card p-6",
+                    plan.highlight ? "border-primary shadow-[0_0_0_1px_hsl(var(--primary))]" : "border-border",
+                    editing && (!plan.active || isHidden(`plans.item.${i}`)) && "opacity-40",
+                  )}
+                  onClick={(event) => {
+                    if (!editing || event.target !== event.currentTarget) return;
+                    edit?.onSelect?.({
+                      key: `plans.item.${i}`,
+                      label: `Plano ${plan.name}`,
+                      kind: "plan",
+                      planIndex: i,
+                      hidden: isHidden(`plans.item.${i}`),
+                      onToggleHidden: () => toggleHidden(`plans.item.${i}`),
+                      onDelete: () => removeItem("plans", "items", i),
+                    });
+                  }}
+                >
+                  <EditableText as="h3" value={plan.name} onChange={editing ? (v) => setPlan({ name: v }) : undefined} className="font-display text-lg font-bold" placeholder="Nome do plano" {...visibility(`plans.item.${i}.name`, "Nome do plano", () => removeItem("plans", "items", i))} />
+                  <div className="mt-2 flex items-end gap-1">
+                    <EditableText value={plan.price} onChange={editing ? (v) => setPlan({ price: v }) : undefined} className="font-display text-3xl font-bold" placeholder="Preço" {...visibility(`plans.item.${i}.price`, "Preço")} />
+                    <EditableText value={plan.period} onChange={editing ? (v) => setPlan({ period: v }) : undefined} className="pb-1 text-sm font-semibold text-muted-foreground" placeholder="/mês" {...visibility(`plans.item.${i}.period`, "Periodicidade")} />
+                  </div>
+                  <EditableText as="p" value={plan.description} onChange={editing ? (v) => setPlan({ description: v }) : undefined} className="mt-2 text-sm text-muted-foreground" placeholder="Descrição" {...visibility(`plans.item.${i}.description`, "Descrição do plano")} />
+                  <ul className="mt-5 flex-1 space-y-2 text-sm">
+                    {plan.features.map((feature, f) => {
+                      if (!editing && (!shown(feature) || isHidden(`plans.item.${i}.feature.${f}`))) return null;
+                      return (
+                        <li key={f} className="flex items-start gap-2">
+                          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+                          <EditableText
+                            value={feature}
+                            onChange={editing ? (v) => setPlan({ features: plan.features.map((x, k) => (k === f ? v : x)) }) : undefined}
+                            placeholder="Benefício"
+                            {...visibility(`plans.item.${i}.feature.${f}`, "Benefício do plano", () => setPlan({ features: plan.features.filter((_, k) => k !== f) }))}
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {editing ? (
+                    <Button className="mt-6 w-full font-bold" variant={plan.highlight ? "default" : "outline"}>
+                      <EditableText value={plan.cta} onChange={(v) => setPlan({ cta: v })} placeholder="Botão" {...visibility(`plans.item.${i}.cta`, "Botão do plano")} />
+                    </Button>
+                  ) : (
+                    <Link to="/checkout" search={{ plan: plan.id }} className="mt-6">
+                      <Button className="w-full font-bold" variant={plan.highlight ? "default" : "outline"}>{plan.cta}</Button>
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    ),
   };
 
-  const visibleSections = content.sections.filter((s) => (mobile && !editing ? s === "hero" || s === "features" || s === "cta" : true));
+  const visibleSections = content.sections.filter((s) => (mobile && !editing ? s === "hero" || s === "features" || s === "plans" || s === "cta" : true));
+
 
   return (
     <LandingEditorContext.Provider value={{ edit, content }}>
