@@ -1,23 +1,17 @@
 import { Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { createContext, useContext, useRef, useState, type CSSProperties } from "react";
 import {
   ArrowRight,
   Check,
   ChevronDown,
-  ChevronUp,
   Crop,
-  Eye,
-  EyeOff,
   Frame,
   Gauge,
-  GripVertical,
   Images,
   Layers,
-  Plus,
   Rocket,
   ShieldCheck,
   Sparkles,
-  Trash2,
   Type as TypeIcon,
   Wand2,
   Zap,
@@ -27,7 +21,36 @@ import { cn } from "@/lib/utils";
 import { shown, withSystemName, type LandingContent, type LandingSection } from "@/lib/landing-content";
 
 export type LandingDevice = "desktop" | "mobile";
-export type LandingEdit = { update: (fn: (c: LandingContent) => LandingContent) => void };
+export type LandingSelection = {
+  key: string;
+  label: string;
+  kind: "text" | "button" | "image" | "item" | "section";
+  value?: string;
+  onChange?: (value: string) => void;
+  hidden: boolean;
+  onToggleHidden: () => void;
+};
+export type LandingEdit = {
+  update: (fn: (c: LandingContent) => LandingContent) => void;
+  selectedKey?: string | undefined;
+  onSelect?: ((selection: LandingSelection) => void) | undefined;
+};
+
+const LandingEditorContext = createContext<{ edit: LandingEdit | undefined; content: LandingContent | undefined }>({ edit: undefined, content: undefined });
+
+function elementStyle(content: LandingContent | undefined, key: string | undefined): CSSProperties | undefined {
+  if (!content || !key) return undefined;
+  const value = content.styles?.[key];
+  if (!value) return undefined;
+  return {
+    color: value.color,
+    backgroundColor: value.backgroundColor,
+    fontSize: value.fontSize ? `${value.fontSize}px` : undefined,
+    width: value.width ? `${value.width}%` : undefined,
+    transform: value.x || value.y ? `translate(${value.x ?? 0}px, ${value.y ?? 0}px)` : undefined,
+    textAlign: value.textAlign,
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /* click-to-edit text                                                  */
@@ -41,6 +64,8 @@ function EditableText({
   placeholder = "Texto",
   hidden = false,
   onToggleHidden,
+  elementKey,
+  label,
 }: {
   value: string;
   onChange?: ((next: string) => void) | undefined;
@@ -49,41 +74,48 @@ function EditableText({
   placeholder?: string | undefined;
   hidden?: boolean | undefined;
   onToggleHidden?: (() => void) | undefined;
+  elementKey?: string | undefined;
+  label?: string | undefined;
 }) {
   const Tag = as as React.ElementType;
+  const editor = useContext(LandingEditorContext);
+  const style = elementStyle(editor.content, elementKey);
+  const selected = Boolean(elementKey && editor.edit?.selectedKey === elementKey);
+  const select = () => {
+    if (!onChange || !elementKey) return;
+    editor.edit?.onSelect?.({
+      key: elementKey,
+      label: label ?? placeholder,
+      kind: placeholder === "Botão" || placeholder === "Entrar" || placeholder === "Link de login" ? "button" : "text",
+      value,
+      onChange,
+      hidden,
+      onToggleHidden: onToggleHidden ?? (() => {}),
+    });
+  };
 
   if (!onChange) {
     if (hidden || !shown(value)) return null;
-    return <Tag className={className}>{value}</Tag>;
+    const node = <Tag className={className} style={style}>{value}</Tag>;
+    const href = elementKey ? editor.content?.links?.[elementKey] : undefined;
+    return href ? <a href={href}>{node}</a> : node;
   }
 
   return (
-    <span className={cn("relative inline-flex items-center gap-1", hidden && "opacity-35")}>
+    <span
+      className={cn("relative inline-flex items-center", hidden && "opacity-35", selected && "outline-2 outline-offset-4 outline-primary")}
+      style={style}
+      onClick={(event) => { event.preventDefault(); event.stopPropagation(); select(); }}
+    >
       <Tag
         data-editable=""
-        contentEditable
-        suppressContentEditableWarning
-        spellCheck={false}
-        data-placeholder={placeholder}
-        onBlur={(e: React.FocusEvent<HTMLElement>) => onChange(e.currentTarget.textContent ?? "")}
-        onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            e.currentTarget.blur();
-          }
-        }}
         className={cn(
-          "cursor-text rounded outline-none ring-1 ring-dashed ring-primary/40 transition hover:ring-primary focus:ring-2 focus:ring-primary",
+          "cursor-pointer rounded outline-none ring-1 ring-dashed ring-transparent transition hover:ring-primary/60",
           className,
         )}
       >
-        {value}
+        {value || placeholder}
       </Tag>
-      {onToggleHidden && (
-        <span role="button" tabIndex={0} onClick={onToggleHidden} onKeyDown={(e) => e.key === "Enter" && onToggleHidden()} className="inline-flex cursor-pointer p-1 text-muted-foreground hover:text-foreground" title={hidden ? "Mostrar elemento" : "Ocultar elemento"}>
-          {hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-        </span>
-      )}
     </span>
   );
 }
@@ -98,9 +130,9 @@ function EditList<T>({
   keep,
   onChange,
   blank,
+  addLabel: _addLabel = "Adicionar item",
   render,
   className,
-  addLabel = "Adicionar item",
   hiddenKey,
   isHidden,
   onToggleHidden,
@@ -110,9 +142,9 @@ function EditList<T>({
   keep: (item: T) => boolean;
   onChange?: ((next: T[]) => void) | undefined;
   blank?: (() => T) | undefined;
+  addLabel?: string | undefined;
   render: (item: T, index: number, setItem: (next: T) => void) => React.ReactNode;
   className?: string | undefined;
-  addLabel?: string | undefined;
   hiddenKey?: string | undefined;
   isHidden?: ((key: string) => boolean) | undefined;
   onToggleHidden?: ((key: string) => void) | undefined;
@@ -121,9 +153,9 @@ function EditList<T>({
   const noop = () => {};
 
   if (!editing || !onChange) {
-    const visible = items.filter((item, index) => keep(item) && !(hiddenKey && isHidden?.(`${hiddenKey}.${index}`)));
+    const visible = items.map((item, index) => ({ item, index })).filter(({ item, index }) => keep(item) && !(hiddenKey && isHidden?.(`${hiddenKey}.${index}`)));
     if (!visible.length) return null;
-    return <div className={className}>{visible.map((item, i) => render(item, i, noop))}</div>;
+    return <div className={className}>{visible.map(({ item, index }) => render(item, index, noop))}</div>;
   }
 
   const move = (from: number, to: number) => {
@@ -150,99 +182,15 @@ function EditList<T>({
               if (dragFrom.current !== null) move(dragFrom.current, i);
               dragFrom.current = null;
             }}
-            className="relative rounded-xl ring-1 ring-dashed ring-primary/25"
+            className="relative cursor-grab rounded-xl ring-1 ring-dashed ring-transparent hover:ring-primary/50"
           >
-            <div className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-md bg-background/90 p-0.5 shadow">
-              <span className="cursor-grab p-1 text-muted-foreground" title="Arraste para reordenar">
-                <GripVertical className="size-3.5" />
-              </span>
-              {hiddenKey && onToggleHidden && (
-                <button
-                  type="button"
-                  className="p-1 text-muted-foreground hover:text-foreground"
-                  onClick={() => onToggleHidden(`${hiddenKey}.${i}`)}
-                  title={isHidden?.(`${hiddenKey}.${i}`) ? "Mostrar elemento" : "Ocultar elemento"}
-                >
-                  {isHidden?.(`${hiddenKey}.${i}`) ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                </button>
-              )}
-              <button type="button" className="p-1 text-muted-foreground hover:text-foreground" onClick={() => move(i, i - 1)} title="Subir">
-                <ChevronUp className="size-3.5" />
-              </button>
-              <button type="button" className="p-1 text-muted-foreground hover:text-foreground" onClick={() => move(i, i + 1)} title="Descer">
-                <ChevronDown className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                className="p-1 text-muted-foreground hover:text-destructive"
-                onClick={() => onChange(items.filter((_, j) => j !== i))}
-                title="Excluir"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-            </div>
             <div className={cn(isHidden?.(`${hiddenKey}.${i}`) && "opacity-35")}>
               {render(item, i, (next) => onChange(items.map((it, j) => (j === i ? next : it))))}
             </div>
           </div>
         ))}
       </div>
-      {blank && (
-        <button
-          type="button"
-          onClick={() => onChange([...items, blank()])}
-          className="mt-3 flex items-center gap-1.5 rounded-lg border border-dashed border-primary/50 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/10"
-        >
-          <Plus className="size-3.5" /> {addLabel}
-        </button>
-      )}
     </>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* image slot                                                          */
-/* ------------------------------------------------------------------ */
-
-function ImageSlot({
-  value,
-  onChange,
-  className,
-  label,
-}: {
-  value: string | null;
-  onChange: (next: string | null) => void;
-  className?: string | undefined;
-  label: string;
-}) {
-  return (
-    <div className={cn("rounded-xl border border-dashed border-primary/50 bg-background/80 p-3 text-xs", className)}>
-      <p className="font-bold">{label}</p>
-      <div className="mt-2 flex items-center gap-3">
-        {value && <img src={value} alt="" className="size-14 rounded-md object-cover" />}
-        <input
-          type="file"
-          accept="image/*"
-          className="text-xs"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            if (file.size > 400_000) {
-              alert("Escolha uma imagem de até 400KB.");
-              return;
-            }
-            const reader = new FileReader();
-            reader.onload = () => onChange(String(reader.result));
-            reader.readAsDataURL(file);
-          }}
-        />
-        {value && (
-          <button type="button" className="font-bold text-muted-foreground hover:text-destructive" onClick={() => onChange(null)}>
-            Remover
-          </button>
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -270,7 +218,6 @@ function SectionShell({
   children: React.ReactNode;
 }) {
   if (!edit) return hidden ? null : <>{children}</>;
-  const index = order.indexOf(section);
   return (
     <div
       draggable
@@ -282,22 +229,12 @@ function SectionShell({
         if (!from || from === section) return;
         onMove(from, order.indexOf(section) - order.indexOf(from));
       }}
-      className={cn("relative border-y-2 border-dashed border-transparent hover:border-primary/40", hidden && "opacity-35")}
+      className={cn("relative cursor-move border-y-2 border-dashed border-transparent hover:border-primary/40", hidden && "opacity-35")}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget) return;
+        edit.onSelect?.({ key: `section.${section}`, label, kind: "section", hidden, onToggleHidden });
+      }}
     >
-      <div className="pointer-events-auto absolute left-2 top-2 z-30 flex items-center gap-1 rounded-md bg-background/90 px-1.5 py-1 text-[11px] font-bold shadow">
-        <GripVertical className="size-3.5 cursor-grab text-muted-foreground" />
-        {label}
-        <button type="button" className="px-1 text-muted-foreground hover:text-foreground" onClick={onToggleHidden} title={hidden ? "Mostrar seção" : "Ocultar seção"}>
-          {hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-        </button>
-        <button type="button" className="px-1 text-muted-foreground hover:text-foreground" onClick={() => onMove(section, -1)} title="Subir seção">
-          <ChevronUp className="size-3.5" />
-        </button>
-        <button type="button" className="px-1 text-muted-foreground hover:text-foreground" onClick={() => onMove(section, 1)} title="Descer seção">
-          <ChevronDown className="size-3.5" />
-        </button>
-        <span className="text-muted-foreground">{index + 1}</span>
-      </div>
       {children}
     </div>
   );
@@ -353,7 +290,10 @@ export function LandingView({
   const isHidden = (key: string) => Boolean(content.hidden?.[key]);
   const toggleHidden = (key: string) =>
     edit?.update((c) => ({ ...c, hidden: { ...c.hidden, [key]: !c.hidden?.[key] } }));
-  const visibility = (key: string) => ({ hidden: isHidden(key), onToggleHidden: edit ? () => toggleHidden(key) : undefined });
+  const visibility = (key: string, label?: string) => ({ elementKey: key, label, hidden: isHidden(key), onToggleHidden: edit ? () => toggleHidden(key) : undefined });
+  const selectImage = (key: string, label: string, value: string | null, onChange: (value: string) => void) => {
+    edit?.onSelect?.({ key, label, kind: "image", value: value ?? "", onChange, hidden: isHidden(key), onToggleHidden: () => toggleHidden(key) });
+  };
 
   const moveSection = (section: LandingSection, delta: number) =>
     edit?.update((c) => {
@@ -424,7 +364,7 @@ export function LandingView({
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               {((shown(content.hero.primaryCta) && !isHidden("hero.primaryCta")) || editing) && (
-                <LandingCta editing={editing}>
+                <LandingCta editing={editing} href={content.links["hero.primaryCta"]}>
                   <Button size="lg" className="font-bold">
                     <EditableText value={content.hero.primaryCta} onChange={on("hero", "primaryCta")} placeholder="Botão" {...visibility("hero.primaryCta")} />
                     <ArrowRight className="size-4" />
@@ -432,7 +372,7 @@ export function LandingView({
                 </LandingCta>
               )}
               {((shown(content.hero.secondaryCta) && !isHidden("hero.secondaryCta")) || editing) && (
-                <a href={editing ? undefined : "#como-funciona"}>
+                <a href={editing ? undefined : content.links["hero.secondaryCta"] || "#como-funciona"}>
                   <Button size="lg" variant="outline" className="font-bold">
                     <EditableText value={content.hero.secondaryCta} onChange={on("hero", "secondaryCta")} placeholder="Botão" {...visibility("hero.secondaryCta")} />
                   </Button>
@@ -456,27 +396,21 @@ export function LandingView({
                 return (
                   <span key={i} className="flex items-center gap-2">
                     <Icon className="size-4 shrink-0 text-primary" />
-                    <EditableText value={badge} onChange={editing ? setItem : undefined} placeholder="Selo" />
+                    <EditableText value={badge} onChange={editing ? setItem : undefined} placeholder="Selo" {...visibility(`hero.badges.${i}`, "Selo")} />
                   </span>
                 );
               }}
             />
           </div>
 
-          <div className="relative rounded-2xl border border-border bg-card p-3 shadow-2xl">
+          <div
+            className={cn("relative rounded-2xl border border-border bg-card p-3 shadow-2xl", editing && "cursor-pointer hover:ring-2 hover:ring-primary/60", isHidden("hero.image") && editing && "opacity-35")}
+            onClick={() => selectImage("hero.image", "Imagem da abertura", content.hero.image, (image) => patch("hero", { image: image || null }))}
+          >
             {content.hero.image && !isHidden("hero.image") ? (
               <img src={content.hero.image} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" />
             ) : (
               <EditorMock />
-            )}
-            {edit && (
-              <div className="mt-3">
-                <Button type="button" size="sm" variant="outline" onClick={() => toggleHidden("hero.image")}>
-                  {isHidden("hero.image") ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                  {isHidden("hero.image") ? "Mostrar imagem" : "Ocultar imagem"}
-                </Button>
-                <ImageSlot className="mt-2" label="Imagem da abertura" value={content.hero.image} onChange={(image) => patch("hero", { image })} />
-              </div>
             )}
           </div>
         </div>
@@ -525,8 +459,8 @@ export function LandingView({
                   <span className="flex size-10 items-center justify-center rounded-lg bg-primary/15 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                     <Icon className="size-5" />
                   </span>
-                  <EditableText as="h3" value={f.title} onChange={editing ? (title) => setItem({ ...f, title }) : undefined} className="mt-4 block text-base font-bold" placeholder="Título" />
-                  <EditableText as="p" value={f.text} onChange={editing ? (text) => setItem({ ...f, text }) : undefined} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Descrição" />
+                  <EditableText as="h3" value={f.title} onChange={editing ? (title) => setItem({ ...f, title }) : undefined} className="mt-4 block text-base font-bold" placeholder="Título" {...visibility(`features.items.${i}.title`, "Título do recurso")} />
+                  <EditableText as="p" value={f.text} onChange={editing ? (text) => setItem({ ...f, text }) : undefined} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Descrição" {...visibility(`features.items.${i}.text`, "Descrição do recurso")} />
                 </div>
               );
             }}
@@ -557,7 +491,7 @@ export function LandingView({
                   <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <Check className="size-3" />
                   </span>
-                  <EditableText value={item} onChange={editing ? setItem : undefined} placeholder="Benefício" />
+                  <EditableText value={item} onChange={editing ? setItem : undefined} placeholder="Benefício" {...visibility(`benefits.items.${i}`, "Benefício")} />
                 </div>
               )}
             />
@@ -576,8 +510,8 @@ export function LandingView({
             className={cn("grid gap-4", !mobile && "sm:grid-cols-2")}
             render={(s, i, setItem) => (
               <div key={i} className="h-full rounded-xl border border-border bg-card p-6">
-                <EditableText as="p" value={s.title} onChange={editing ? (title) => setItem({ ...s, title }) : undefined} className="block font-display text-3xl font-bold text-primary" placeholder="Número" />
-                <EditableText as="p" value={s.text} onChange={editing ? (text) => setItem({ ...s, text }) : undefined} className="mt-1 block text-sm text-muted-foreground" placeholder="Legenda" />
+                <EditableText as="p" value={s.title} onChange={editing ? (title) => setItem({ ...s, title }) : undefined} className="block font-display text-3xl font-bold text-primary" placeholder="Número" {...visibility(`benefits.stats.${i}.title`, "Número")} />
+                <EditableText as="p" value={s.text} onChange={editing ? (text) => setItem({ ...s, text }) : undefined} className="mt-1 block text-sm text-muted-foreground" placeholder="Legenda" {...visibility(`benefits.stats.${i}.text`, "Legenda do número")} />
               </div>
             )}
           />
@@ -604,8 +538,8 @@ export function LandingView({
             render={(s, i, setItem) => (
               <div key={i} className="h-full rounded-xl border border-border bg-card p-5">
                 <p className="font-display text-2xl font-bold text-primary">{String(i + 1).padStart(2, "0")}</p>
-                <EditableText as="h3" value={s.title} onChange={editing ? (title) => setItem({ ...s, title }) : undefined} className="mt-3 block text-base font-bold" placeholder="Título" />
-                <EditableText as="p" value={s.text} onChange={editing ? (text) => setItem({ ...s, text }) : undefined} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Descrição" />
+                <EditableText as="h3" value={s.title} onChange={editing ? (title) => setItem({ ...s, title }) : undefined} className="mt-3 block text-base font-bold" placeholder="Título" {...visibility(`steps.items.${i}.title`, "Título do passo")} />
+                <EditableText as="p" value={s.text} onChange={editing ? (text) => setItem({ ...s, text }) : undefined} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Descrição" {...visibility(`steps.items.${i}.text`, "Descrição do passo")} />
               </div>
             )}
           />
@@ -631,8 +565,8 @@ export function LandingView({
             className={cn("mt-10 grid gap-4", !mobile && "sm:grid-cols-2 lg:grid-cols-4")}
             render={(a, i, setItem) => (
               <div key={i} className="h-full rounded-xl border border-border bg-card p-5">
-                <EditableText as="h3" value={a.title} onChange={editing ? (title) => setItem({ ...a, title }) : undefined} className="block text-base font-bold" placeholder="Título" />
-                <EditableText as="p" value={a.text} onChange={editing ? (text) => setItem({ ...a, text }) : undefined} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Descrição" />
+                <EditableText as="h3" value={a.title} onChange={editing ? (title) => setItem({ ...a, title }) : undefined} className="block text-base font-bold" placeholder="Título" {...visibility(`audience.items.${i}.title`, "Título do público")} />
+                <EditableText as="p" value={a.text} onChange={editing ? (text) => setItem({ ...a, text }) : undefined} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Descrição" {...visibility(`audience.items.${i}.text`, "Descrição do público")} />
               </div>
             )}
           />
@@ -662,8 +596,8 @@ export function LandingView({
             render={(item, i, setItem) =>
               editing ? (
                 <div key={i} className="px-5 py-4">
-                  <EditableText value={item.q} onChange={(q) => setItem({ ...item, q })} className="block text-sm font-bold" placeholder="Pergunta" />
-                  <EditableText as="p" value={item.a} onChange={(a) => setItem({ ...item, a })} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Resposta" />
+                  <EditableText value={item.q} onChange={(q) => setItem({ ...item, q })} className="block text-sm font-bold" placeholder="Pergunta" {...visibility(`faq.items.${i}.q`, "Pergunta")} />
+                  <EditableText as="p" value={item.a} onChange={(a) => setItem({ ...item, a })} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Resposta" {...visibility(`faq.items.${i}.a`, "Resposta")} />
                 </div>
               ) : (
                 <div key={i}>
@@ -691,7 +625,7 @@ export function LandingView({
       <section className="py-16 md:py-24">
         <div className="mx-auto max-w-6xl px-4">
           <div
-            className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card px-6 py-14 text-center"
+            className={cn("relative overflow-hidden rounded-2xl border border-primary/40 bg-card px-6 py-14 text-center", editing && "hover:ring-2 hover:ring-primary/60")}
             style={
               content.cta.image && !isHidden("cta.image")
                 ? {
@@ -701,6 +635,10 @@ export function LandingView({
                   }
                 : undefined
             }
+            onClick={(event) => {
+              if (!editing || event.target !== event.currentTarget) return;
+              selectImage("cta.image", "Imagem da chamada final", content.cta.image, (image) => patch("cta", { image: image || null }));
+            }}
           >
             <div
               className="pointer-events-none absolute inset-x-0 -bottom-24 h-64 opacity-30 blur-3xl"
@@ -719,7 +657,7 @@ export function LandingView({
             )}
             <div className="relative mt-8 flex flex-wrap justify-center gap-3">
               {((shown(content.cta.primary) && !isHidden("cta.primary")) || editing) && (
-                <LandingCta editing={editing}>
+                <LandingCta editing={editing} href={content.links["cta.primary"]}>
                   <Button size="lg" className="font-bold">
                     <EditableText value={content.cta.primary} onChange={on("cta", "primary")} placeholder="Botão" {...visibility("cta.primary")} />
                     <ArrowRight className="size-4" />
@@ -727,22 +665,13 @@ export function LandingView({
                 </LandingCta>
               )}
               {((shown(content.cta.secondary) && !isHidden("cta.secondary")) || editing) && (
-                <a href={editing ? undefined : "#recursos"}>
+                <a href={editing ? undefined : content.links["cta.secondary"] || "#recursos"}>
                   <Button size="lg" variant="outline" className="font-bold">
                     <EditableText value={content.cta.secondary} onChange={on("cta", "secondary")} placeholder="Botão" {...visibility("cta.secondary")} />
                   </Button>
                 </a>
               )}
             </div>
-            {edit && (
-              <div className="relative mt-6 text-left">
-                <Button type="button" size="sm" variant="outline" onClick={() => toggleHidden("cta.image")}>
-                  {isHidden("cta.image") ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                  {isHidden("cta.image") ? "Mostrar imagem" : "Ocultar imagem"}
-                </Button>
-                <ImageSlot className="mt-2" label="Imagem de fundo da chamada final" value={content.cta.image} onChange={(image) => patch("cta", { image })} />
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -752,26 +681,16 @@ export function LandingView({
   const visibleSections = content.sections.filter((s) => (mobile && !editing ? s === "hero" || s === "features" || s === "cta" : true));
 
   return (
+    <LandingEditorContext.Provider value={{ edit, content }}>
     <div className="min-h-screen bg-background text-foreground" style={pageStyle}>
       {/* header */}
       <header className={cn("sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur", isHidden("header") && !editing && "hidden", isHidden("header") && editing && "opacity-35")}>
-        {edit && (
-          <Button type="button" size="sm" variant="outline" onClick={() => toggleHidden("header")} className="absolute left-2 top-1 z-50">
-            {isHidden("header") ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-            {isHidden("header") ? "Mostrar cabeçalho" : "Ocultar cabeçalho"}
-          </Button>
-        )}
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
           <div className="flex min-w-0 items-center gap-2">
             {brandImage && !isHidden("header.brand") ? (
               <img src={brandImage} alt="" className="size-9 shrink-0 object-contain" />
             ) : null}
             {!isHidden("header.brand") && <span className="truncate font-display text-lg font-bold">{systemName}</span>}
-            {edit && (
-              <button type="button" onClick={() => toggleHidden("header.brand")} className="p-1 text-muted-foreground" title={isHidden("header.brand") ? "Mostrar identidade" : "Ocultar identidade"}>
-                {isHidden("header.brand") ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
-            )}
           </div>
 
           {!mobile && (
@@ -786,8 +705,7 @@ export function LandingView({
                 if (!editing && (!shown(value) || isHidden(`nav.${field}`))) return null;
                 return (
                   <a key={field} href={editing ? undefined : href} className="transition-colors hover:text-foreground">
-                    <EditableText value={value} onChange={on("nav", field)} placeholder="Link" />
-                    {editing && <button type="button" onClick={() => toggleHidden(`nav.${field}`)} className="ml-1 p-1" title={isHidden(`nav.${field}`) ? "Mostrar link" : "Ocultar link"}>{isHidden(`nav.${field}`) ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}</button>}
+                    <EditableText value={value} onChange={on("nav", field)} placeholder="Link" {...visibility(`nav.${field}`, "Link do menu")} />
                   </a>
                 );
               })}
@@ -795,10 +713,9 @@ export function LandingView({
           )}
 
           {((shown(content.nav.login) && !isHidden("nav.login")) || editing) && (
-            <LandingCta editing={editing}>
+            <LandingCta editing={editing} href={content.links["nav.login"]}>
               <Button size="sm" className="font-bold">
-                <EditableText value={content.nav.login} onChange={on("nav", "login")} placeholder="Entrar" />
-                {editing && <span onClick={() => toggleHidden("nav.login")} title={isHidden("nav.login") ? "Mostrar botão" : "Ocultar botão"}>{isHidden("nav.login") ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</span>}
+                <EditableText value={content.nav.login} onChange={on("nav", "login")} placeholder="Entrar" {...visibility("nav.login", "Botão de login")} />
               </Button>
             </LandingCta>
           )}
@@ -812,12 +729,6 @@ export function LandingView({
       ))}
 
       <footer className={cn("relative border-t border-border/60 py-10", isHidden("footer") && !editing && "hidden", isHidden("footer") && editing && "opacity-35")}>
-        {edit && (
-          <Button type="button" size="sm" variant="outline" onClick={() => toggleHidden("footer")} className="absolute left-2 top-2">
-            {isHidden("footer") ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-            {isHidden("footer") ? "Mostrar rodapé" : "Ocultar rodapé"}
-          </Button>
-        )}
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:flex-row">
           <div className="flex min-w-0 items-center gap-2">
             {brandImage ? (
@@ -827,7 +738,7 @@ export function LandingView({
           </div>
           <EditableText as="p" value={content.footer.text} onChange={on("footer", "text")} className="text-xs" placeholder="Texto do rodapé" {...visibility("footer.text")} />
           {((shown(content.footer.login) && !isHidden("footer.login")) || editing) && (
-            <LandingCta editing={editing}>
+            <LandingCta editing={editing} href={content.links["footer.login"]}>
               <span className="text-xs font-bold text-primary hover:underline">
                 <EditableText value={content.footer.login} onChange={on("footer", "login")} placeholder="Link de login" {...visibility("footer.login")} />
               </span>
@@ -836,13 +747,15 @@ export function LandingView({
         </div>
       </footer>
     </div>
+    </LandingEditorContext.Provider>
   );
 }
 
 /** Links go to /login on the public page and stay inert while editing. */
-function LandingCta({ editing, children }: { editing: boolean; children: React.ReactNode }) {
+function LandingCta({ editing, children, href = "/login" }: { editing: boolean; children: React.ReactNode; href?: string | undefined }) {
   if (editing) return <span className="inline-flex">{children}</span>;
-  return <Link to="/login">{children}</Link>;
+  if (href === "/login") return <Link to="/login">{children}</Link>;
+  return <a href={href}>{children}</a>;
 }
 
 function EditorMock() {
