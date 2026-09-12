@@ -1,23 +1,17 @@
 import { Link } from "@tanstack/react-router";
-import { createContext, useContext, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useRef, useState, type CSSProperties } from "react";
 import {
   ArrowRight,
   Check,
   ChevronDown,
-  ChevronUp,
   Crop,
-  Eye,
-  EyeOff,
   Frame,
   Gauge,
-  GripVertical,
   Images,
   Layers,
-  Plus,
   Rocket,
   ShieldCheck,
   Sparkles,
-  Trash2,
   Type as TypeIcon,
   Wand2,
   Zap,
@@ -42,7 +36,20 @@ export type LandingEdit = {
   onSelect?: ((selection: LandingSelection) => void) | undefined;
 };
 
-const LandingEditorContext = createContext<{ edit?: LandingEdit; content?: LandingContent }>({});
+const LandingEditorContext = createContext<{ edit: LandingEdit | undefined; content: LandingContent | undefined }>({ edit: undefined, content: undefined });
+
+function elementStyle(content: LandingContent | undefined, key: string | undefined): CSSProperties | undefined {
+  if (!content || !key) return undefined;
+  const value = content.styles?.[key];
+  if (!value) return undefined;
+  return {
+    color: value.color,
+    backgroundColor: value.backgroundColor,
+    fontSize: value.fontSize ? `${value.fontSize}px` : undefined,
+    width: value.width ? `${value.width}%` : undefined,
+    textAlign: value.textAlign,
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /* click-to-edit text                                                  */
@@ -71,7 +78,7 @@ function EditableText({
 }) {
   const Tag = as as React.ElementType;
   const editor = useContext(LandingEditorContext);
-  const style = elementKey ? editor.content?.styles?.[elementKey] : undefined;
+  const style = elementStyle(editor.content, elementKey);
   const selected = Boolean(elementKey && editor.edit?.selectedKey === elementKey);
   const select = () => {
     if (!onChange || !elementKey) return;
@@ -88,13 +95,15 @@ function EditableText({
 
   if (!onChange) {
     if (hidden || !shown(value)) return null;
-    return <Tag className={className}>{value}</Tag>;
+    const node = <Tag className={className} style={style}>{value}</Tag>;
+    const href = elementKey ? editor.content?.links?.[elementKey] : undefined;
+    return href ? <a href={href}>{node}</a> : node;
   }
 
   return (
     <span
       className={cn("relative inline-flex items-center", hidden && "opacity-35", selected && "outline-2 outline-offset-4 outline-primary")}
-      style={style as CSSProperties | undefined}
+      style={style}
       onClick={(event) => { event.preventDefault(); event.stopPropagation(); select(); }}
     >
       <Tag
@@ -122,7 +131,6 @@ function EditList<T>({
   blank,
   render,
   className,
-  addLabel = "Adicionar item",
   hiddenKey,
   isHidden,
   onToggleHidden,
@@ -134,7 +142,6 @@ function EditList<T>({
   blank?: (() => T) | undefined;
   render: (item: T, index: number, setItem: (next: T) => void) => React.ReactNode;
   className?: string | undefined;
-  addLabel?: string | undefined;
   hiddenKey?: string | undefined;
   isHidden?: ((key: string) => boolean) | undefined;
   onToggleHidden?: ((key: string) => void) | undefined;
@@ -254,7 +261,6 @@ function SectionShell({
   children: React.ReactNode;
 }) {
   if (!edit) return hidden ? null : <>{children}</>;
-  const index = order.indexOf(section);
   return (
     <div
       draggable
@@ -266,7 +272,11 @@ function SectionShell({
         if (!from || from === section) return;
         onMove(from, order.indexOf(section) - order.indexOf(from));
       }}
-      className={cn("relative border-y-2 border-dashed border-transparent hover:border-primary/40", hidden && "opacity-35")}
+      className={cn("relative cursor-move border-y-2 border-dashed border-transparent hover:border-primary/40", hidden && "opacity-35")}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget) return;
+        edit.onSelect?.({ key: `section.${section}`, label, kind: "section", hidden, onToggleHidden });
+      }}
     >
       {children}
     </div>
@@ -726,23 +736,12 @@ export function LandingView({
     <div className="min-h-screen bg-background text-foreground" style={pageStyle}>
       {/* header */}
       <header className={cn("sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur", isHidden("header") && !editing && "hidden", isHidden("header") && editing && "opacity-35")}>
-        {edit && (
-          <Button type="button" size="sm" variant="outline" onClick={() => toggleHidden("header")} className="absolute left-2 top-1 z-50">
-            {isHidden("header") ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-            {isHidden("header") ? "Mostrar cabeçalho" : "Ocultar cabeçalho"}
-          </Button>
-        )}
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
           <div className="flex min-w-0 items-center gap-2">
             {brandImage && !isHidden("header.brand") ? (
               <img src={brandImage} alt="" className="size-9 shrink-0 object-contain" />
             ) : null}
             {!isHidden("header.brand") && <span className="truncate font-display text-lg font-bold">{systemName}</span>}
-            {edit && (
-              <button type="button" onClick={() => toggleHidden("header.brand")} className="p-1 text-muted-foreground" title={isHidden("header.brand") ? "Mostrar identidade" : "Ocultar identidade"}>
-                {isHidden("header.brand") ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
-            )}
           </div>
 
           {!mobile && (
@@ -757,8 +756,7 @@ export function LandingView({
                 if (!editing && (!shown(value) || isHidden(`nav.${field}`))) return null;
                 return (
                   <a key={field} href={editing ? undefined : href} className="transition-colors hover:text-foreground">
-                    <EditableText value={value} onChange={on("nav", field)} placeholder="Link" />
-                    {editing && <button type="button" onClick={() => toggleHidden(`nav.${field}`)} className="ml-1 p-1" title={isHidden(`nav.${field}`) ? "Mostrar link" : "Ocultar link"}>{isHidden(`nav.${field}`) ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}</button>}
+                    <EditableText value={value} onChange={on("nav", field)} placeholder="Link" {...visibility(`nav.${field}`, "Link do menu")} />
                   </a>
                 );
               })}
@@ -766,10 +764,9 @@ export function LandingView({
           )}
 
           {((shown(content.nav.login) && !isHidden("nav.login")) || editing) && (
-            <LandingCta editing={editing}>
+            <LandingCta editing={editing} href={content.links["nav.login"]}>
               <Button size="sm" className="font-bold">
-                <EditableText value={content.nav.login} onChange={on("nav", "login")} placeholder="Entrar" />
-                {editing && <span onClick={() => toggleHidden("nav.login")} title={isHidden("nav.login") ? "Mostrar botão" : "Ocultar botão"}>{isHidden("nav.login") ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</span>}
+                <EditableText value={content.nav.login} onChange={on("nav", "login")} placeholder="Entrar" {...visibility("nav.login", "Botão de login")} />
               </Button>
             </LandingCta>
           )}
@@ -783,12 +780,6 @@ export function LandingView({
       ))}
 
       <footer className={cn("relative border-t border-border/60 py-10", isHidden("footer") && !editing && "hidden", isHidden("footer") && editing && "opacity-35")}>
-        {edit && (
-          <Button type="button" size="sm" variant="outline" onClick={() => toggleHidden("footer")} className="absolute left-2 top-2">
-            {isHidden("footer") ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-            {isHidden("footer") ? "Mostrar rodapé" : "Ocultar rodapé"}
-          </Button>
-        )}
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:flex-row">
           <div className="flex min-w-0 items-center gap-2">
             {brandImage ? (
@@ -812,9 +803,10 @@ export function LandingView({
 }
 
 /** Links go to /login on the public page and stay inert while editing. */
-function LandingCta({ editing, children }: { editing: boolean; children: React.ReactNode }) {
+function LandingCta({ editing, children, href = "/login" }: { editing: boolean; children: React.ReactNode; href?: string | undefined }) {
   if (editing) return <span className="inline-flex">{children}</span>;
-  return <Link to="/login">{children}</Link>;
+  if (href === "/login") return <Link to="/login">{children}</Link>;
+  return <a href={href}>{children}</a>;
 }
 
 function EditorMock() {
