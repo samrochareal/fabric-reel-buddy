@@ -149,6 +149,14 @@ function PlansAdminPage() {
       await saveLandingContent(content);
       refreshBranding();
       toast.success("Planos atualizados.");
+      if (paymentsConfigured()) {
+        const result = await syncPlanCatalog({ data: { environment: getStripeEnvironment() } });
+        if ("error" in result) {
+          toast.error(`Pacotes salvos, mas a cobrança não sincronizou: ${result.error}`);
+        } else {
+          toast.success(`${result.synced} pacote(s) atualizados como compra de créditos.`);
+        }
+      }
     } catch {
       toast.error("Não conseguimos salvar os planos.");
     } finally {
