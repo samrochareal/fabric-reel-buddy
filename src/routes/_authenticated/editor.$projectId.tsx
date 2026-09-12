@@ -45,10 +45,14 @@ import { Input } from "@/components/ui/input";
 import {
   ASPECTS,
   defaultEditOptions,
+  defaultTurboSettings,
   fontStack,
-  
+  turboSettingsOf,
   type EditOptions,
   type TextBlock,
+  type TurboCompression,
+  type TurboQuality,
+  type TurboWidth,
 } from "@/lib/video";
 import { logVideoJobs } from "@/lib/admin";
 import { useBranding } from "@/lib/branding";
