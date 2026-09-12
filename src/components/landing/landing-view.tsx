@@ -5,6 +5,8 @@ import {
   Check,
   ChevronDown,
   Crop,
+  Eye,
+  EyeOff,
   Frame,
   Gauge,
   Images,
@@ -129,6 +131,7 @@ function EditList<T>({
   keep,
   onChange,
   blank,
+  addLabel: _addLabel = "Adicionar item",
   render,
   className,
   hiddenKey,
@@ -140,6 +143,7 @@ function EditList<T>({
   keep: (item: T) => boolean;
   onChange?: ((next: T[]) => void) | undefined;
   blank?: (() => T) | undefined;
+  addLabel?: string | undefined;
   render: (item: T, index: number, setItem: (next: T) => void) => React.ReactNode;
   className?: string | undefined;
   hiddenKey?: string | undefined;
@@ -436,7 +440,7 @@ export function LandingView({
                 return (
                   <span key={i} className="flex items-center gap-2">
                     <Icon className="size-4 shrink-0 text-primary" />
-                    <EditableText value={badge} onChange={editing ? setItem : undefined} placeholder="Selo" />
+                    <EditableText value={badge} onChange={editing ? setItem : undefined} placeholder="Selo" {...visibility(`hero.badges.${i}`, "Selo")} />
                   </span>
                 );
               }}
@@ -505,8 +509,8 @@ export function LandingView({
                   <span className="flex size-10 items-center justify-center rounded-lg bg-primary/15 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                     <Icon className="size-5" />
                   </span>
-                  <EditableText as="h3" value={f.title} onChange={editing ? (title) => setItem({ ...f, title }) : undefined} className="mt-4 block text-base font-bold" placeholder="Título" />
-                  <EditableText as="p" value={f.text} onChange={editing ? (text) => setItem({ ...f, text }) : undefined} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Descrição" />
+                  <EditableText as="h3" value={f.title} onChange={editing ? (title) => setItem({ ...f, title }) : undefined} className="mt-4 block text-base font-bold" placeholder="Título" {...visibility(`features.items.${i}.title`, "Título do recurso")} />
+                  <EditableText as="p" value={f.text} onChange={editing ? (text) => setItem({ ...f, text }) : undefined} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Descrição" {...visibility(`features.items.${i}.text`, "Descrição do recurso")} />
                 </div>
               );
             }}
@@ -537,7 +541,7 @@ export function LandingView({
                   <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <Check className="size-3" />
                   </span>
-                  <EditableText value={item} onChange={editing ? setItem : undefined} placeholder="Benefício" />
+                  <EditableText value={item} onChange={editing ? setItem : undefined} placeholder="Benefício" {...visibility(`benefits.items.${i}`, "Benefício")} />
                 </div>
               )}
             />
@@ -556,8 +560,8 @@ export function LandingView({
             className={cn("grid gap-4", !mobile && "sm:grid-cols-2")}
             render={(s, i, setItem) => (
               <div key={i} className="h-full rounded-xl border border-border bg-card p-6">
-                <EditableText as="p" value={s.title} onChange={editing ? (title) => setItem({ ...s, title }) : undefined} className="block font-display text-3xl font-bold text-primary" placeholder="Número" />
-                <EditableText as="p" value={s.text} onChange={editing ? (text) => setItem({ ...s, text }) : undefined} className="mt-1 block text-sm text-muted-foreground" placeholder="Legenda" />
+                <EditableText as="p" value={s.title} onChange={editing ? (title) => setItem({ ...s, title }) : undefined} className="block font-display text-3xl font-bold text-primary" placeholder="Número" {...visibility(`benefits.stats.${i}.title`, "Número")} />
+                <EditableText as="p" value={s.text} onChange={editing ? (text) => setItem({ ...s, text }) : undefined} className="mt-1 block text-sm text-muted-foreground" placeholder="Legenda" {...visibility(`benefits.stats.${i}.text`, "Legenda do número")} />
               </div>
             )}
           />
@@ -584,8 +588,8 @@ export function LandingView({
             render={(s, i, setItem) => (
               <div key={i} className="h-full rounded-xl border border-border bg-card p-5">
                 <p className="font-display text-2xl font-bold text-primary">{String(i + 1).padStart(2, "0")}</p>
-                <EditableText as="h3" value={s.title} onChange={editing ? (title) => setItem({ ...s, title }) : undefined} className="mt-3 block text-base font-bold" placeholder="Título" />
-                <EditableText as="p" value={s.text} onChange={editing ? (text) => setItem({ ...s, text }) : undefined} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Descrição" />
+                <EditableText as="h3" value={s.title} onChange={editing ? (title) => setItem({ ...s, title }) : undefined} className="mt-3 block text-base font-bold" placeholder="Título" {...visibility(`steps.items.${i}.title`, "Título do passo")} />
+                <EditableText as="p" value={s.text} onChange={editing ? (text) => setItem({ ...s, text }) : undefined} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Descrição" {...visibility(`steps.items.${i}.text`, "Descrição do passo")} />
               </div>
             )}
           />
@@ -611,8 +615,8 @@ export function LandingView({
             className={cn("mt-10 grid gap-4", !mobile && "sm:grid-cols-2 lg:grid-cols-4")}
             render={(a, i, setItem) => (
               <div key={i} className="h-full rounded-xl border border-border bg-card p-5">
-                <EditableText as="h3" value={a.title} onChange={editing ? (title) => setItem({ ...a, title }) : undefined} className="block text-base font-bold" placeholder="Título" />
-                <EditableText as="p" value={a.text} onChange={editing ? (text) => setItem({ ...a, text }) : undefined} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Descrição" />
+                <EditableText as="h3" value={a.title} onChange={editing ? (title) => setItem({ ...a, title }) : undefined} className="block text-base font-bold" placeholder="Título" {...visibility(`audience.items.${i}.title`, "Título do público")} />
+                <EditableText as="p" value={a.text} onChange={editing ? (text) => setItem({ ...a, text }) : undefined} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Descrição" {...visibility(`audience.items.${i}.text`, "Descrição do público")} />
               </div>
             )}
           />
@@ -642,8 +646,8 @@ export function LandingView({
             render={(item, i, setItem) =>
               editing ? (
                 <div key={i} className="px-5 py-4">
-                  <EditableText value={item.q} onChange={(q) => setItem({ ...item, q })} className="block text-sm font-bold" placeholder="Pergunta" />
-                  <EditableText as="p" value={item.a} onChange={(a) => setItem({ ...item, a })} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Resposta" />
+                  <EditableText value={item.q} onChange={(q) => setItem({ ...item, q })} className="block text-sm font-bold" placeholder="Pergunta" {...visibility(`faq.items.${i}.q`, "Pergunta")} />
+                  <EditableText as="p" value={item.a} onChange={(a) => setItem({ ...item, a })} className="mt-2 block text-sm leading-relaxed text-muted-foreground" placeholder="Resposta" {...visibility(`faq.items.${i}.a`, "Resposta")} />
                 </div>
               ) : (
                 <div key={i}>
