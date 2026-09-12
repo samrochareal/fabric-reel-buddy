@@ -19,10 +19,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/landing-editor")({
   head: () => ({
     meta: [
-      { title: "Editor da Landing Page" },
-      { name: "description", content: "Edite textos, cores, imagens e a ordem das seções da landing page." },
-      { property: "og:title", content: "Editor da Landing Page" },
-      { property: "og:description", content: "Edição visual da landing page: clique no texto, arraste blocos e salve." },
+      { title: "Landing page editor" },
+      { name: "description", content: "Edit texts, colors, images and the section order of the landing page." },
+      { property: "og:title", content: "Landing page editor" },
+      { property: "og:description", content: "Visual landing page editing: click text, drag blocks and save." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "robots", content: "noindex" },

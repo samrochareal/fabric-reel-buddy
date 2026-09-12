@@ -83,13 +83,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no",
       },
-      { title: "Editor de vídeos em massa" },
+      { title: "Batch video editor" },
       {
         name: "description",
         content:
-          "Suba até 50 clipes de uma vez, ajuste o enquadramento em segundos e baixe tudo pronto para Reels, TikTok e Shorts.",
+          "Upload up to 100 clips at once, adjust framing in seconds and download everything ready for Reels, TikTok and Shorts.",
       },
-      { property: "og:title", content: "Editor de vídeos em massa" },
+      { property: "og:title", content: "Batch video editor" },
       {
         property: "og:description",
         content:
