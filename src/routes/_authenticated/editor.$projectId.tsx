@@ -1314,19 +1314,33 @@ function EditorPage() {
                 </div>
 
                 {toolEnabled(account, "turbo") && (
-                  <div className="mt-4 flex items-start justify-between gap-2 rounded-lg border border-border p-3">
-                    <div>
-                      <p className="text-xs font-bold">{t("Turbo processing")}</p>
-                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                        {t(
-                          "Renders the batch as fast as possible and keeps files light. The final image loses a little quality because of the stronger compression.",
-                        )}
-                      </p>
+                  <div className="mt-4 rounded-lg border border-border p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-bold">{t("Turbo processing")}</p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                          {t(
+                            "Renders the batch as fast as possible and keeps files light. The final image loses a little quality because of the stronger compression.",
+                          )}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={view.turbo === true}
+                        onCheckedChange={(v) =>
+                          patch({
+                            turbo: v,
+                            turboSettings: turboSettingsOf(view) ?? defaultTurboSettings(),
+                          })
+                        }
+                      />
                     </div>
-                    <Switch
-                      checked={view.turbo === true}
-                      onCheckedChange={(v) => patch({ turbo: v })}
-                    />
+
+                    {view.turbo === true && (
+                      <TurboPanel
+                        settings={turboSettingsOf(view)}
+                        onChange={(turboSettings) => patch({ turboSettings })}
+                      />
+                    )}
                   </div>
                 )}
 
