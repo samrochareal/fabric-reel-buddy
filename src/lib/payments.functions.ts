@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { normalizeLandingContent } from "@/lib/landing-content";
 import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib/stripe.server";
+import { currencyForCountry } from "@/lib/geo.functions";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 type CheckoutSessionResult = { clientSecret: string } | { error: string };
 
