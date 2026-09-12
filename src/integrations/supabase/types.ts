@@ -76,6 +76,30 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_translations: {
+        Row: {
+          created_at: string
+          id: string
+          lang: string
+          source: string
+          translated: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lang: string
+          source: string
+          translated: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lang?: string
+          source?: string
+          translated?: string
+        }
+        Relationships: []
+      }
       notification_reads: {
         Row: {
           id: string
