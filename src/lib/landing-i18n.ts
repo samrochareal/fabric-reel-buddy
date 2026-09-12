@@ -1,5 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useLang, type Lang } from "@/lib/i18n";
+import { translateLandingTexts } from "@/lib/landing-translate.functions";
 import type { LandingContent, LandingPlan } from "@/lib/landing-content";
 
 /**
@@ -186,11 +188,10 @@ const EN: Record<string, string> = {
 };
 
 /** Translates one landing string, keeping unknown (master-written) text as is. */
-export function landingText(text: string, lang: Lang): string {
+export function landingText(text: string, lang: Lang, extra?: Record<string, string>): string {
   if (lang === "pt") return text;
   const trimmed = text.trim();
-  const hit = EN[trimmed];
-  return hit ?? text;
+  return EN[trimmed] ?? extra?.[trimmed] ?? text;
 }
 
 /** Keys whose values are not user-facing text and must never be translated. */
@@ -206,40 +207,128 @@ const SKIP = new Set([
   "priceId",
 ]);
 
-function deep<T>(value: T, lang: Lang): T {
-  if (typeof value === "string") return landingText(value, lang) as unknown as T;
-  if (Array.isArray(value)) return value.map((item) => deep(item, lang)) as unknown as T;
+function deep<T>(value: T, lang: Lang, extra?: Record<string, string>): T {
+  if (typeof value === "string") return landingText(value, lang, extra) as unknown as T;
+  if (Array.isArray(value)) return value.map((item) => deep(item, lang, extra)) as unknown as T;
   if (value && typeof value === "object") {
     const out: Record<string, unknown> = {};
     for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
-      out[key] = SKIP.has(key) ? item : deep(item, lang);
+      out[key] = SKIP.has(key) ? item : deep(item, lang, extra);
     }
     return out as unknown as T;
   }
   return value;
 }
 
-export function translateLandingContent(content: LandingContent, lang: Lang): LandingContent {
+export function translateLandingContent(
+  content: LandingContent,
+  lang: Lang,
+  extra?: Record<string, string>,
+): LandingContent {
   if (lang === "pt") return content;
-  return deep(content, lang);
+  return deep(content, lang, extra);
 }
 
-export function translateLandingPlan(plan: LandingPlan, lang: Lang): LandingPlan {
+export function translateLandingPlan(
+  plan: LandingPlan,
+  lang: Lang,
+  extra?: Record<string, string>,
+): LandingPlan {
   if (lang === "pt") return plan;
-  return deep(plan, lang);
+  return deep(plan, lang, extra);
+}
+
+/** True when a string looks like visible copy (not a URL, colour or number). */
+function isCopy(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.length < 2 || trimmed.length > 600) return false;
+  if (/^(https?:|\/|#|mailto:|data:)/i.test(trimmed)) return false;
+  if (/^[\d\s.,%$R+-]+$/.test(trimmed)) return false;
+  return /\p{L}{2}/u.test(trimmed);
+}
+
+/** Collects the strings that the built-in dictionary does not cover. */
+function collectUnknown(value: unknown, acc: Set<string>): void {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!EN[trimmed] && isCopy(trimmed)) acc.add(trimmed);
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectUnknown(item, acc));
+    return;
+  }
+  if (value && typeof value === "object") {
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      if (!SKIP.has(key)) collectUnknown(item, acc);
+    }
+  }
+}
+
+/**
+ * Translates the texts the master typed himself, on demand, and remembers the
+ * result so the page does not translate the same sentence twice.
+ */
+function useMasterTexts(source: unknown, lang: Lang, enabled: boolean): Record<string, string> {
+  const translate = useServerFn(translateLandingTexts);
+  const [map, setMap] = useState<Record<string, string>>({});
+
+  const pending = useMemo(() => {
+    if (!enabled || lang === "pt") return [] as string[];
+    const acc = new Set<string>();
+    collectUnknown(source, acc);
+    return Array.from(acc).filter((text) => !(text in map));
+  }, [source, lang, enabled, map]);
+
+  const key = pending.join("\u0000");
+
+  useEffect(() => {
+    if (!key) return;
+    let active = true;
+    void (async () => {
+      try {
+        const result = await translate({ data: { lang: "en", texts: key.split("\u0000") } });
+        if (!active) return;
+        setMap((prev) => {
+          const next = { ...prev };
+          for (const text of key.split("\u0000")) next[text] = result[text] ?? text;
+          return next;
+        });
+      } catch {
+        if (active) {
+          setMap((prev) => {
+            const next = { ...prev };
+            for (const text of key.split("\u0000")) next[text] = text;
+            return next;
+          });
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [key, translate]);
+
+  return map;
 }
 
 /** Landing content already translated to the language the visitor is using. */
 export function useLandingContent(content: LandingContent, enabled = true): LandingContent {
   const [lang] = useLang();
+  const extra = useMasterTexts(content, lang, enabled);
   return useMemo(
-    () => (enabled ? translateLandingContent(content, lang) : content),
-    [content, lang, enabled],
+    () => (enabled ? translateLandingContent(content, lang, extra) : content),
+    [content, lang, enabled, extra],
   );
 }
 
 /** Plan texts translated to the visitor's language. */
 export function useLandingPlans(plans: LandingPlan[]): LandingPlan[] {
   const [lang] = useLang();
-  return useMemo(() => plans.map((plan) => translateLandingPlan(plan, lang)), [plans, lang]);
+  const extra = useMasterTexts(plans, lang, true);
+  return useMemo(
+    () => plans.map((plan) => translateLandingPlan(plan, lang, extra)),
+    [plans, lang, extra],
+  );
 }
+
