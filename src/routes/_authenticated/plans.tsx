@@ -348,7 +348,7 @@ function PlansAdminPage() {
                   />
                 </label>
                 <label className="text-xs font-bold">
-                  Valor cobrado (R$)
+                  Valor no Brasil (R$)
                   <Input
                     type="number"
                     min={0}
@@ -365,11 +365,36 @@ function PlansAdminPage() {
                   />
                 </label>
                 <label className="text-xs font-bold">
-                  Texto do preço na página
+                  Valor fora do Brasil (US$)
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    className="mt-2"
+                    disabled={plan.free}
+                    value={(plan.amountCentsUsd / 100).toFixed(2)}
+                    onChange={(event) =>
+                      setPlan(index, {
+                        amountCentsUsd: Math.max(0, Math.round(Number(event.target.value) * 100)),
+                        priceUsd: `$${Math.max(0, Number(event.target.value)).toLocaleString("en-US")}`,
+                      })
+                    }
+                  />
+                </label>
+                <label className="text-xs font-bold">
+                  Texto do preço em real
                   <Input
                     className="mt-2"
                     value={plan.price}
                     onChange={(event) => setPlan(index, { price: event.target.value })}
+                  />
+                </label>
+                <label className="text-xs font-bold">
+                  Texto do preço em dólar
+                  <Input
+                    className="mt-2"
+                    value={plan.priceUsd}
+                    onChange={(event) => setPlan(index, { priceUsd: event.target.value })}
                   />
                 </label>
                 <label className="text-xs font-bold">
