@@ -1,0 +1,1 @@
+create policy "Master can view credit grants" on public.payment_credit_grants for select to authenticated using (public.has_role(auth.uid(), 'admin'));

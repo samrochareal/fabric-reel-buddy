@@ -12,6 +12,7 @@ import {
   type LandingContent,
 } from "@/lib/landing-content";
 import { useIsAdmin } from "@/lib/admin";
+import { LANDING_IMAGE_MAX_BYTES, uploadLandingImage } from "@/lib/landing-images";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -103,19 +104,21 @@ function LandingEditorPage() {
     });
   };
 
-  const chooseImage = (file: File | undefined) => {
+  const chooseImage = async (file: File | undefined) => {
     if (!file || !selection?.onChange) return;
-    if (file.size > 400_000) {
-      toast.error("Escolha uma imagem de até 400KB.");
+    if (file.size > LANDING_IMAGE_MAX_BYTES) {
+      toast.error("Escolha uma imagem de até 10MB.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const value = String(reader.result);
+    const apply = (value: string) => {
       selection.onChange?.(value);
-      setSelection((current) => current ? { ...current, value } : current);
+      setSelection((current) => (current ? { ...current, value } : current));
     };
-    reader.readAsDataURL(file);
+    try {
+      apply(await uploadLandingImage(file));
+    } catch {
+      toast.error("Não foi possível enviar a imagem. Tente novamente.");
+    }
   };
 
   if (loading || !isAdmin) return null;
@@ -220,7 +223,7 @@ function LandingEditorPage() {
               {selection.kind === "image" && (
                 <div className="space-y-3">
                   {selection.value && <img src={selection.value} alt="" className="aspect-video w-full border border-border object-cover" />}
-                  <label className="block cursor-pointer border border-dashed border-primary p-4 text-center text-xs font-bold">Escolher imagem<input type="file" accept="image/*" className="hidden" onChange={(event) => chooseImage(event.target.files?.[0])} /></label>
+                  <label className="block cursor-pointer border border-dashed border-primary p-4 text-center text-xs font-bold">Escolher imagem<input type="file" accept="image/*" className="hidden" onChange={(event) => void chooseImage(event.target.files?.[0])} /></label>
                   {selection.value && <Button variant="ghost" className="w-full" onClick={() => { selection.onChange?.(""); setSelection({ ...selection, value: "" }); }}>Remover imagem</Button>}
                 </div>
               )}

@@ -24,6 +24,7 @@ import { Route as AuthenticatedPlansRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedRechargeRouteImport } from './routes/_authenticated/recharge'
 import { Route as AuthenticatedReferralsRouteImport } from './routes/_authenticated/referrals'
 import { Route as AuthenticatedEditorProjectIdRouteImport } from './routes/_authenticated/editor.$projectId'
+import { Route as ApiPublicLandingImageSplatRouteImport } from './routes/api/public/landing-image.$'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -104,6 +105,12 @@ const AuthenticatedEditorProjectIdRoute =
     path: '/editor/$projectId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicLandingImageSplatRoute =
+  ApiPublicLandingImageSplatRouteImport.update({
+    id: '/api/public/landing-image/$',
+    path: '/api/public/landing-image/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPaymentsWebhookRoute =
   ApiPublicPaymentsWebhookRouteImport.update({
     id: '/api/public/payments/webhook',
@@ -126,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/recharge': typeof AuthenticatedRechargeRoute
   '/referrals': typeof AuthenticatedReferralsRoute
   '/editor/$projectId': typeof AuthenticatedEditorProjectIdRoute
+  '/api/public/landing-image/$': typeof ApiPublicLandingImageSplatRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -143,6 +151,7 @@ export interface FileRoutesByTo {
   '/recharge': typeof AuthenticatedRechargeRoute
   '/referrals': typeof AuthenticatedReferralsRoute
   '/editor/$projectId': typeof AuthenticatedEditorProjectIdRoute
+  '/api/public/landing-image/$': typeof ApiPublicLandingImageSplatRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
@@ -162,6 +171,7 @@ export interface FileRoutesById {
   '/_authenticated/recharge': typeof AuthenticatedRechargeRoute
   '/_authenticated/referrals': typeof AuthenticatedReferralsRoute
   '/_authenticated/editor/$projectId': typeof AuthenticatedEditorProjectIdRoute
+  '/api/public/landing-image/$': typeof ApiPublicLandingImageSplatRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/recharge'
     | '/referrals'
     | '/editor/$projectId'
+    | '/api/public/landing-image/$'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/recharge'
     | '/referrals'
     | '/editor/$projectId'
+    | '/api/public/landing-image/$'
     | '/api/public/payments/webhook'
   id:
     | '__root__'
@@ -216,6 +228,7 @@ export interface FileRouteTypes {
     | '/_authenticated/recharge'
     | '/_authenticated/referrals'
     | '/_authenticated/editor/$projectId'
+    | '/api/public/landing-image/$'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -226,6 +239,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CheckoutRoute: typeof CheckoutRoute
   LoginRoute: typeof LoginRoute
+  ApiPublicLandingImageSplatRoute: typeof ApiPublicLandingImageSplatRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
@@ -336,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEditorProjectIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/landing-image/$': {
+      id: '/api/public/landing-image/$'
+      path: '/api/public/landing-image/$'
+      fullPath: '/api/public/landing-image/$'
+      preLoaderRoute: typeof ApiPublicLandingImageSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payments/webhook': {
       id: '/api/public/payments/webhook'
       path: '/api/public/payments/webhook'
@@ -380,6 +401,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CheckoutRoute: CheckoutRoute,
   LoginRoute: LoginRoute,
+  ApiPublicLandingImageSplatRoute: ApiPublicLandingImageSplatRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport

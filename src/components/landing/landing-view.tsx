@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { planPriceLabel, shown, withSystemName, type LandingContent, type LandingSection } from "@/lib/landing-content";
 import { useBuyerCurrency } from "@/lib/locale";
+import { LanguageToggle } from "@/lib/i18n";
 
 export type LandingDevice = "desktop" | "mobile";
 export type LandingSelection = {
@@ -437,16 +438,18 @@ export function LandingView({
             />
           </div>
 
-          <div
-            className={cn("relative rounded-2xl border border-border bg-card p-3 shadow-2xl", editing && "cursor-pointer hover:ring-2 hover:ring-primary/60", isHidden("hero.image") && editing && "opacity-35")}
-            onClick={() => selectImage("hero.image", "Imagem da abertura", content.hero.image, (image) => patch("hero", { image: image || null }))}
-          >
-            {content.hero.image && !isHidden("hero.image") ? (
-              <img src={content.hero.image} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" />
-            ) : (
-              <EditorMock />
-            )}
-          </div>
+          {(editing || !isHidden("hero.image")) && (
+            <div
+              className={cn("relative rounded-2xl border border-border bg-card p-3 shadow-2xl", editing && "cursor-pointer hover:ring-2 hover:ring-primary/60", isHidden("hero.image") && editing && "opacity-35")}
+              onClick={() => selectImage("hero.image", "Imagem da abertura", content.hero.image, (image) => patch("hero", { image: image || null }))}
+            >
+              {content.hero.image ? (
+                <img src={content.hero.image} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" />
+              ) : (
+                <EditorMock />
+              )}
+            </div>
+          )}
         </div>
       </section>
     ),
@@ -827,13 +830,16 @@ export function LandingView({
             </nav>
           )}
 
-          {((shown(content.nav.login) && !isHidden("nav.login")) || editing) && (
-            <LandingCta editing={editing} href={content.links["nav.login"]}>
-              <Button size="sm" className="font-bold">
-                <EditableText value={content.nav.login} onChange={on("nav", "login")} placeholder="Entrar" {...visibility("nav.login", "Botão de login")} />
-              </Button>
-            </LandingCta>
-          )}
+          <div className="flex shrink-0 items-center gap-2">
+            <LanguageToggle />
+            {((shown(content.nav.login) && !isHidden("nav.login")) || editing) && (
+              <LandingCta editing={editing} href={content.links["nav.login"]}>
+                <Button size="sm" className="font-bold">
+                  <EditableText value={content.nav.login} onChange={on("nav", "login")} placeholder="Entrar" {...visibility("nav.login", "Botão de login")} />
+                </Button>
+              </LandingCta>
+            )}
+          </div>
         </div>
       </header>
 
