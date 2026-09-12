@@ -633,7 +633,12 @@ function AdminPage() {
     try {
       await saveExternalLinks(
         links
-          .map((l) => ({ title: l.title.trim(), url: l.url.trim(), icon: l.icon ?? "link" }))
+          .map((l) => ({
+            title: l.title.trim(),
+            url: l.url.trim(),
+            icon: l.icon ?? "link",
+            hidden: Boolean(l.hidden),
+          }))
           .filter((l) => l.title && l.url),
       );
       refreshBranding();
