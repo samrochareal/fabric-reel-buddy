@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccountBadge } from "@/components/account-badge";
 import { SideMenu } from "@/components/side-menu";
 import { CreditMeter } from "@/components/credit-meter";
+import { OutOfCreditsDialog } from "@/components/out-of-credits-dialog";
 import { NotificationBell } from "@/components/notification-bell";
 import { getProject, saveProjectSettings } from "@/lib/projects";
 import {
