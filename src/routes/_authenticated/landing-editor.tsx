@@ -1,3 +1,4 @@
+import { NumberInput } from "@/components/ui/number-input";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowUp, Eye, EyeOff, Link2, Loader2, Monitor, Plus, RotateCcw, Save, Smartphone, Trash2, X } from "lucide-react";
@@ -263,10 +264,10 @@ function LandingEditorPage() {
                       {plan.free ? "Plano gratuito" : "Plano pago"}
                     </Button>
                     <label className="block text-xs font-bold">Créditos entregues
-                      <input type="number" min="0" className="mt-2 h-9 w-full border border-border bg-background px-2 text-sm font-normal outline-none focus:border-primary" value={plan.credits} onChange={(event) => setPlan({ credits: Number(event.target.value) })} />
+                      <NumberInput min={0} className="mt-2 h-9 w-full font-normal" value={plan.credits} onValueChange={(credits) => setPlan({ credits })} />
                     </label>
                     <label className="block text-xs font-bold">Valor cobrado (R$)
-                      <input type="number" min="0" step="0.01" className="mt-2 h-9 w-full border border-border bg-background px-2 text-sm font-normal outline-none focus:border-primary" value={(plan.amountCents / 100).toFixed(2)} onChange={(event) => setPlan({ amountCents: Math.max(0, Math.round(Number(event.target.value) * 100)) })} />
+                      <NumberInput min={0} step="0.01" decimals={2} className="mt-2 h-9 w-full font-normal" value={plan.amountCents / 100} onValueChange={(amount) => setPlan({ amountCents: Math.round(amount * 100) })} />
                     </label>
                     <label className="block text-xs font-bold">Novo benefício
                       <input className="mt-2 h-9 w-full border border-border bg-background px-2 text-sm font-normal outline-none focus:border-primary" placeholder="Escreva e pressione Enter" onKeyDown={(event) => { if (event.key !== "Enter") return; const value = event.currentTarget.value.trim(); if (!value) return; setPlan({ features: [...plan.features, value] }); event.currentTarget.value = ""; }} />
