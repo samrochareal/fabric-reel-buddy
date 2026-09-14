@@ -10,7 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { nextRefillAt, useMyAccount, useRefreshAccount, type Account } from "@/lib/account";
+import {
+  claimFreeRefill,
+  nextRefillAt,
+  useMyAccount,
+  useRefreshAccount,
+  type Account,
+} from "@/lib/account";
 import { useT } from "@/lib/i18n";
 
 function pad(n: number) {
