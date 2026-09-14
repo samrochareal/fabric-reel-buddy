@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ShoppingCart, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { nextRefillAt, useMyAccount, useRefreshAccount, type Account } from "@/lib/account";
+import {
+  claimFreeRefill,
+  nextRefillAt,
+  useMyAccount,
+  useRefreshAccount,
+  type Account,
+} from "@/lib/account";
 import { useT } from "@/lib/i18n";
 
 function pad(n: number) {
@@ -38,6 +44,7 @@ export function OutOfCreditsDialog({
   const refresh = useRefreshAccount();
   const target = nextRefillAt(account);
   const [now, setNow] = useState(() => Date.now());
+  const claiming = useRef(false);
 
   useEffect(() => {
     if (!open) return;
@@ -68,7 +75,16 @@ export function OutOfCreditsDialog({
   }, [open, account?.credits, account?.premium]);
 
   useEffect(() => {
-    if (target && target.getTime() - now <= 0) refresh();
+    if (!target || target.getTime() - now > 0 || claiming.current) return;
+    claiming.current = true;
+    void claimFreeRefill()
+      .catch(() => undefined)
+      .finally(() => {
+        refresh();
+        window.setTimeout(() => {
+          claiming.current = false;
+        }, 10_000);
+      });
   }, [target, now, refresh]);
 
   const ms = target ? Math.max(0, target.getTime() - now) : 0;

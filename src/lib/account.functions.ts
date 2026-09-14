@@ -16,6 +16,18 @@ export const getMyAccount = createServerFn({ method: "GET" })
     return data;
   });
 
+/** Grants the free refill once the master-defined waiting window has passed. */
+export const claimRefill = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin.rpc("claim_credit_refill", {
+      _user_id: context.userId,
+    } as never);
+    if (error) throw error;
+    return data;
+  });
+
 /** Spends credits for processed videos — 1 credit per video. */
 export const spendCredits = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
