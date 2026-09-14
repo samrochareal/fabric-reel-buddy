@@ -458,12 +458,7 @@ function EditorPage() {
     }
 
     if (account && !account.premium && account.credits <= 0) {
-      const when = nextRefillAt(account);
-      toast.error(
-        `${t("You are out of credits.")} ${
-          when ? t("New credits arrive {when}.", { when: when.toLocaleString() }) : ""
-        }`,
-      );
+      setOutOfCredits(true);
       return;
     }
 
