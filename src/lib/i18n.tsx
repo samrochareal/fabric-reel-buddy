@@ -238,6 +238,10 @@ const PT: Record<string, string> = {
   "You are out of credits.": "Seus créditos acabaram.",
   "New credits arrive {when}.": "Novos créditos chegam {when}.",
   "Free credits in": "Créditos grátis em",
+  "Buy a credit pack to keep going or wait for the next free refill.":
+    "Compre um pacote de créditos para continuar ou aguarde a próxima recarga gratuita.",
+  "Credits added — you can process videos now.":
+    "Créditos adicionados — você já pode processar vídeos.",
   "Out of credits — processing stopped.": "Créditos esgotados — processamento interrompido.",
   "Your access has expired. Please contact the administrator.":
     "Seu acesso expirou. Fale com o administrador.",
