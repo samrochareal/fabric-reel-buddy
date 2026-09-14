@@ -295,22 +295,20 @@ function PlansAdminPage() {
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="text-xs font-bold">
               Créditos liberados
-              <Input
-                type="number"
+              <NumberInput
                 min={0}
                 className="mt-2"
                 value={freeCredits}
-                onChange={(event) => setFreeCredits(Number(event.target.value))}
+                onValueChange={setFreeCredits}
               />
             </label>
             <label className="text-xs font-bold">
               A cada quantas horas
-              <Input
-                type="number"
+              <NumberInput
                 min={1}
                 className="mt-2"
                 value={freeHours}
-                onChange={(event) => setFreeHours(Number(event.target.value))}
+                onValueChange={setFreeHours}
               />
             </label>
           </div>
@@ -355,44 +353,43 @@ function PlansAdminPage() {
                 </label>
                 <label className="text-xs font-bold">
                   Créditos entregues
-                  <Input
-                    type="number"
+                  <NumberInput
                     min={0}
                     className="mt-2"
                     value={plan.credits}
-                    onChange={(event) => setPlan(index, { credits: Number(event.target.value) })}
+                    onValueChange={(credits) => setPlan(index, { credits })}
                   />
                 </label>
                 <label className="text-xs font-bold">
                   Valor no Brasil (R$)
-                  <Input
-                    type="number"
+                  <NumberInput
                     min={0}
                     step="0.01"
+                    decimals={2}
                     className="mt-2"
                     disabled={plan.free}
-                    value={(plan.amountCents / 100).toFixed(2)}
-                    onChange={(event) =>
+                    value={plan.amountCents / 100}
+                    onValueChange={(amount) =>
                       setPlan(index, {
-                        amountCents: Math.max(0, Math.round(Number(event.target.value) * 100)),
-                        price: `R$ ${Math.max(0, Number(event.target.value)).toLocaleString("pt-BR")}`,
+                        amountCents: Math.round(amount * 100),
+                        price: `R$ ${amount.toLocaleString("pt-BR")}`,
                       })
                     }
                   />
                 </label>
                 <label className="text-xs font-bold">
                   Valor fora do Brasil (US$)
-                  <Input
-                    type="number"
+                  <NumberInput
                     min={0}
                     step="0.01"
+                    decimals={2}
                     className="mt-2"
                     disabled={plan.free}
-                    value={(plan.amountCentsUsd / 100).toFixed(2)}
-                    onChange={(event) =>
+                    value={plan.amountCentsUsd / 100}
+                    onValueChange={(amount) =>
                       setPlan(index, {
-                        amountCentsUsd: Math.max(0, Math.round(Number(event.target.value) * 100)),
-                        priceUsd: `$${Math.max(0, Number(event.target.value)).toLocaleString("en-US")}`,
+                        amountCentsUsd: Math.round(amount * 100),
+                        priceUsd: `$${amount.toLocaleString("en-US")}`,
                       })
                     }
                   />

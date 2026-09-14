@@ -235,12 +235,11 @@ function UserDialog({
             ].map((row) => (
               <div key={row.label}>
                 <p className="text-xs font-semibold">{row.label}</p>
-                <Input
-                  type="number"
+                <NumberInput
                   min={0}
                   className="mt-1.5 h-10"
                   value={row.value}
-                  onChange={(e) => row.set(Math.max(0, Number(e.target.value) || 0))}
+                  onValueChange={row.set}
                 />
               </div>
             ))}
@@ -1054,26 +1053,22 @@ function AdminPage() {
           {referralMode === "fixed" ? (
             <div className="mt-3 max-w-xs">
               <p className="text-xs font-semibold">{t("Credits per referral")}</p>
-              <Input
-                type="number"
+              <NumberInput
                 min={0}
                 className="mt-1.5 h-10"
                 value={referralCredits}
-                onChange={(e) => setReferralCredits(Math.max(0, Number(e.target.value) || 0))}
+                onValueChange={setReferralCredits}
               />
             </div>
           ) : (
             <div className="mt-3 max-w-xs">
               <p className="text-xs font-semibold">{t("Percentage of each recharge (%)")}</p>
-              <Input
-                type="number"
+              <NumberInput
                 min={0}
                 max={100}
                 className="mt-1.5 h-10"
                 value={referralPercent}
-                onChange={(e) =>
-                  setReferralPercent(Math.min(100, Math.max(0, Number(e.target.value) || 0)))
-                }
+                onValueChange={setReferralPercent}
               />
               <p className="mt-1.5 text-[11px] text-muted-foreground">
                 {t("The inviter earns this share of the credits each invited person buys.")}
@@ -1144,36 +1139,33 @@ function AdminPage() {
                 <label className="text-xs font-semibold text-muted-foreground">
                   {t("Available credits")}
                 </label>
-                <Input
+                <NumberInput
                   className="mt-1 h-9"
-                  type="number"
                   min={0}
                   value={defCredits}
-                  onChange={(e) => setDefCredits(Number(e.target.value))}
+                  onValueChange={setDefCredits}
                 />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground">
                   {t("Credits per refill")}
                 </label>
-                <Input
+                <NumberInput
                   className="mt-1 h-9"
-                  type="number"
                   min={0}
                   value={defRefillAmount}
-                  onChange={(e) => setDefRefillAmount(Number(e.target.value))}
+                  onValueChange={setDefRefillAmount}
                 />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground">
                   {t("Refill every (hours)")}
                 </label>
-                <Input
+                <NumberInput
                   className="mt-1 h-9"
-                  type="number"
                   min={1}
                   value={defRefillHours}
-                  onChange={(e) => setDefRefillHours(Number(e.target.value))}
+                  onValueChange={setDefRefillHours}
                 />
               </div>
               <div>
