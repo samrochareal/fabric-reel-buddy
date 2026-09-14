@@ -74,7 +74,16 @@ export function OutOfCreditsDialog({
   }, [open, account?.credits, account?.premium]);
 
   useEffect(() => {
-    if (target && target.getTime() - now <= 0) refresh();
+    if (!target || target.getTime() - now > 0 || claiming.current) return;
+    claiming.current = true;
+    void claimFreeRefill()
+      .catch(() => undefined)
+      .finally(() => {
+        refresh();
+        window.setTimeout(() => {
+          claiming.current = false;
+        }, 10_000);
+      });
   }, [target, now, refresh]);
 
   const ms = target ? Math.max(0, target.getTime() - now) : 0;
