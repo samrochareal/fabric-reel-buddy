@@ -68,6 +68,13 @@ export async function fetchMyAccount(): Promise<Account | null> {
   };
 }
 
+/** Asks the server for the free refill once the waiting time is over. */
+export async function claimFreeRefill(): Promise<void> {
+  if (isGuest()) return;
+  const { claimRefill } = await import("@/lib/account.functions");
+  await claimRefill();
+}
+
 export type SpendResult = {
   ok: boolean;
   reason?: string;
