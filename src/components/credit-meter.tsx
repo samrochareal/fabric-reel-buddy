@@ -43,16 +43,20 @@ export function CreditMeter({ account: given }: { account?: Account | null }) {
     const h = Math.floor(ms / 3600_000);
     const m = Math.floor((ms % 3600_000) / 60_000);
     const s = Math.floor((ms % 60_000) / 1000);
+    const clock = `${pad(h)}:${pad(m)}:${pad(s)}`;
     return (
       <span
-        className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-mono text-xs font-bold tabular-nums text-muted-foreground"
+        className="flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary"
         title={t("New credits arrive {when}.", { when: target.toLocaleTimeString() })}
       >
-        <Timer className="size-3.5 text-primary" />
-        {pad(h)}:{pad(m)}:{pad(s)}
+        <Timer className="size-3.5" />
+        <span className="hidden sm:inline font-semibold">{t("Free credits in")}</span>
+        <span className="font-mono tabular-nums">{clock}</span>
       </span>
     );
   }
+
+  const total = account.credits_used + account.credits;
 
   return (
     <span
@@ -60,7 +64,7 @@ export function CreditMeter({ account: given }: { account?: Account | null }) {
       title={t("Credits used / credits available")}
     >
       <Coins className="size-3.5 text-primary" />
-      {pad(account.credits_used)}/{pad(account.credits)}
+      {pad(account.credits_used)}/{pad(total)}
     </span>
   );
 }
