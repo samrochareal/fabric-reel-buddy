@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccountBadge } from "@/components/account-badge";
 import { SideMenu } from "@/components/side-menu";
 import { CreditMeter } from "@/components/credit-meter";
+import { OutOfCreditsDialog } from "@/components/out-of-credits-dialog";
 import { NotificationBell } from "@/components/notification-bell";
 import { getProject, saveProjectSettings } from "@/lib/projects";
 import {
@@ -59,7 +60,7 @@ import { useBranding } from "@/lib/branding";
 import { useT } from "@/lib/i18n";
 import {
   accessExpired,
-  nextRefillAt,
+  
   spendOneCredit,
   toolEnabled,
   useMyAccount,
@@ -167,6 +168,7 @@ function EditorPage() {
   const [scope, setScope] = useState<"batch" | "single">("batch");
   const [overrides, setOverrides] = useState<Record<string, Partial<EditOptions>>>({});
   const [backgrounds, setBackgrounds] = useState<BackgroundImageItem[]>([]);
+  const [outOfCredits, setOutOfCredits] = useState(false);
   const [renamingBg, setRenamingBg] = useState<BackgroundImageItem | null>(null);
   const [bgName, setBgName] = useState("");
   const [running, setRunning] = useState(false);
@@ -457,12 +459,7 @@ function EditorPage() {
     }
 
     if (account && !account.premium && account.credits <= 0) {
-      const when = nextRefillAt(account);
-      toast.error(
-        `${t("You are out of credits.")} ${
-          when ? t("New credits arrive {when}.", { when: when.toLocaleString() }) : ""
-        }`,
-      );
+      setOutOfCredits(true);
       return;
     }
 
@@ -527,6 +524,7 @@ function EditorPage() {
         refreshAccount();
         if (!spent.ok) {
           toast.error(t("Out of credits — processing stopped."));
+          setOutOfCredits(true);
           break;
         }
         const index = clips.findIndex((c) => c.id === clip.id);
@@ -1771,6 +1769,12 @@ function EditorPage() {
           <Button onClick={() => void applyBgRename()}>{t("Save")}</Button>
         </DialogContent>
       </Dialog>
+
+      <OutOfCreditsDialog
+        open={outOfCredits}
+        onOpenChange={setOutOfCredits}
+        account={account}
+      />
     </div>
   );
 }
