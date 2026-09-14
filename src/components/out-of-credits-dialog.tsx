@@ -44,6 +44,7 @@ export function OutOfCreditsDialog({
   const refresh = useRefreshAccount();
   const target = nextRefillAt(account);
   const [now, setNow] = useState(() => Date.now());
+  const claiming = useRef(false);
 
   useEffect(() => {
     if (!open) return;
