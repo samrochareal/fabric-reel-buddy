@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { useIsAdmin } from "@/lib/admin";
 import { fetchPlatformDefaults, savePlatformDefaults } from "@/lib/admin";
 import { fetchBranding, useRefreshBranding } from "@/lib/branding";

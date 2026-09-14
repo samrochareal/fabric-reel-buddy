@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
