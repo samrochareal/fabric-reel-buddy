@@ -523,6 +523,7 @@ function EditorPage() {
         refreshAccount();
         if (!spent.ok) {
           toast.error(t("Out of credits — processing stopped."));
+          setOutOfCredits(true);
           break;
         }
         const index = clips.findIndex((c) => c.id === clip.id);
