@@ -167,6 +167,7 @@ function EditorPage() {
   const [scope, setScope] = useState<"batch" | "single">("batch");
   const [overrides, setOverrides] = useState<Record<string, Partial<EditOptions>>>({});
   const [backgrounds, setBackgrounds] = useState<BackgroundImageItem[]>([]);
+  const [outOfCredits, setOutOfCredits] = useState(false);
   const [renamingBg, setRenamingBg] = useState<BackgroundImageItem | null>(null);
   const [bgName, setBgName] = useState("");
   const [running, setRunning] = useState(false);
