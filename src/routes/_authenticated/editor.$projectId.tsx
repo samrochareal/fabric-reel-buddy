@@ -1768,6 +1768,12 @@ function EditorPage() {
           <Button onClick={() => void applyBgRename()}>{t("Save")}</Button>
         </DialogContent>
       </Dialog>
+
+      <OutOfCreditsDialog
+        open={outOfCredits}
+        onOpenChange={setOutOfCredits}
+        account={account}
+      />
     </div>
   );
 }
