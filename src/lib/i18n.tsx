@@ -237,6 +237,7 @@ const PT: Record<string, string> = {
   "Show link": "Mostrar link",
   "You are out of credits.": "Seus créditos acabaram.",
   "New credits arrive {when}.": "Novos créditos chegam {when}.",
+  "Free credits in": "Créditos grátis em",
   "Out of credits — processing stopped.": "Créditos esgotados — processamento interrompido.",
   "Your access has expired. Please contact the administrator.":
     "Seu acesso expirou. Fale com o administrador.",
