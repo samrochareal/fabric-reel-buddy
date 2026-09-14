@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Timer } from "lucide-react";
-import { nextRefillAt, useMyAccount, useRefreshAccount, type Account } from "@/lib/account";
+import {
+  claimFreeRefill,
+  nextRefillAt,
+  useMyAccount,
+  useRefreshAccount,
+  type Account,
+} from "@/lib/account";
 import { useT } from "@/lib/i18n";
 
 function pad(n: number) {
   return String(Math.max(0, n)).padStart(2, "0");
 }
 
-/** Shows the next free-credit refill only after credits have run out. */
+/** Shows the live countdown to the next free-credit refill after credits run out. */
 export function CreditMeter({ account: given }: { account?: Account | null }) {
   const t = useT();
   const fallback = useMyAccount();
@@ -15,15 +21,32 @@ export function CreditMeter({ account: given }: { account?: Account | null }) {
   const refresh = useRefreshAccount();
   const target = nextRefillAt(account);
   const [now, setNow] = useState(() => Date.now());
+  const claiming = useRef(false);
 
+  // tick every second so the countdown is always live
   useEffect(() => {
-    if (!target) return;
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
-  }, [target?.getTime()]);
+  }, []);
 
+  // keep the master-defined refill window in sync
   useEffect(() => {
-    if (target && target.getTime() - now <= 0) refresh();
+    const id = window.setInterval(() => refresh(), 60_000);
+    return () => window.clearInterval(id);
+  }, [refresh]);
+
+  // once the window is over, ask the server for the credits
+  useEffect(() => {
+    if (!target || target.getTime() - now > 0 || claiming.current) return;
+    claiming.current = true;
+    void claimFreeRefill()
+      .catch(() => undefined)
+      .finally(() => {
+        refresh();
+        window.setTimeout(() => {
+          claiming.current = false;
+        }, 10_000);
+      });
   }, [target, now, refresh]);
 
   if (!account || !target) return null;
